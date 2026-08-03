@@ -1,0 +1,140 @@
+@import "tailwindcss";
+
+/* Palette and type system straight from the brand book.
+   Gold = creativity, optimism, ambition. Navy = trust, intelligence,
+   strategy. Charcoal = authority. Off-white = balance and breathing space. */
+@theme {
+  --color-gold: #e6b325;
+  --color-navy: #1f355e;
+  --color-charcoal: #212121;
+  --color-cream: #f9f7f2;
+  /* The book's off-white sits at 98% brightness, which reads as plain white
+     on a large ground. `bone` is that same off-white carrying a whisper of
+     the brand navy, so a full-bleed light section still registers as tinted. */
+  --color-bone: #f1eee7;
+}
+
+/* Montserrat primary, Merriweather secondary — the book's only two faces,
+   so they map onto Tailwind's sans/serif slots rather than getting bespoke
+   utility classes. `inline` so the utilities reference next/font's vars. */
+@theme inline {
+  --font-sans: var(--font-montserrat), Arial, Helvetica, sans-serif;
+  --font-serif: var(--font-merriweather), Georgia, "Times New Roman", serif;
+}
+
+body {
+  background: var(--color-charcoal);
+  color: var(--color-cream);
+  font-family: var(--font-sans);
+}
+
+/* Scroll cue nudge. Kept in CSS rather than JS so it costs nothing to run
+   and stops cleanly for anyone who'd rather it didn't move. */
+@keyframes scroll-hint-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(7px);
+  }
+}
+
+.animate-scroll-hint {
+  animation: scroll-hint-bob 1.7s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-scroll-hint {
+    animation: none;
+  }
+}
+
+/* Focus list: hovering one entry dims its siblings so the eye is pulled to a
+   single step at a time. Plain CSS because the two rules have to beat each
+   other by source order, which reads far clearer here than utility overrides. */
+.focus-list > li {
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+.focus-list:hover > li {
+  opacity: 0.35;
+}
+.focus-list > li:hover {
+  opacity: 1;
+  transform: translateX(10px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .focus-list > li:hover {
+    transform: none;
+  }
+}
+
+/* Emphasised word in a revealed headline — swells and lights up once its own
+   block reveal has uncovered it. */
+.emphasis-word {
+  display: inline-block;
+  transition: transform 0.6s cubic-bezier(0.34, 1.4, 0.4, 1), text-shadow 0.6s ease,
+    color 0.6s ease;
+}
+.emphasis-word.is-lit {
+  transform: scale(1.08);
+  color: var(--color-gold);
+  text-shadow: 0 0 26px rgba(230, 179, 37, 0.45);
+}
+
+/* Typewriter caret. */
+@keyframes caret-blink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  55%,
+  100% {
+    opacity: 0;
+  }
+}
+.caret {
+  animation: caret-blink 1s step-end infinite;
+}
+
+/* Hover strike. Painted as a background gradient rather than a positioned bar
+   so that `box-decoration-break: clone` gives every line fragment its own
+   rule — a single absolutely-positioned bar can only ever strike through the
+   middle of the whole block, which lands between the lines once text wraps. */
+.strike-hover {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 58%;
+  background-size: 0% 3px;
+  transition: background-size 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.group:hover .strike-hover {
+  background-size: 100% 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .emphasis-word,
+  .strike-hover {
+    transition: none;
+  }
+  .caret {
+    animation: none;
+  }
+}
+
+/* Native <dialog> renders in the top layer, so it escapes the Invitation
+   section's overflow clipping and brings its own focus trap and Esc handling. */
+dialog::backdrop {
+  background: rgba(33, 33, 33, 0.74);
+  backdrop-filter: blur(3px);
+}
+
+/* Hollow display type — the hero's countdown digit. */
+.text-stroke-white {
+  color: transparent;
+  -webkit-text-stroke: 2px #fff;
+  text-stroke: 2px #fff;
+}

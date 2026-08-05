@@ -323,7 +323,7 @@ export function Preloader({ onDone }: { onDone?: () => void }) {
       <div className="relative z-10 mt-6 h-8 w-full max-w-[900px] px-[15%]">
         <div
           ref={tagline1Ref}
-          className="absolute inset-x-0 flex justify-center gap-[0.5em] whitespace-nowrap text-[clamp(0.7rem,1.6vw,1.1rem)] font-bold uppercase tracking-[0.18em]"
+          className="absolute inset-x-0 flex justify-center gap-[0.5em] whitespace-nowrap text-[clamp(0.7rem,1.6vw,1.1rem)] font-serif uppercase tracking-[0.18em]"
           style={{ opacity: 0 }}
         >
           {TAGLINE_1.map((w, i) => (

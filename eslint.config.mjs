@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored verbatim from react-bits — kept byte-identical so upstream
+    // fixes drop straight in. Not ours to lint.
+    "components/reactbits/**",
   ]),
 ]);
 

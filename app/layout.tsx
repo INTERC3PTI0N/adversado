@@ -14,6 +14,10 @@ const montserrat = Montserrat({
 const merriweather = Merriweather({
   variable: "--font-merriweather",
   subsets: ["latin"],
+  // Without the italic axis next/font ships upright only and the browser
+  // fakes the slant by shearing the glyphs — visibly cruder than the real
+  // cut, which the countdown page's subhead uses.
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {

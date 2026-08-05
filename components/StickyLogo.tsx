@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import gsap from "gsap";
 
@@ -27,6 +28,8 @@ gsap.registerPlugin(ScrollTrigger);
 export function StickyLogo() {
   const [hovered, setHovered] = useState(false);
   const [onLight, setOnLight] = useState(false);
+  // The countdown holding page carries the wordmark as its own headline.
+  const hidden = usePathname() === "/";
 
   useEffect(() => {
     const sections = document.querySelectorAll("[data-nav-light]");
@@ -52,6 +55,8 @@ export function StickyLogo() {
 
     return () => triggers.forEach((t) => t.kill());
   }, []);
+
+  if (hidden) return null;
 
   const swap = "opacity 0.5s ease, filter 0.5s ease, transform 0.5s ease";
 

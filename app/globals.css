@@ -132,6 +132,28 @@ dialog::backdrop {
   backdrop-filter: blur(3px);
 }
 
+/* Countdown digit: drops in as the tile it sits on takes the hit. Keyed on
+   the value in JSX, so the remount is what replays it. */
+@keyframes digit-in {
+  from {
+    opacity: 0;
+    transform: translateY(-22%) scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.digit-in {
+  animation: digit-in 0.45s cubic-bezier(0.22, 1.2, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .digit-in {
+    animation: none;
+  }
+}
+
 /* Hollow display type — the hero's countdown digit. */
 .text-stroke-white {
   color: transparent;

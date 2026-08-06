@@ -18,12 +18,16 @@ export function ScrollHint({ delay = 6900 }: { delay?: number }) {
   }, [delay]);
 
   useEffect(() => {
+    // Only armed once the cue is actually up. Otherwise any scroll during the
+    // intro — including the ones the preloader's own scroll lock produces as
+    // it releases — retires the hint before it has ever been seen.
+    if (!visible) return;
     const onScroll = () => {
       if (window.scrollY > 40) setDismissed(true);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [visible]);
 
   return (
     <div

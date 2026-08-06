@@ -15,6 +15,7 @@ const eslintConfig = defineConfig([
     // Vendored verbatim from react-bits — kept byte-identical so upstream
     // fixes drop straight in. Not ours to lint.
     "components/reactbits/**",
+    "components/vendor/**",
   ]),
 ]);
 

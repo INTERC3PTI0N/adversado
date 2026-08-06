@@ -3,6 +3,10 @@
 import { useEffect, useRef } from "react";
 import { animate, useMotionValue } from "motion/react";
 import { Silk } from "@/components/Silk";
+import { Globe } from "@/components/ui/cobe-globe";
+
+/** The one marker the preloader's globe carries — where Adversado is from. */
+const KOCHI_MARKER = [{ id: "kochi", location: [9.9312, 76.2673] as [number, number], label: "Kochi, Kerala" }];
 
 /**
  * Recreation of preloader/preloader.mp4, frame-matched against the source
@@ -75,25 +79,29 @@ const EYE_LOWER_C = { x: 9824, y: 2595 };
 
 const DOT_PATH =
   "M22717 1659 c-83 -19 -138 -61 -176 -134 -67 -131 -6 -296 131 -355 93 -40 214 -14 285 62 58 62 82 179 54 262 -15 44 -77 116 -125 145 -37 22 -116 31 -169 20z";
-const DOT_REST = { x: 22768, y: 1407 };
-const DOT_DROP = { dx: -180, dy: 3500 };
+// Measured off DOT_PATH's own bbox: 509 × 512 centred here, so it is a circle
+// to within a unit. Expressed as a fraction of the 23680 × 4480 viewBox, that
+// centre is where the globe has to sit for the morph to line up.
+const DOT_CX_PCT = (22768 / 23680) * 100;
+const DOT_CY_PCT = (1407.5 / 4480) * 100;
+// The globe is ~8× the dot across, so it has to clear the wordmark rather
+// than growing over the letters. The travel is diagonal — up and to the
+// right, out past the O it came off — which buys that clearance sideways as
+// well as vertically and lets it sit lower than a straight lift could.
+// Both are percentages of the globe's own box, so the whole move scales with
+// the wordmark at every viewport.
+const GLOBE_W_PCT = 17;
+const DOT_W_PCT = (509 / 23680) * 100;
+const GLOBE_LIFT_PCT = -78;
+const GLOBE_SHIFT_PCT = 34;
 
 const TAGLINE_1: { text: string; color: string }[] = [
-  { text: "THE", color: GOLD },
-  { text: "BRAND", color: WHITE },
-  { text: "BEHIND", color: GOLD },
-  { text: "THE", color: WHITE },
-  { text: "BRANDS —", color: GOLD },
+  { text: "The", color: GOLD },
+  { text: "Brand", color: WHITE },
+  { text: "Behind", color: GOLD },
+  { text: "The", color: WHITE },
+  { text: "Brands.", color: GOLD },
 ];
-/** Thread from the dot's rest point down to wherever it currently hangs. */
-function threadPath(dx: number, dy: number) {
-  const x0 = DOT_REST.x;
-  const y0 = DOT_REST.y;
-  const x1 = x0 + dx;
-  const y1 = y0 + dy;
-  const wobble = dy * 0.06;
-  return `M ${x0} ${y0} C ${x0 + wobble} ${y0 + dy * 0.25}, ${x1 - wobble} ${y0 + dy * 0.5}, ${x1} ${y1}`;
-}
 
 export function Preloader({ onDone }: { onDone?: () => void }) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -104,7 +112,7 @@ export function Preloader({ onDone }: { onDone?: () => void }) {
   const eyeUpperRef = useRef<SVGGElement>(null);
   const eyeLowerRef = useRef<SVGGElement>(null);
   const dotGroupRef = useRef<SVGGElement>(null);
-  const threadRef = useRef<SVGPathElement>(null);
+  const globeRef = useRef<HTMLDivElement>(null);
   const tagline1Ref = useRef<HTMLDivElement>(null);
 
   const fade = useMotionValue(0);
@@ -112,8 +120,8 @@ export function Preloader({ onDone }: { onDone?: () => void }) {
   const headReveal = useMotionValue(0);
   const pawReveal = useMotionValue(0);
   const eyeOpen = useMotionValue(0);
-  const dotX = useMotionValue(0);
-  const dotY = useMotionValue(0);
+  /** 0 = dot sitting on the O, 1 = risen and grown into the globe. */
+  const globeRise = useMotionValue(0);
 
   useEffect(() => {
     const root = rootRef.current!;
@@ -124,7 +132,7 @@ export function Preloader({ onDone }: { onDone?: () => void }) {
     const eyeUpper = eyeUpperRef.current!;
     const eyeLower = eyeLowerRef.current!;
     const dotGroup = dotGroupRef.current!;
-    const thread = threadRef.current!;
+    const globe = globeRef.current!;
     const tagline1 = tagline1Ref.current!;
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -159,9 +167,20 @@ export function Preloader({ onDone }: { onDone?: () => void }) {
       t(eyeUpper, EYE_UPPER_C);
       t(eyeLower, EYE_LOWER_C);
     };
+    // The morph is one value driving both halves in opposite directions: the
+    // flat dot fades out as it swells, the globe fades in at exactly the dot's
+    // size and grows into place. They occupy the same point in the same frame,
+    // so the swap reads as one object changing rather than two objects
+    // trading places. At rise=0 the globe is back at dot size and invisible.
     const applyDot = () => {
-      thread.setAttribute("d", threadPath(dotX.get(), dotY.get()));
-      dotGroup.setAttribute("transform", `translate(${dotX.get()} ${dotY.get()})`);
+      const r = globeRise.get();
+      // Crossfade over the first 40% of the rise — the dot is gone well before
+      // the sphere is big enough for the flat disc to look wrong on it.
+      const swap = Math.min(1, r * 2.5);
+      dotGroup.style.opacity = String(1 - swap);
+      globe.style.opacity = String(swap);
+      const scale = DOT_W_PCT / GLOBE_W_PCT + (1 - DOT_W_PCT / GLOBE_W_PCT) * r;
+      globe.style.transform = `translate(-50%, -50%) translate(${GLOBE_SHIFT_PCT * r}%, ${GLOBE_LIFT_PCT * r}%) scale(${scale})`;
     };
 
     const unsubs = [
@@ -170,13 +189,12 @@ export function Preloader({ onDone }: { onDone?: () => void }) {
       headReveal.on("change", applyHead),
       pawReveal.on("change", applyPaw),
       eyeOpen.on("change", applyEyes),
-      dotX.on("change", applyDot),
-      dotY.on("change", applyDot),
+      globeRise.on("change", applyDot),
     ];
 
     if (reduced) {
-      // Rest on the settled first-half frame: cat peeked out, eyes open, dot
-      // hanging, tagline in.
+      // Rest on the settled frame: cat peeked out, eyes open, dot back on its
+      // O, tagline in.
       root.style.backgroundColor = NAVY;
       root.style.setProperty("--fg", GOLD);
       applyFade(1);
@@ -184,8 +202,6 @@ export function Preloader({ onDone }: { onDone?: () => void }) {
       applyHead(1);
       applyPaw(1);
       applyEyes(1);
-      dotX.set(DOT_DROP.dx);
-      dotY.set(DOT_DROP.dy);
       applyDot();
       tagline1.style.opacity = "1";
       const t = setTimeout(() => onDone?.(), 400);
@@ -209,10 +225,13 @@ export function Preloader({ onDone }: { onDone?: () => void }) {
       [fade, [0, 1], { duration: 0.3, ease: "easeOut", at: 0.25 }],
       [intro, [0, 1], { duration: 0.3, ease: [0.22, 1, 0.36, 1], at: 0.25 }],
 
-      // 0.60-1.50 — the O's dot detaches and drops on its thread.
-      [dotY, [0, DOT_DROP.dy], { duration: 0.9, ease: [0.34, 1.4, 0.4, 1], at: 0.6 }],
-      [dotX, [0, DOT_DROP.dx], { duration: 0.9, ease: [0.34, 1.4, 0.4, 1], at: 0.6 }],
-      [dotX, [DOT_DROP.dx, DOT_DROP.dx - 40, DOT_DROP.dx], { duration: 2.4, ease: "easeInOut", at: 1.6 }],
+      // 0.60-1.15 — the O's dot pops up clear of the wordmark and becomes the
+      // globe. The globe spins on its own Y axis throughout, driven by the
+      // component itself rather than by this timeline.
+      [globeRise, [0, 1], { duration: 0.55, ease: [0.34, 1.45, 0.4, 1], at: 0.6 }],
+      // 3.05-3.55 — back down and back to being the white dot, before the
+      // wordmark fades at 3.90.
+      [globeRise, [1, 0], { duration: 0.5, ease: [0.4, 0, 0.2, 1], at: 3.05 }],
 
       // 1.55-2.05 — the cat peeks out of the gap: paw into the R, head into the E.
       [pawReveal, [0, 1], { duration: 0.25, ease: "easeOut", at: 1.55 }],
@@ -225,18 +244,36 @@ export function Preloader({ onDone }: { onDone?: () => void }) {
 
       // 2.50 — tagline wipes in left-to-right.
       [tagline1, { clipPath: ["inset(0 100% 0 0)", "inset(0 0% 0 0)"], opacity: [0, 1] }, { duration: 1.0, ease: [0.22, 1, 0.36, 1], at: 2.5 }],
-
-      // 3.90 — exit: hold on the finished wordmark a beat, then fade the
-      // whole group out. The preloader hands off from here — no colour flip,
-      // no second phase.
-      [fade, [1, 0], { duration: 0.3, ease: "easeIn", at: 3.9 }],
-      [tagline1, { opacity: [1, 0] }, { duration: 0.3, ease: "easeIn", at: 3.9 }],
     ]);
 
-    controls.then(() => onDone?.());
+    // The exit is not on the timeline: the preloader holds its finished frame
+    // until the homepage's 3D scene reports loaded (canvas up, both GLBs
+    // fetched), so it never hands off to a page whose set is still arriving.
+    // Capped, because a blocked CDN must degrade to a slow start, not a
+    // preloader that never ends.
+    let cancelled = false;
+    let exit: ReturnType<typeof animate> | null = null;
+    let waitId: ReturnType<typeof setInterval> | undefined;
+    controls.then(() => {
+      const t0 = performance.now();
+      waitId = setInterval(() => {
+        const ready = (window as Window & { __pwSceneReady?: boolean }).__pwSceneReady === true;
+        if (!ready && performance.now() - t0 < 12000) return;
+        clearInterval(waitId);
+        if (cancelled) return;
+        exit = animate([
+          [fade, [1, 0], { duration: 0.3, ease: "easeIn", at: 0.35 }],
+          [tagline1, { opacity: [1, 0] }, { duration: 0.3, ease: "easeIn", at: 0.35 }],
+        ]);
+        exit.then(() => onDone?.());
+      }, 150);
+    });
 
     return () => {
+      cancelled = true;
+      clearInterval(waitId);
       controls.stop();
+      exit?.stop();
       unsubs.forEach((u) => u());
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -259,9 +296,44 @@ export function Preloader({ onDone }: { onDone?: () => void }) {
         />
       </div>
 
+      <div className="relative z-10 w-[70vw] max-w-[900px]">
+        {/* The real globe, parked over the dot's exact centre and mounted from
+            the first frame so its land data has the whole preloader to arrive
+            in — it fetches its coastlines over the network, and a globe that
+            popped in half-drawn would be worse than one that fades in late.
+            Sized and lifted in percentages of this box so it tracks the
+            wordmark at every viewport. */}
+        <div
+          ref={globeRef}
+          aria-hidden
+          className="pointer-events-none absolute aspect-square"
+          style={{
+            left: `${DOT_CX_PCT}%`,
+            top: `${DOT_CY_PCT}%`,
+            width: `${GLOBE_W_PCT}%`,
+            opacity: 0,
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+          {/* cobe globe, recoloured to the brand: navy ocean, gold marker and
+              glow. Wrapped `pointer-events-none` — this component drags on
+              pointerdown, and nothing under a preloader should be grabbable. */}
+          <div className="pointer-events-none h-full w-full">
+            <Globe
+              markers={KOCHI_MARKER}
+              dark={1}
+              baseColor={[0.122, 0.208, 0.369]}
+              markerColor={[0.902, 0.702, 0.145]}
+              glowColor={[0.365, 0.427, 0.541]}
+              mapBrightness={6}
+              markerSize={0.06}
+            />
+          </div>
+        </div>
+
       <svg
         viewBox="0 0 23680 4480"
-        className="relative z-10 w-[70vw] max-w-[900px] overflow-visible"
+        className="block w-full overflow-visible"
         aria-label="Adversado"
       >
         <defs>
@@ -313,17 +385,17 @@ export function Preloader({ onDone }: { onDone?: () => void }) {
             </g>
           </g>
 
-          <path ref={threadRef} stroke={WHITE} strokeWidth={16} fill="none" strokeLinecap="round" />
           <g ref={dotGroupRef}>
             <path d={DOT_PATH} fill={WHITE} />
           </g>
         </g>
       </svg>
+      </div>
 
       <div className="relative z-10 mt-6 h-8 w-full max-w-[900px] px-[15%]">
         <div
           ref={tagline1Ref}
-          className="absolute inset-x-0 flex justify-center gap-[0.5em] whitespace-nowrap text-[clamp(0.7rem,1.6vw,1.1rem)] font-serif uppercase tracking-[0.18em]"
+          className="absolute inset-x-0 flex justify-center gap-[0.32em] whitespace-nowrap font-serif text-[clamp(0.85rem,1.9vw,1.35rem)] font-light italic tracking-[0.06em]"
           style={{ opacity: 0 }}
         >
           {TAGLINE_1.map((w, i) => (

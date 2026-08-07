@@ -16,6 +16,10 @@ const eslintConfig = defineConfig([
     // fixes drop straight in. Not ours to lint.
     "components/reactbits/**",
     "components/vendor/**",
+    // Pulled in by `npx shadcn add` from the Skiper UI registry. Same reasoning
+    // as the two above — it ships with `any` throughout and re-running the add
+    // command would overwrite anything we cleaned up here.
+    "components/ui/skiper-ui/**",
   ]),
 ]);
 

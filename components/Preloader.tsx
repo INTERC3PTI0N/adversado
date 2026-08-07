@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import { animate, useMotionValue } from "motion/react";
 import { Silk } from "@/components/Silk";
+import WarpText from "@/components/vendor/WarpText";
+import { EventHorizon } from "@/components/vendor/EventHorizon";
+import GalleryTunnel from "@/components/vendor/GalleryTunnel";
 import { Globe } from "@/components/ui/cobe-globe";
+import { generateBrandTiles } from "@/components/brandTiles";
 
 /** The one marker the preloader's globe carries — where Adversado is from. */
 const KOCHI_MARKER = [{ id: "kochi", location: [9.9312, 76.2673] as [number, number], label: "Kochi, Kerala" }];
@@ -95,6 +99,66 @@ const DOT_W_PCT = (509 / 23680) * 100;
 const GLOBE_LIFT_PCT = -78;
 const GLOBE_SHIFT_PCT = 34;
 
+/**
+ * Act two: the lights come up, and then they fade.
+ *
+ * The wordmark plays first, in the dark. Then the room is lit for a headline
+ * announcing its own disappearance, which counts itself down — and on zero
+ * the light fades out over the dark page waiting underneath, so the handoff
+ * to the rest of the site is the fade itself rather than a separate wipe
+ * bolted on after it.
+ */
+const COUNT_WORDS: Record<number, string> = { 3: "THREE", 2: "TWO", 1: "ONE" };
+const COUNT_STEP_MS = 1000;
+/** The wordmark act, from first frame to its own fade being finished. */
+const DARK_MS = 4050;
+/** Lights coming up over the wordmark's last frame. */
+const LIGHT_IN_MS = 500;
+/** Beat to read the line in, then the three ticks it promises. */
+const LIGHT_HOLD_MS = 700 + COUNT_STEP_MS * 3;
+/** The event horizon swallowing the stage: the words break apart and fly
+ * into it while the universe rushes up to meet the reader. Long enough to
+ * read as its own cinematic beat rather than a quick cut. */
+const SUCK_MS = 2600;
+/** How long the Gallery Tunnel ride runs before handing off to the site.
+ * Long, but the tunnel's own speed is what keeps it from feeling slow —
+ * more distance covered, not less velocity. */
+const TUNNEL_MS = 4400;
+/** The tunnel's own fade-in, so it eases over whatever's still on screen
+ * from the suck rather than popping in as a hard cut. */
+const TUNNEL_FADE_MS = 500;
+/** The ride's final beat: the tunnel blows out past the reader rather than
+ * cutting away. The hero starts its own approach the instant this begins, not
+ * when it ends — so for most of this the reader is looking through the opening
+ * tunnel at "So do most brands." already coming toward them from a long way
+ * off, and the whole thing lands as one continuous zoom. */
+const TUNNEL_ZOOM_MS = 1500;
+/** Where the lens stops blurring and starts. Transparent through the middle so
+ * the vanishing point stays sharp, opaque by the edge of frame so the blur is
+ * at full strength there — the further from the axis of travel, the more
+ * smeared, which is the whole read. */
+const LENS_MASK =
+  "radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 20%, rgba(0,0,0,0.35) 42%, rgba(0,0,0,0.85) 68%, rgba(0,0,0,1) 100%)";
+/** When the lit act is fully up, in ms and in seconds. */
+const LIGHT_ON_MS = DARK_MS + LIGHT_IN_MS;
+
+const SENTENCE_WORDS = ["THIS", "HEADLINE", "WILL", "VANISH", "IN "];
+/** The headline's type size, set on the line so each word's WarpText can size
+ * itself in `em` against it. Tuned so all six words hold a single line — the
+ * old single-canvas version got there by auto-shrinking the whole sentence,
+ * which per-word boxes can't do without every word landing at its own size. */
+const HEADLINE_SIZE = "clamp(1.6rem, 5.3vw, 4.8rem)";
+/**
+ * WarpText shrinks its text to fit 86% × 78% of its own box, so a box even
+ * slightly too tight makes that word rasterise smaller than its neighbours.
+ * Rather than guessing a width per word, each word's wrapper is sized by a
+ * hidden copy of the word set in the same face, and the canvas is floated over
+ * it with this much bleed on every side — enough that the fit factor stays
+ * pinned at 1 for every word, and that the ambient warp has somewhere to push
+ * the glyphs into instead of clipping them at the edge.
+ */
+const WARP_BLEED = "-16%";
+
 const TAGLINE_1: { text: string; color: string }[] = [
   { text: "The", color: GOLD },
   { text: "Brand", color: WHITE },
@@ -103,7 +167,84 @@ const TAGLINE_1: { text: string; color: string }[] = [
   { text: "Brands.", color: GOLD },
 ];
 
-export function Preloader({ onDone }: { onDone?: () => void }) {
+/**
+ * One word of the headline, as its own sheet of warped glass.
+ *
+ * The hidden span is what actually occupies space — it sets the word in the
+ * same face and weight WarpText will rasterise it in, so the box ends up the
+ * word's natural width without anyone having to guess at one. The canvas then
+ * floats over that box with a margin of bleed all round.
+ */
+const WarpWord = forwardRef<HTMLSpanElement, { text: string; color: string; sizer?: string }>(
+  function WarpWord({ text, color, sizer }, ref) {
+    return (
+      <span
+        ref={ref}
+        className="relative inline-block"
+        style={{ willChange: "transform, opacity", padding: "0 0.09em" }}
+      >
+        {/* Kerning and ligatures are turned off deliberately. WarpText draws
+            the word by walking one character at a time and summing advances,
+            which is what an unkerned run measures — leave the browser kerning
+            this and the box comes out narrower than the canvas paints, so long
+            words overflow and collide with their neighbours. The padding above
+            covers the last of the difference (letter-spacing lands after the
+            final character in the DOM but not on the canvas). */}
+        <span
+          aria-hidden
+          className="invisible font-black"
+          style={{
+            letterSpacing: "-0.06em",
+            lineHeight: 1,
+            fontKerning: "none",
+            fontVariantLigatures: "none",
+          }}
+        >
+          {sizer ?? text}
+        </span>
+        <WarpText
+          text={text}
+          color={color}
+          warpStrength={0.08}
+          warpScale={3}
+          speed={0.55}
+          // Held well back from the vendored defaults: six independent lenses
+          // sitting side by side each chasing the pointer on their own made the
+          // sentence squirm, where one canvas for the whole line had bent as a
+          // single sheet. Enough to catch the light, not enough to break the
+          // line's spacing.
+          pointerInfluence={0.3}
+          pointerStrength={0.18}
+          refraction={0.018}
+          ripple
+          fontSize="1em"
+          fontWeight={900}
+          style={{
+            position: "absolute",
+            left: WARP_BLEED,
+            right: WARP_BLEED,
+            top: "-0.32em",
+            bottom: "-0.32em",
+            width: "auto",
+            height: "auto",
+            minHeight: 0,
+          }}
+        />
+      </span>
+    );
+  }
+);
+
+export function Preloader({
+  onDone,
+  onHandoff,
+}: {
+  /** The tunnel has finished opening out — nothing of the preloader is left to see. */
+  onDone?: () => void;
+  /** The tunnel has *started* opening out. Whatever is underneath should begin
+   * arriving now, so the reader sees it through the opening rather than after it. */
+  onHandoff?: () => void;
+}) {
   const rootRef = useRef<HTMLDivElement>(null);
   const groupWrapRef = useRef<SVGGElement>(null);
   const introClipRef = useRef<SVGRectElement>(null);
@@ -114,6 +255,24 @@ export function Preloader({ onDone }: { onDone?: () => void }) {
   const dotGroupRef = useRef<SVGGElement>(null);
   const globeRef = useRef<HTMLDivElement>(null);
   const tagline1Ref = useRef<HTMLDivElement>(null);
+  const lightRef = useRef<HTMLDivElement>(null);
+  const universeRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLHeadingElement>(null);
+  const wordRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const tunnelRef = useRef<HTMLDivElement>(null);
+  const lensRef = useRef<HTMLDivElement>(null);
+  const [count, setCount] = useState(3);
+  const [outro, setOutro] = useState<"none" | "tunnel">("none");
+  /** Once true the preloader is nothing but the tunnel opening out — its own
+   * stage is struck and its backdrop turned transparent, so the page arriving
+   * underneath is visible through it. */
+  const [handoff, setHandoff] = useState(false);
+  // Generated once, client-side only, and reused for the whole life of the
+  // component — the tunnel unmounts and the reader is gone before a second
+  // preloader run would ever need a fresh set.
+  const [tunnelImages] = useState(() =>
+    typeof window === "undefined" ? [] : generateBrandTiles(12, 512).map((src) => ({ src }))
+  );
 
   const fade = useMotionValue(0);
   const intro = useMotionValue(0);
@@ -134,6 +293,7 @@ export function Preloader({ onDone }: { onDone?: () => void }) {
     const dotGroup = dotGroupRef.current!;
     const globe = globeRef.current!;
     const tagline1 = tagline1Ref.current!;
+    const light = lightRef.current!;
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -194,7 +354,9 @@ export function Preloader({ onDone }: { onDone?: () => void }) {
 
     if (reduced) {
       // Rest on the settled frame: cat peeked out, eyes open, dot back on its
-      // O, tagline in.
+      // O, tagline in. The lit act is a motion gag — a headline that vanishes
+      // and takes the lights with it — so there is nothing of it to hold still.
+      light.style.opacity = "0";
       root.style.backgroundColor = NAVY;
       root.style.setProperty("--fg", GOLD);
       applyFade(1);
@@ -220,7 +382,15 @@ export function Preloader({ onDone }: { onDone?: () => void }) {
     applyEyes(0);
     applyDot();
 
+    // The countdown runs on React state — one word changing once a second
+    // doesn't need a motion value, and it reads better in the markup.
+    const ticks = [
+      setTimeout(() => setCount(2), LIGHT_ON_MS + 700 + COUNT_STEP_MS),
+      setTimeout(() => setCount(1), LIGHT_ON_MS + 700 + COUNT_STEP_MS * 2),
+    ];
+
     const controls = animate([
+      // ── Act one, in the dark ──────────────────────────────────────────
       // 0.25-0.55 — wordmark reveals outward from the centre.
       [fade, [0, 1], { duration: 0.3, ease: "easeOut", at: 0.25 }],
       [intro, [0, 1], { duration: 0.3, ease: [0.22, 1, 0.36, 1], at: 0.25 }],
@@ -230,7 +400,7 @@ export function Preloader({ onDone }: { onDone?: () => void }) {
       // component itself rather than by this timeline.
       [globeRise, [0, 1], { duration: 0.55, ease: [0.34, 1.45, 0.4, 1], at: 0.6 }],
       // 3.05-3.55 — back down and back to being the white dot, before the
-      // wordmark fades at 3.90.
+      // wordmark fades at 3.70.
       [globeRise, [1, 0], { duration: 0.5, ease: [0.4, 0, 0.2, 1], at: 3.05 }],
 
       // 1.55-2.05 — the cat peeks out of the gap: paw into the R, head into the E.
@@ -244,36 +414,136 @@ export function Preloader({ onDone }: { onDone?: () => void }) {
 
       // 2.50 — tagline wipes in left-to-right.
       [tagline1, { clipPath: ["inset(0 100% 0 0)", "inset(0 0% 0 0)"], opacity: [0, 1] }, { duration: 1.0, ease: [0.22, 1, 0.36, 1], at: 2.5 }],
+
+      // 3.70-4.05 — the wordmark clears the stage for the headline.
+      [fade, [1, 0], { duration: 0.35, ease: "easeIn", at: 3.7 }],
+      [tagline1, { opacity: [1, 0] }, { duration: 0.35, ease: "easeIn", at: 3.7 }],
+
+      // ── Act two: the lights come up ───────────────────────────────────
+      [light, { opacity: [0, 1] }, { duration: LIGHT_IN_MS / 1000, ease: "easeOut", at: DARK_MS / 1000 }],
     ]);
 
-    // The exit is not on the timeline: the preloader holds its finished frame
-    // until the homepage's 3D scene reports loaded (canvas up, both GLBs
-    // fetched), so it never hands off to a page whose set is still arriving.
-    // Capped, because a blocked CDN must degrade to a slow start, not a
-    // preloader that never ends.
     let cancelled = false;
-    let exit: ReturnType<typeof animate> | null = null;
-    let waitId: ReturnType<typeof setInterval> | undefined;
-    controls.then(() => {
-      const t0 = performance.now();
-      waitId = setInterval(() => {
-        const ready = (window as Window & { __pwSceneReady?: boolean }).__pwSceneReady === true;
-        if (!ready && performance.now() - t0 < 12000) return;
-        clearInterval(waitId);
+    let suck: ReturnType<typeof animate> | null = null;
+    const wordControls: ReturnType<typeof animate>[] = [];
+    let tunnelFade: ReturnType<typeof animate> | null = null;
+    let lensFade: ReturnType<typeof animate> | null = null;
+    let tunnelZoom: ReturnType<typeof animate> | null = null;
+    let tunnelTimer: ReturnType<typeof setTimeout> | undefined;
+
+    // The outro: the event horizon rushes up to meet the reader while the
+    // headline breaks apart into its own words and is thrown into it, then a
+    // long tunnel push over black hands off to the dark site underneath —
+    // the constellations and Hero's own reveal pick the same rush up on the
+    // far side (adversado:reveal, dispatched by the page once this calls
+    // onDone). Run as its own animation off a plain setTimeout — chaining it
+    // onto `controls` would tie its start to whichever timeline segment
+    // happens to finish last, rather than to this specific moment.
+    const outroTimer = setTimeout(() => {
+      // Each word is its own WarpText, so the thing that flies apart is the
+      // same warped glass the reader has been looking at the whole time —
+      // nothing is swapped in underneath it, and the first frame of the
+      // collapse is pixel-for-pixel the frame before it.
+      const words = wordRefs.current.filter((el): el is HTMLSpanElement => !!el);
+      words.forEach((el, i) => {
+        const settle = i * 0.09;
+        const dur = Math.max(0.5, SUCK_MS / 1000 - settle * 0.6);
+        const sideways = (i % 2 === 0 ? -1 : 1) * (1 + (i % 3));
+        const c = animate(0, 1, {
+          duration: dur,
+          delay: settle,
+          ease: [0.6, 0, 0.9, 0.35],
+          onUpdate: (v) => {
+            el.style.transform = `translateZ(${-v * 2400}px) translateX(${v * sideways * 90}px) translateY(${v * (i - words.length / 2) * 40}px) rotateX(${v * 60}deg) rotateY(${sideways * v * 45}deg) scale(${1 - v * 0.85})`;
+            el.style.opacity = String(1 - Math.max(0, v - 0.15) / 0.85);
+          },
+        });
+        wordControls.push(c);
+      });
+
+      // The universe rushing up to meet the reader — a long, accelerating
+      // push rather than the old quick snap, so this whole beat reads as
+      // its own camera move instead of a jump cut.
+      suck = animate(0, 1, {
+        duration: SUCK_MS / 1000,
+        ease: [0.5, 0, 0.85, 0.4],
+        onUpdate: (v) => {
+          const universe = universeRef.current;
+          if (universe) universe.style.transform = `scale(${1 + v * v * 5.5})`;
+        },
+      });
+
+      suck.then(() => {
         if (cancelled) return;
-        exit = animate([
-          [fade, [1, 0], { duration: 0.3, ease: "easeIn", at: 0.35 }],
-          [tagline1, { opacity: [1, 0] }, { duration: 0.3, ease: "easeIn", at: 0.35 }],
-        ]);
-        exit.then(() => onDone?.());
-      }, 150);
-    });
+        setOutro("tunnel");
+        // Mounted at opacity 0 in the markup below; faded in here rather
+        // than popping straight to full brightness, so the tunnel eases in
+        // over whatever the suck left on screen instead of cutting to it.
+        requestAnimationFrame(() => {
+          if (cancelled || !tunnelRef.current) return;
+          tunnelFade = animate(
+            tunnelRef.current,
+            { opacity: [0, 1] },
+            { duration: TUNNEL_FADE_MS / 1000, ease: "easeOut" }
+          );
+          // The lens comes up just behind the tunnel rather than with it — a
+          // beat to see where they are, then the frame closes in around them.
+          if (lensRef.current) {
+            lensFade = animate(
+              lensRef.current,
+              { opacity: [0, 1] },
+              { duration: 0.9, delay: 0.2, ease: "easeOut" }
+            );
+          }
+        });
+        // The tunnel is an infinite ride with no natural end, so its length
+        // is set here: hold the push, then hand off. `onDone` is what swaps
+        // this whole component out for the constellations with "So do most
+        // brands." revealing over them — but it fires only once the tunnel
+        // has finished its own final push, so that push reads as physically
+        // arriving at that section rather than a cut to a separate zoom.
+        tunnelTimer = setTimeout(() => {
+          if (cancelled || !tunnelRef.current) return;
+          // Everything behind the tunnel goes, so the tunnel is the only thing
+          // between the reader and the page — then the hero is told to start
+          // its approach, and the tunnel opens out over the top of it.
+          setHandoff(true);
+          onHandoff?.();
+          // The lens clears on the way out. Holding the vignette through the
+          // blow-out would darken the hero arriving underneath at exactly the
+          // moment it needs to be readable — the frame opening up is what says
+          // the reader is through the hole rather than still inside it.
+          if (lensRef.current) {
+            lensFade?.stop();
+            lensFade = animate(
+              lensRef.current,
+              { opacity: [1, 0] },
+              { duration: TUNNEL_ZOOM_MS / 1000 / 1.6, ease: "easeIn" }
+            );
+          }
+          tunnelZoom = animate(
+            tunnelRef.current,
+            { scale: [1, 7], opacity: [1, 0] },
+            { duration: TUNNEL_ZOOM_MS / 1000, ease: [0.5, 0, 0.75, 0.65] }
+          );
+          tunnelZoom.then(() => {
+            if (!cancelled) onDone?.();
+          });
+        }, TUNNEL_MS - TUNNEL_ZOOM_MS);
+      });
+    }, LIGHT_ON_MS + LIGHT_HOLD_MS);
 
     return () => {
       cancelled = true;
-      clearInterval(waitId);
+      ticks.forEach(clearTimeout);
+      clearTimeout(outroTimer);
+      clearTimeout(tunnelTimer);
       controls.stop();
-      exit?.stop();
+      suck?.stop();
+      tunnelFade?.stop();
+      lensFade?.stop();
+      tunnelZoom?.stop();
+      wordControls.forEach((c) => c.stop());
       unsubs.forEach((u) => u());
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -283,8 +553,19 @@ export function Preloader({ onDone }: { onDone?: () => void }) {
     <div
       ref={rootRef}
       className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden"
-      style={{ backgroundColor: NAVY, "--fg": GOLD } as React.CSSProperties}
+      style={
+        {
+          backgroundColor: handoff ? "transparent" : NAVY,
+          "--fg": GOLD,
+        } as React.CSSProperties
+      }
     >
+      {/* The preloader's own stage — struck the moment the tunnel starts
+          opening out, along with the backdrop above, so what's left is a
+          transparent frame holding nothing but the tunnel. That's what lets
+          the hero arrive *through* it rather than after it. */}
+      {!handoff && (
+      <>
       <div className="absolute inset-0 z-0">
         <Silk
           primaryColor={SILK_HIGH}
@@ -405,6 +686,141 @@ export function Preloader({ onDone }: { onDone?: () => void }) {
           ))}
         </div>
       </div>
+
+      {/* Act two, over the top of everything: the lit room, raised once the
+          wordmark has taken its bow. Mounted from the first frame at zero
+          opacity rather than swapped in, so the lights come up on a stage
+          that is already standing and nothing has to load mid-sequence. */}
+      <div
+        ref={lightRef}
+        className="absolute inset-0 z-40 flex items-center justify-center overflow-hidden px-6"
+        style={{ opacity: 0 }}
+      >
+        {/* The Event Horizon shader, vendored verbatim, in its own layer so
+            the outro can zoom it independently of the text above it. Its
+            tilt/rotate follow the pointer on hover rather than needing a
+            drag. */}
+        <div ref={universeRef} className="absolute inset-0">
+          <EventHorizon rotationSpeed={0.3} diskIntensity={1.0} chromatic={0.0} />
+        </div>
+
+        {/* The headline, one React Bits WarpText per word rather than one for
+            the whole sentence. A single canvas can't be torn into pieces, and
+            a DOM copy laid over it to do the tearing can never match it —
+            WarpText rasterises with its own letter-spacing, line-height and an
+            auto-shrink fit factor, so the swap always showed as a jump in
+            type. Per word, the glass IS the thing that flies, so the collapse
+            starts from exactly the frame already on screen. */}
+        <h1
+          ref={contentRef}
+          aria-label="THIS HEADLINE WILL VANISH INs"
+          className="relative flex w-full max-w-[1600px] flex-wrap items-center justify-center gap-x-[0.26em] gap-y-2"
+          style={{ perspective: 1800, transformStyle: "preserve-3d", fontSize: HEADLINE_SIZE }}
+        >
+          {SENTENCE_WORDS.map((w, i) => (
+            <WarpWord
+              key={w}
+              ref={(el) => {
+                wordRefs.current[i] = el;
+              }}
+              text={w}
+              color={GOLD}
+            />
+          ))}
+          {/* The count word: same glass, its own colour — the one word on the
+              line that isn't gold. Sized off the longest word it will ever
+              hold, so the line doesn't reflow on each tick of the countdown. */}
+          <WarpWord
+            ref={(el) => {
+              wordRefs.current[SENTENCE_WORDS.length] = el;
+            }}
+            text={COUNT_WORDS[count]}
+            sizer="three"
+            color={SILK_HIGH}
+          />
+        </h1>
+      </div>
+      </>
+      )}
+
+      {/* The Gallery Tunnel, vendored verbatim and mounted only for the beat
+          between the hole swallowing the stage and the site underneath. The
+          component runs forever by design, so the timing lives out here: a
+          timer in the effect above unmounts it and calls `onDone`, which is
+          what puts "So do most brands." on the constellations.
+          Mounted at opacity 0 — the effect above fades it in over
+          TUNNEL_FADE_MS once it's actually painted, so this is a rush into
+          the ride rather than a pop. Its walls are the procedurally drawn
+          placeholder brand plates from brandTiles.ts rather than the vendored
+          default photo set, and it's pushed hard on speed — a long ride only
+          reads as cinematic if it's covering real distance the whole time,
+          not just running longer at the same pace. */}
+      {outro === "tunnel" && (
+        <div ref={tunnelRef} className="fixed inset-0 z-[70]" style={{ opacity: 0 }}>
+          <GalleryTunnel
+            label={false}
+            images={tunnelImages}
+            colors={["#e6b325", "#2b6cff", "#5a3c8c", "#f9f7f2", "#1f355e"]}
+            background="#020308"
+            lineColor="#e6b325"
+            lineOpacity={28}
+            speed={230}
+            boost={340}
+            fade={85}
+          />
+
+        </div>
+      )}
+
+      {/* The camera, over the ride rather than inside it. The tunnel renders a
+          clean sharp grid in every direction; what makes it read as being
+          pulled through something instead of flown down a corridor is what sits
+          between the reader and it.
+
+          This has to be a sibling of the tunnel, not a child: `backdrop-filter`
+          samples what is painted beneath it within the nearest backdrop root,
+          and the tunnel's own animated opacity makes that div a backdrop root —
+          nested inside, the blur would sample an empty backdrop and show
+          nothing at all.
+
+          Three passes, all masked to leave the middle alone, because the eye
+          needs one sharp point to fix on or the whole frame just reads as out
+          of focus:
+            · periphery blur, ramping up toward the edges
+            · a gravitational smear of gold and blue around that same ring
+            · a vignette closing the corners down to black */}
+      {outro === "tunnel" && (
+        <div
+          ref={lensRef}
+          aria-hidden
+          className="pointer-events-none fixed inset-0 z-[71]"
+          style={{ opacity: 0 }}
+        >
+          <div
+            className="absolute inset-0"
+            style={{
+              backdropFilter: "blur(20px) saturate(1.25)",
+              WebkitBackdropFilter: "blur(20px) saturate(1.25)",
+              maskImage: LENS_MASK,
+              WebkitMaskImage: LENS_MASK,
+            }}
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 24%, rgba(230,179,37,0.20) 50%, rgba(43,108,255,0.26) 74%, rgba(0,0,0,0) 97%)",
+            }}
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 26%, rgba(2,3,8,0.45) 60%, rgba(2,3,8,0.96) 100%)",
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -1,32 +1,58 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { TextReveal, RevealWord } from "@/components/TextReveal";
-import { useBlockReveal } from "@/components/useBlockReveal";
+import { animate } from "motion/react";
+import { TextReveal } from "@/components/TextReveal";
 import { ScrollHint } from "@/components/ScrollHint";
 import { Typewriter } from "@/components/Typewriter";
 
 // Brand book palette.
-const NAVY = "#1f355e";
 const GOLD = "#e6b325";
 
-const HEADLINE_1_LEAD = ["This", "headline", "will", "vanish", "in"];
-const HEADLINE_2 = "So do most brands.";
+const HEADLINE_2 = "SO DO MOST BRANDS.";
 const SUBHEADING =
   "Adversado builds the ones that stay. Strategy to execution, one team, end to end.";
 
 const REVEAL_STAGGER = 0.08;
 const REVEAL_DURATION = 0.5;
-// Last word of headline 1 (index 6, "seconds.") starts at 6*stagger and both
-// reveal phases take duration*2 — this is when the wordmark is fully in.
-const REVEAL_DONE_MS = (6 * REVEAL_STAGGER + REVEAL_DURATION * 2) * 1000;
-const COUNT_STEP_MS = 1000;
-const FADE_MS = 400;
+
+// The tunnel hands off mid-rush, so the hero has to arrive rather than fade
+// in — and it has to arrive from a long way off, on the same move.
+//
+// Apparent size is 1/z, so each layer is given a depth to start at and they
+// all converge on z = 1. The block opens at a tenth of full size and covers
+// most of its travel late, the way something actually approaching does. The
+// headline and subheading then sit at their own depths *within* the block, so
+// they don't arrive together — the subheading is nearest, grows the most, and
+// lands last. That spread is the parallax.
+const ARRIVE_MS = 2600;
+/** The block's own depth — 1/10th size at the start of the approach. */
+const BLOCK_Z = 10;
+/** Depths within the block, multiplied on top of it. */
+const HEADLINE_Z = 1.5;
+const SUB_Z = 2.9;
+/** Fast off the mark, then decelerating into place, so the last stretch settles
+ * rather than slamming. */
+const ARRIVE_EASE = [0.2, 0.45, 0.3, 1] as const;
+/** Roughly when the block is close enough to read. The subheading waits for it
+ * — no point typing a sentence while it's still a smudge in the distance. */
+const ARRIVE_SETTLE_MS = 1800;
+/** The t = 0 frame of the arrival, authored into the markup. The block mounts
+ * the instant the tunnel starts opening, and the driver below is an effect —
+ * without this it would paint once at full size before the first update. */
+const ARRIVE_START = {
+  transform: `scale(${1 / BLOCK_Z}) translateY(9%)`,
+  opacity: 0.2,
+  filter: "blur(12px)",
+} as const;
 
 // "So do most brands." is four words; the last finishes at 3*stagger +
 // duration*2. The subheading starts typing once that has fully landed.
 const HEADLINE_2_DONE_MS = (3 * REVEAL_STAGGER + REVEAL_DURATION * 2) * 1000;
-const TYPE_DELAY_MS = HEADLINE_2_DONE_MS + 250;
+// Offset past the arrival below: the headline's blocks can sweep while it is
+// still closing, but the subheading shouldn't start typing until there is
+// something legible to type underneath.
+const TYPE_DELAY_MS = ARRIVE_SETTLE_MS + HEADLINE_2_DONE_MS + 250;
 // Roughly how long the typed line takes. The scroll cue lands right behind
 // the last character rather than waiting the subheading out and then some —
 // by the time the sentence has finished typing, the hero has said everything
@@ -34,30 +60,77 @@ const TYPE_DELAY_MS = HEADLINE_2_DONE_MS + 250;
 const TYPE_RUN_MS = 4200;
 const SCROLL_HINT_DELAY_MS = TYPE_DELAY_MS + TYPE_RUN_MS + 400;
 
-const COUNT_WORDS: Record<number, string> = { 3: "three", 2: "two", 1: "one" };
-
 export function Hero({ active = true }: { active?: boolean }) {
-  const [count, setCount] = useState(3);
-  const [firstVisible, setFirstVisible] = useState(true);
-  const [phase, setPhase] = useState<"idle" | "first" | "second">("idle");
-
+  // The disappearing headline and its countdown now open the site, inside the
+  // preloader, and end with the lights going out. The hero picks the thought
+  // up on the other side of that blackout — "So do most brands." is the
+  // answer to a line the reader has just watched vanish.
+  const [phase, setPhase] = useState<"idle" | "second">("idle");
+  const contentRef = useRef<HTMLDivElement>(null);
   const headlineRef = useRef<HTMLHeadingElement>(null);
-  useBlockReveal(headlineRef, { stagger: REVEAL_STAGGER, duration: REVEAL_DURATION }, [phase]);
+  const subRef = useRef<HTMLParagraphElement>(null);
+  const scrimRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Hero renders (background and all) from page load, underneath the
-    // preloader/transition — but the countdown must not start ticking until
-    // those have handed off, or it's long over by the time anyone can see it.
+    // Hero renders from page load, underneath the preloader/transition — but
+    // its reveal must not play until those have handed off, or it is long
+    // over by the time anyone can see it.
     if (!active) return;
-    const timers = [
-      setTimeout(() => setPhase("first"), 0),
-      setTimeout(() => setCount(2), REVEAL_DONE_MS + COUNT_STEP_MS),
-      setTimeout(() => setCount(1), REVEAL_DONE_MS + COUNT_STEP_MS * 2),
-      setTimeout(() => setFirstVisible(false), REVEAL_DONE_MS + COUNT_STEP_MS * 3),
-      setTimeout(() => setPhase("second"), REVEAL_DONE_MS + COUNT_STEP_MS * 3 + FADE_MS),
-    ];
-    return () => timers.forEach(clearTimeout);
+    const t = setTimeout(() => setPhase("second"), 0);
+    return () => clearTimeout(t);
   }, [active]);
+
+  useEffect(() => {
+    if (phase !== "second") return;
+    const el = contentRef.current;
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      // The block is authored already far away (see ARRIVE_START below) so it
+      // can't flash at full size for a frame before the driver takes over.
+      // With no driver coming, that has to be undone here instead.
+      el.style.cssText = "";
+      return;
+    }
+    // The preloader's tunnel push ends carrying the reader forward; this picks
+    // that motion up rather than starting a fresh reveal. Each layer closes
+    // from its own distance and settles on its own beat — that spread is the
+    // parallax, and it's what sells the handoff as one continuous rush rather
+    // than a second, separate zoom starting cold.
+    const headline = headlineRef.current;
+    const sub = subRef.current;
+    const scrim = scrimRef.current;
+
+    // One driver for the whole arrival rather than a tween per layer — every
+    // layer has to read off the same camera position or the depths stop
+    // agreeing with each other and the parallax falls apart.
+    const controls = animate(0, 1, {
+      duration: ARRIVE_MS / 1000,
+      ease: ARRIVE_EASE,
+      onUpdate: (t) => {
+        /** Apparent size of something that started at depth `z0`. */
+        const size = (z0: number) => 1 / (z0 + (1 - z0) * t);
+        const away = 1 - t;
+
+        el.style.transform = `scale(${size(BLOCK_Z)}) translateY(${away * 9}%)`;
+        el.style.opacity = String(Math.min(1, 0.2 + t * 3));
+        // Only the block carries the blur — the distance haze belongs to the
+        // whole thing, and per-layer filters would just stack over each other.
+        el.style.filter = `blur(${Math.max(0, 1 - t * 1.6) * 12}px)`;
+
+        if (headline) headline.style.transform = `scale(${size(HEADLINE_Z)}) translateY(${away * -5}%)`;
+        // The near layer: grows the most and drops the furthest, so it peels
+        // away from the headline on the way in instead of tracking it.
+        if (sub) sub.style.transform = `scale(${size(SUB_Z)}) translateY(${away * 26}%)`;
+        // The scrim is the air being flown through, so it goes the other way —
+        // wide open at distance, closing down as the block lands.
+        if (scrim) {
+          scrim.style.transform = `scale(${1 + away * 1.6})`;
+          scrim.style.opacity = String(0.2 + t * 0.8);
+        }
+      },
+    });
+    return () => controls.stop();
+  }, [phase]);
 
   return (
     <section className="relative flex h-screen w-full items-center justify-center overflow-hidden">
@@ -71,6 +144,7 @@ export function Hero({ active = true }: { active?: boolean }) {
           through the headline and eats its contrast. Falls off well before
           the edges, keeping the field continuous. */}
       <div
+        ref={scrimRef}
         aria-hidden
         className="absolute inset-0 z-[1]"
         style={{
@@ -80,33 +154,16 @@ export function Hero({ active = true }: { active?: boolean }) {
       />
 
       <div className="relative z-10 flex w-full flex-col items-center px-4 text-center">
-        {phase === "first" && (
-          // Set to take the whole page. It's a line about vanishing, so it
-          // has to be loud enough that its disappearance is felt — sized in
-          // vw with a huge ceiling and allowed to wrap, because holding it to
-          // one line is what was keeping it small.
-          <h1
-            ref={headlineRef}
-            className="max-w-[92vw] text-[clamp(2.5rem,9.5vw,9rem)] font-bold uppercase leading-[0.92] tracking-[-0.03em] text-cream"
-            style={{ opacity: firstVisible ? 1 : 0, transition: `opacity ${FADE_MS}ms ease` }}
-          >
-            {HEADLINE_1_LEAD.map((w, i) => (
-              <RevealWord key={i} blockColor={NAVY}>
-                {w}
-              </RevealWord>
-            ))}
-            {/* The counting word is the only thing on screen that changes, so
-                it's the only thing carrying colour. Solid gold, not outlined —
-                a stroke at this size reads as a rendering artefact. */}
-            <RevealWord blockColor={NAVY} textClassName="text-gold">
-              {COUNT_WORDS[count]}
-            </RevealWord>
-            <RevealWord blockColor={NAVY}>{count === 1 ? "second." : "seconds."}</RevealWord>
-          </h1>
-        )}
         {phase === "second" && (
-          <div className="flex w-full max-w-5xl flex-col items-center gap-10">
-            <h1 className="text-[clamp(2.5rem,8vw,6.5rem)] font-bold leading-[1.02] tracking-tight text-cream">
+          <div
+            ref={contentRef}
+            className="flex w-full max-w-full flex-col items-center gap-10"
+            style={ARRIVE_START}
+          >
+            <h1
+              ref={headlineRef}
+              className="text-[clamp(2.5rem,8vw,6.5rem)] font-bold leading-[1.02] tracking-tight text-cream"
+            >
               <TextReveal
                 text={HEADLINE_2}
                 blockColor={GOLD}
@@ -115,7 +172,10 @@ export function Hero({ active = true }: { active?: boolean }) {
                 emphasis="brands"
               />
             </h1>
-            <p className="max-w-3xl font-serif text-[clamp(1.25rem,2.6vw,2.1rem)] font-light leading-[1.7] text-cream/90">
+            <p
+              ref={subRef}
+              className="max-w-3xl font-serif text-[clamp(1.25rem,2.6vw,2.1rem)] font-light leading-[1.7] text-cream/90"
+            >
               <Typewriter text={SUBHEADING} delay={TYPE_DELAY_MS} />
             </p>
           </div>

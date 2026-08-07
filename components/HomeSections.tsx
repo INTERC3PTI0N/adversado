@@ -5,7 +5,7 @@ import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
-import { BoxReveal, CinematicScene, PeachScene, useDepthReveal } from "@/components/Cinematic";
+import { BoxReveal, CinematicScene, useDepthReveal } from "@/components/Cinematic";
 import { BeliefSection } from "@/components/BeliefSection";
 import { useCursorVars, useMagnetic } from "@/components/Interactions";
 import { ContactDialog } from "@/components/ContactDialog";
@@ -27,12 +27,11 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
  * Every section still carries its own interaction, chosen to suit what it is
  * saying rather than repeating one effect six times:
  *   Belief       — the monolith, craned down as you scroll past it
- *   Introduction — WebGL dot matrix that scatters from the pointer
- *   Verticals    — 3D card tilt with a light source tracking the cursor
+ *   Introduction — navy wash that tracks the cursor across the whole block
+ *   Verticals    — accordion of shader panels, magnetic CTA under them
  *   Refusals     — hover strikes the line through and swells it
  *   Six Ds       — hovering one step dims the rest
- *   Invitation   — magnetic CTA that leans toward the pointer
- *   Footer       — marquee that slows when you reach into it
+ *   Invitation   — gold wash and a magnetic CTA that leans toward the pointer
  */
 
 const VERTICALS = [
@@ -77,9 +76,22 @@ const SIX_DS = [
 
 function Introduction() {
   const ref = useDepthReveal<HTMLElement>();
+  const glowRef = useCursorVars<HTMLDivElement>();
 
   return (
     <section ref={ref} className="relative overflow-hidden px-6 py-28 sm:py-40">
+      {/* Cursor-tracked wash. The section is about one team covering
+          everything, so the light moving with the reader over the whole block
+          is doing the same job the copy is. */}
+      <div
+        ref={glowRef}
+        aria-hidden
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(620px circle at var(--mx, 50%) var(--my, 50%), rgba(31,53,94,0.55), transparent 72%)",
+        }}
+      />
       <div className="relative mx-auto max-w-5xl">
         <p data-depth className="mb-8 text-sm uppercase tracking-[0.35em] text-gold">
           The Introduction
@@ -195,6 +207,7 @@ function VerticalCard({
 
 function Verticals() {
   const ref = useDepthReveal<HTMLElement>(0.1);
+  const ctaRef = useMagnetic<HTMLAnchorElement>({ strength: 0.35, radius: 100 });
   const [active, setActive] = useState(0);
 
   return (
@@ -222,6 +235,7 @@ function Verticals() {
 
         <div data-depth className="mt-14">
           <Link
+            ref={ctaRef}
             href="/services"
             prefetch={false}
             className="group inline-flex items-center gap-3 text-base uppercase tracking-[0.2em] text-gold"
@@ -384,7 +398,10 @@ function Invitation() {
   const [contactOpen, setContactOpen] = useState(false);
 
   return (
-    <section ref={ref} className="relative overflow-hidden px-6 py-28 sm:py-40">
+    // The last section on the page now that the footer is gone, so its own
+    // bottom padding is what sets how much air the button sits in — no
+    // trailing footer left to supply that space.
+    <section ref={ref} className="relative overflow-hidden px-6 pb-32 pt-28 sm:pb-48 sm:pt-40">
       <div
         ref={glowRef}
         aria-hidden
@@ -431,81 +448,6 @@ function Invitation() {
   );
 }
 
-/* ── Footer ─────────────────────────────────────────────────────────────── */
-
-function Footer() {
-  const ref = useRef<HTMLElement>(null);
-  const marqueeRef = useRef<HTMLDivElement>(null);
-  const stripRef = useRef<HTMLDivElement>(null);
-
-  useGSAP(
-    () => {
-      const mm = gsap.matchMedia();
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
-        // The strip holds two identical copies, so sliding exactly one copy
-        // width lands on a frame identical to the start — seamless loop.
-        const tween = gsap.to(marqueeRef.current, {
-          xPercent: -50,
-          duration: 28,
-          ease: "none",
-          repeat: -1,
-        });
-
-        // Reaching into the strip slows it to a crawl so the line becomes
-        // readable instead of sliding out from under the pointer. Bound
-        // imperatively next to the tween rather than through React's
-        // onPointerEnter: the handler needs the tween instance, and going
-        // via a ref means whichever of the two lands second wins.
-        const strip = stripRef.current;
-        const slow = () => tween.timeScale(0.15);
-        const resume = () => tween.timeScale(1);
-        strip?.addEventListener("pointerenter", slow);
-        strip?.addEventListener("pointerleave", resume);
-
-        return () => {
-          strip?.removeEventListener("pointerenter", slow);
-          strip?.removeEventListener("pointerleave", resume);
-        };
-      });
-      return () => mm.revert();
-    },
-    { scope: ref }
-  );
-
-  return (
-    <footer ref={ref} className="border-t border-cream/10">
-      <div ref={stripRef} className="overflow-hidden py-12">
-        <div ref={marqueeRef} className="flex w-max gap-16 whitespace-nowrap">
-          {Array.from({ length: 2 }).map((_, copy) => (
-            <div key={copy} className="flex gap-16" aria-hidden={copy === 1}>
-              {Array.from({ length: 4 }).map((__, i) => (
-                <span
-                  key={i}
-                  className="cursor-default font-serif text-[clamp(1.75rem,5vw,3.5rem)] font-light italic text-cream/15 transition-colors duration-500 hover:text-gold/60"
-                >
-                  The Brand Behind The Brands.
-                </span>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 pb-14 sm:flex-row sm:items-end sm:justify-between">
-        <p className="max-w-md text-xl leading-relaxed text-cream/60">
-          Strategy to execution, end to end.
-        </p>
-        <p className="text-xs uppercase tracking-[0.2em] text-cream/40">
-          Branding <span className="text-gold/60">/</span> Advertising{" "}
-          <span className="text-gold/60">/</span> Marketing{" "}
-          <span className="text-gold/60">/</span> Events{" "}
-          <span className="text-gold/60">/</span> Performance
-        </p>
-      </div>
-    </footer>
-  );
-}
-
 export function HomeSections() {
   return (
     <>
@@ -513,14 +455,11 @@ export function HomeSections() {
           of sections and the scrollbar is its dolly track; nothing above it
           paints a ground of its own, so there is no seam anywhere to read as
           the end of one page and the start of the next. */}
-      {/* Three fixed layers under the copy, in paint order: black ground,
-          the authored scene, then the starfield over the top of it. The
-          scene clears its own canvas opaque, so the stars have to sit above
-          it to be seen at all — and since they are additive points on
-          transparency, they land on its black and read as one night sky
-          the whole scene stands in. */}
+      {/* Two fixed layers under the copy: black ground, then the parallax
+          constellations over it. The authored figure scene is off for now —
+          `PeachScene` is still in Cinematic.tsx, unmounted, so turning it
+          back on is one line. */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 bg-black" />
-      <PeachScene />
       <CinematicScene />
       {/* Clipped sideways: the tilted vertical cards swing their corners a few
           px past the viewport at the extremes of the effect, which is enough

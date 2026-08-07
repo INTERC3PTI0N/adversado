@@ -4,6 +4,7 @@ import { forwardRef, useEffect, useRef, useState } from "react";
 import { animate, useMotionValue } from "motion/react";
 import { Silk } from "@/components/Silk";
 import WarpText from "@/components/vendor/WarpText";
+import { Highlighter } from "@/components/vendor/Highlighter";
 import { EventHorizon } from "@/components/vendor/EventHorizon";
 import GalleryTunnel from "@/components/vendor/GalleryTunnel";
 import { Globe } from "@/components/ui/cobe-globe";
@@ -121,9 +122,9 @@ const LIGHT_HOLD_MS = 700 + COUNT_STEP_MS * 3;
  * read as its own cinematic beat rather than a quick cut. */
 const SUCK_MS = 2600;
 /** How long the Gallery Tunnel ride runs before handing off to the site.
- * Long, but the tunnel's own speed is what keeps it from feeling slow —
- * more distance covered, not less velocity. */
-const TUNNEL_MS = 4400;
+ * Short — the tunnel's own raised speed below is what keeps it from feeling
+ * slow, so a 2s window reads as a fast pass rather than a long one. */
+const TUNNEL_MS = 2000;
 /** The tunnel's own fade-in, so it eases over whatever's still on screen
  * from the suck rather than popping in as a hard cut. */
 const TUNNEL_FADE_MS = 500;
@@ -449,13 +450,26 @@ export function Preloader({
         const settle = i * 0.09;
         const dur = Math.max(0.5, SUCK_MS / 1000 - settle * 0.6);
         const sideways = (i % 2 === 0 ? -1 : 1) * (1 + (i % 3));
+        // A word that carries an annotation flies as one unit with it: the
+        // rough-notation <svg> is injected as el's immediate next sibling, so
+        // the whole collapse is applied to the word and that svg together,
+        // keeping the marker glued to the word it was drawn on as both are
+        // thrown into the centre.
+        const annotated =
+          el.nextElementSibling instanceof SVGElement &&
+          el.nextElementSibling.getAttribute("class")?.includes("rough-annotation");
+        const targets = annotated ? [el, el.nextElementSibling] : [el];
         const c = animate(0, 1, {
           duration: dur,
           delay: settle,
           ease: [0.6, 0, 0.9, 0.35],
           onUpdate: (v) => {
-            el.style.transform = `translateZ(${-v * 2400}px) translateX(${v * sideways * 90}px) translateY(${v * (i - words.length / 2) * 40}px) rotateX(${v * 60}deg) rotateY(${sideways * v * 45}deg) scale(${1 - v * 0.85})`;
-            el.style.opacity = String(1 - Math.max(0, v - 0.15) / 0.85);
+            const transform = `translateZ(${-v * 2400}px) translateX(${v * sideways * 90}px) translateY(${v * (i - words.length / 2) * 40}px) rotateX(${v * 60}deg) rotateY(${sideways * v * 45}deg) scale(${1 - v * 0.85})`;
+            const opacity = String(1 - Math.max(0, v - 0.15) / 0.85);
+            (targets as HTMLElement[]).forEach((t) => {
+              t.style.transform = transform;
+              t.style.opacity = opacity;
+            });
           },
         });
         wordControls.push(c);
@@ -596,17 +610,17 @@ export function Preloader({
             transform: "translate(-50%, -50%)",
           }}
         >
-          {/* cobe globe, recoloured to the brand: navy ocean, gold marker and
+          {/* cobe globe, recoloured white: white ocean, white marker and
               glow. Wrapped `pointer-events-none` — this component drags on
               pointerdown, and nothing under a preloader should be grabbable. */}
           <div className="pointer-events-none h-full w-full">
             <Globe
               markers={KOCHI_MARKER}
               dark={1}
-              baseColor={[0.122, 0.208, 0.369]}
-              markerColor={[0.902, 0.702, 0.145]}
-              glowColor={[0.365, 0.427, 0.541]}
-              mapBrightness={6}
+              baseColor={[1, 1, 1]}
+              markerColor={[1, 1, 1]}
+              glowColor={[1, 1, 1]}
+              mapBrightness={8}
               markerSize={0.06}
             />
           </div>
@@ -711,32 +725,83 @@ export function Preloader({
             auto-shrink fit factor, so the swap always showed as a jump in
             type. Per word, the glass IS the thing that flies, so the collapse
             starts from exactly the frame already on screen. */}
-        <h1
+<h1
           ref={contentRef}
           aria-label="THIS HEADLINE WILL VANISH INs"
           className="relative flex w-full max-w-[1600px] flex-wrap items-center justify-center gap-x-[0.26em] gap-y-2"
           style={{ perspective: 1800, transformStyle: "preserve-3d", fontSize: HEADLINE_SIZE }}
         >
-          {SENTENCE_WORDS.map((w, i) => (
-            <WarpWord
-              key={w}
-              ref={(el) => {
-                wordRefs.current[i] = el;
-              }}
-              text={w}
-              color={GOLD}
-            />
-          ))}
-          {/* The count word: same glass, its own colour — the one word on the
-              line that isn't gold. Sized off the longest word it will ever
-              hold, so the line doesn't reflow on each tick of the countdown. */}
+          {/* The human-drawn marker strokes over the vanishing headline — a
+              rough highlight behind "HEADLINE" and a sketchy underline under
+              "VANISH", the two words whose meaning the countdown is about to
+              make literal. The wobble is the exact opposite of the clinical
+              warp glass above it, on a line whose whole job is to promise its
+              own disappearance.
+
+              Each annotated word is one flying unit: the ref lands on the
+              Highlighter's own span so the suck can carry it (and its
+              sibling `.rough-annotation` svg) away along with the plain
+              words. */}
+          <WarpWord
+            ref={(el) => {
+              wordRefs.current[0] = el;
+            }}
+            text={SENTENCE_WORDS[0]}
+            color={GOLD}
+          />
+          <Highlighter
+            ref={(el) => {
+              wordRefs.current[1] = el;
+            }}
+            action="highlight"
+            color={SILK_HIGH}
+            strokeWidth={3}
+            iterations={2}
+            animationDuration={900}
+            padding={10}
+            className="inline-flex items-center"
+          >
+            <WarpWord text={SENTENCE_WORDS[1]} color={GOLD} />
+          </Highlighter>
+          <WarpWord
+            ref={(el) => {
+              wordRefs.current[2] = el;
+            }}
+            text={SENTENCE_WORDS[2]}
+            color={GOLD}
+          />
+          <Highlighter
+            ref={(el) => {
+              wordRefs.current[3] = el;
+            }}
+            action="underline"
+            color={GOLD}
+            strokeWidth={3}
+            iterations={2}
+            animationDuration={900}
+            padding={12}
+            className="inline-flex items-center"
+          >
+            <WarpWord text={SENTENCE_WORDS[3]} color={GOLD} />
+          </Highlighter>
+          <WarpWord
+            ref={(el) => {
+              wordRefs.current[4] = el;
+            }}
+            text={SENTENCE_WORDS[4]}
+            color={GOLD}
+          />
+          {/* The count word: same glass, its own colour — the one word on
+              the line that isn't gold. Sized off the longest word it will
+              ever hold, so the line doesn't reflow on each tick of the
+              countdown. */}
           <WarpWord
             ref={(el) => {
               wordRefs.current[SENTENCE_WORDS.length] = el;
             }}
             text={COUNT_WORDS[count]}
             sizer="three"
-            color={SILK_HIGH}
+            color={WHITE}
           />
         </h1>
       </div>
@@ -764,8 +829,8 @@ export function Preloader({
             background="#020308"
             lineColor="#e6b325"
             lineOpacity={28}
-            speed={230}
-            boost={340}
+            speed={420}
+            boost={560}
             fade={85}
           />
 

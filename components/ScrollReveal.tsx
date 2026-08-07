@@ -31,8 +31,8 @@ export function ScrollReveal({
   className,
   enableBlur = true,
   baseOpacity = 0.1,
-  baseRotation = 6,
-  blurStrength = 4,
+  baseRotation = 0,
+  blurStrength = 6,
 }: {
   children: React.ReactNode;
   className?: string;

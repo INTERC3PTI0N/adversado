@@ -7,9 +7,10 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { BoxReveal, CinematicScene, useDepthReveal } from "@/components/Cinematic";
 import { BeliefSection } from "@/components/BeliefSection";
-import { useCursorVars, useMagnetic } from "@/components/Interactions";
+import { useCursorVars, useMagnetic, useNearViewport } from "@/components/Interactions";
 import { ContactDialog } from "@/components/ContactDialog";
 import { Silk } from "@/components/Silk";
+import { IntroCard } from "@/components/vendor/IntroCard";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -73,52 +74,17 @@ const SIX_DS = [
 ];
 
 /* ── The Introduction ───────────────────────────────────────────────────── */
+/* No card any more — the wordmark, tagline and argument sit directly on the
+ * page's own starfield, like every other section. The body copy still runs
+ * through React Bits' VariableProximity, thickening each letter as the cursor
+ * passes, and key phrases are still marked. */
 
 function Introduction() {
   const ref = useDepthReveal<HTMLElement>();
-  const glowRef = useCursorVars<HTMLDivElement>();
 
   return (
-    <section ref={ref} className="relative overflow-hidden px-6 py-28 sm:py-40">
-      {/* Cursor-tracked wash. The section is about one team covering
-          everything, so the light moving with the reader over the whole block
-          is doing the same job the copy is. */}
-      <div
-        ref={glowRef}
-        aria-hidden
-        className="absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(620px circle at var(--mx, 50%) var(--my, 50%), rgba(31,53,94,0.55), transparent 72%)",
-        }}
-      />
-      <div className="relative mx-auto max-w-5xl">
-        <p data-depth className="mb-8 text-sm uppercase tracking-[0.35em] text-gold">
-          The Introduction
-        </p>
-        <BoxReveal className="max-w-3xl">
-          <h2 className="text-[clamp(2.5rem,6.5vw,5rem)] font-bold leading-[1.08] tracking-tight text-cream">
-            One team. The whole picture.
-          </h2>
-        </BoxReveal>
-        <div className="mt-10 grid gap-8 md:grid-cols-2">
-          <p data-depth className="text-[clamp(1.15rem,1.9vw,1.5rem)] leading-[1.8] text-cream/75">
-            Adversado brings branding, advertising, marketing, events and performance under
-            one roof. It sounds like a service list, but it’s actually a philosophy. Your
-            brand should be the same brand everywhere it shows up.
-          </p>
-          <p data-depth className="text-[clamp(1.15rem,1.9vw,1.5rem)] leading-[1.8] text-cream/75">
-            The voice in the strategy room. The ad. The event. The feed. Same voice. Same
-            standard. Same slightly obsessive attention to detail.
-          </p>
-        </div>
-        <p
-          data-depth
-          className="mt-14 font-serif text-[clamp(1.7rem,3.6vw,3rem)] font-light italic text-gold"
-        >
-          The Brand Behind The Brands.
-        </p>
-      </div>
+    <section ref={ref} className="px-6 py-28 sm:py-40">
+      <IntroCard className="mx-auto w-full max-w-[130rem]" />
     </section>
   );
 }
@@ -147,9 +113,14 @@ function VerticalCard({
   onActivate: (i: number) => void;
 }) {
   const theme = VERTICAL_THEMES[i % VERTICAL_THEMES.length];
+  // Four shaders, four WebGL contexts, all of them far below the fold while
+  // the preloader is still running its own ten. Held back until the card is
+  // nearly in view — see `useNearViewport`.
+  const [cardRef, near] = useNearViewport<HTMLLIElement>();
 
   return (
     <li
+      ref={cardRef}
       data-depth
       tabIndex={0}
       role="listitem"
@@ -164,14 +135,20 @@ function VerticalCard({
       className="group relative h-[240px] min-w-0 cursor-pointer overflow-hidden rounded-2xl border border-cream/12 transition-[flex-grow] duration-700 ease-out sm:h-full"
       style={{ flexGrow: active ? 5 : 1, flexBasis: 0 }}
     >
-      <Silk
-        className="absolute inset-0 h-full w-full"
-        primaryColor={theme.primary}
-        secondaryColor={theme.secondary}
-        speed={0.7}
-        interactive={0.25}
-        intensity={0.3}
-      />
+      {/* The card keeps its own colour underneath, so a panel that hasn't
+          been scrolled to yet is still the right shape and tone rather than a
+          hole — the shader fades in over it once it arrives. */}
+      <span aria-hidden className="absolute inset-0" style={{ background: theme.secondary }} />
+      {near && (
+        <Silk
+          className="absolute inset-0 h-full w-full"
+          primaryColor={theme.primary}
+          secondaryColor={theme.secondary}
+          speed={0.7}
+          interactive={0.25}
+          intensity={0.3}
+        />
+      )}
       <span
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-gradient-to-t from-charcoal/90 via-charcoal/15 to-transparent transition-opacity duration-500"

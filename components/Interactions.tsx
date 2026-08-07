@@ -1,11 +1,56 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 
 const prefersReducedMotion = () =>
   typeof window !== "undefined" &&
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/**
+ * Has this element been near the viewport yet?
+ *
+ * Every shader on this site costs a WebGL context, and browsers hand out
+ * about sixteen per page before they start killing the oldest one to make
+ * room. This page was asking for twenty: the preloader alone holds ten (silk,
+ * event horizon, globe, one per headline word, then the tunnel) while every
+ * shader further down the page was already running behind it, unseen. The
+ * casualties were whichever contexts were created first — the preloader's own
+ * background, which is why it came up blank.
+ *
+ * Gating on visibility fixes it at the root: a shader that cannot be seen has
+ * no reason to hold a context. Latches on rather than toggling, so scrolling
+ * back and forth doesn't tear scenes down and rebuild them — the aim is to
+ * stagger creation, not to churn it.
+ */
+export function useNearViewport<T extends HTMLElement>(rootMargin = "300px") {
+  const ref = useRef<T>(null);
+  const [seen, setSeen] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || seen) return;
+    // No IntersectionObserver shouldn't mean no visuals — fall back to showing
+    // everything. Deferred a frame rather than set straight away: a synchronous
+    // setState in an effect body is a cascading render, and the initial value
+    // has to stay `false` on both sides or SSR and hydration disagree about
+    // what was rendered.
+    if (typeof IntersectionObserver === "undefined") {
+      const id = requestAnimationFrame(() => setSeen(true));
+      return () => cancelAnimationFrame(id);
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) setSeen(true);
+      },
+      { rootMargin }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [seen, rootMargin]);
+
+  return [ref, seen] as const;
+}
 
 /**
  * Magnetic pull — the element drifts toward the cursor once it's within

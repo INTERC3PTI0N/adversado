@@ -29,8 +29,7 @@ const DEFAULTS = {
     labelFont: { fontFamily: "Inter", fontSize: 14, fontWeight: 500 } as CSSProperties,
 };
 
-const TUNNEL_WIDTH = 2;
-const TUNNEL_HEIGHT = 1.8;
+const TUNNEL_RADIUS = 0.92; // cross-section radius — the box never had one; the warp wants a tube
 const SEGMENT_DEPTH = 1;
 const NUM_SEGMENTS = 15;
 const LINE_RADIUS = 0.003;
@@ -149,18 +148,22 @@ function __OriginkitBase_ImageBox(props: Partial<ImageBoxProps>) {
         let pressed = false;
         let alive = true;
 
-        const hw = TUNNEL_WIDTH / 2;
-        const hh = TUNNEL_HEIGHT / 2;
+        // Circular cross-section: a ring of panels forming the wall of a tube.
+        // More cells than the old box wanted — a circle drawn with a handful of
+        // flat panels reads as a jagged octagon, so the grid count is bumped
+        // and the whole look is a warp winding toward the vanishing point.
+        const CELLS = Math.max(10, Math.round(grid) * 3);
+        const RADIUS = TUNNEL_RADIUS;
+        const dTh = (Math.PI * 2) / CELLS;
+        const panelWidth = 2 * RADIUS * Math.sin(dTh / 2);
 
-        const cols = Math.max(1, Math.round(grid));
-        const rows = Math.max(1, Math.round(grid));
-        const colW = TUNNEL_WIDTH / cols;
-        const rowH = TUNNEL_HEIGHT / rows;
+        // One flat panel per arc, sized to span the chord between neighbours
+        // and wound so its narrow edge wraps back exactly once around the tube.
+        const geoPanel = new THREE.PlaneGeometry(panelWidth, SEGMENT_DEPTH);
 
-        const geoFloor = new THREE.PlaneGeometry(colW, SEGMENT_DEPTH);
-        const geoWall = new THREE.PlaneGeometry(SEGMENT_DEPTH, rowH);
-
-        const geoTubeZ = new THREE.TubeGeometry(
+        // Depth rays: straight tubes running the whole length of a segment —
+        // the columns that converge on the vanishing point and sell the warp.
+        const geoRay = new THREE.TubeGeometry(
             new THREE.LineCurve3(
                 new THREE.Vector3(0, 0, 0),
                 new THREE.Vector3(0, 0, -SEGMENT_DEPTH)
@@ -169,24 +172,17 @@ function __OriginkitBase_ImageBox(props: Partial<ImageBoxProps>) {
             LINE_RADIUS,
             8
         );
-        const geoTubeX = new THREE.TubeGeometry(
-            new THREE.LineCurve3(
-                new THREE.Vector3(0, 0, 0),
-                new THREE.Vector3(TUNNEL_WIDTH, 0, 0)
-            ),
-            1,
-            LINE_RADIUS,
-            8
-        );
-        const geoTubeY = new THREE.TubeGeometry(
-            new THREE.LineCurve3(
-                new THREE.Vector3(0, 0, 0),
-                new THREE.Vector3(0, TUNNEL_HEIGHT, 0)
-            ),
-            1,
-            LINE_RADIUS,
-            8
-        );
+
+        // The ring at each depth: a smooth circle closing the tube's throat,
+        // which is what reads as "round" where the old box read as "corners".
+        const ringSegs = 64;
+        const ringPts: THREE.Vector3[] = [];
+        for (let i = 0; i < ringSegs; i++) {
+            const a = (i / ringSegs) * Math.PI * 2;
+            ringPts.push(new THREE.Vector3(Math.cos(a) * RADIUS, Math.sin(a) * RADIUS, 0));
+        }
+        const ringCurve = new THREE.CatmullRomCurve3(ringPts, true, "catmullrom", 0.5);
+        const geoRing = new THREE.TubeGeometry(ringCurve, ringSegs, LINE_RADIUS, 8);
 
         const colorMats = palette.map(
             (hex) =>
@@ -228,44 +224,40 @@ function __OriginkitBase_ImageBox(props: Partial<ImageBoxProps>) {
             geo: THREE.BufferGeometry,
             x: number,
             y: number,
-            z = 0
+            z = 0,
+            rot: THREE.Euler = new THREE.Euler(0, 0, 0)
         ) => {
             const m = new THREE.Mesh(geo, lineMaterial);
             m.position.set(x, y, z);
+            m.rotation.copy(rot);
             return m;
         };
 
         const SLOTS: Array<{
             geo: THREE.BufferGeometry;
             pos: THREE.Vector3;
-            rot: THREE.Euler;
+            quat: THREE.Quaternion;
         }> = [];
         {
-            const z = -SEGMENT_DEPTH / 2;
-            for (let i = 0; i < cols; i++) {
-                const x = -hw + i * colW + colW / 2;
+            const z = SEGMENT_DEPTH / 2;
+            // Each panel sits on the cylinder wall at the midpoint of its arc,
+            // wound round the tube axis so its normal points radially outward
+            // and its width lies along the tangent — a flat quad hugging a
+            // circle from the inside.
+            const zAxis = new THREE.Vector3(0, 0, 1);
+            for (let i = 0; i < CELLS; i++) {
+                const mid = i * dTh + dTh / 2;
+                const cx = Math.cos(mid) * RADIUS;
+                const cy = Math.sin(mid) * RADIUS;
+                const tangent = new THREE.Vector3(-Math.sin(mid), Math.cos(mid), 0);
+                const normal = new THREE.Vector3(Math.cos(mid), Math.sin(mid), 0);
+                const quat = new THREE.Quaternion().setFromRotationMatrix(
+                    new THREE.Matrix4().makeBasis(tangent, zAxis, normal)
+                );
                 SLOTS.push({
-                    geo: geoFloor,
-                    pos: new THREE.Vector3(x, -hh, z),
-                    rot: new THREE.Euler(-Math.PI / 2, 0, 0),
-                });
-                SLOTS.push({
-                    geo: geoFloor,
-                    pos: new THREE.Vector3(x, hh, z),
-                    rot: new THREE.Euler(Math.PI / 2, 0, 0),
-                });
-            }
-            for (let i = 0; i < rows; i++) {
-                const y = -hh + i * rowH + rowH / 2;
-                SLOTS.push({
-                    geo: geoWall,
-                    pos: new THREE.Vector3(-hw, y, z),
-                    rot: new THREE.Euler(0, Math.PI / 2, 0),
-                });
-                SLOTS.push({
-                    geo: geoWall,
-                    pos: new THREE.Vector3(hw, y, z),
-                    rot: new THREE.Euler(0, -Math.PI / 2, 0),
+                    geo: geoPanel,
+                    pos: new THREE.Vector3(cx, cy, -z),
+                    quat,
                 });
             }
         }
@@ -297,25 +289,25 @@ function __OriginkitBase_ImageBox(props: Partial<ImageBoxProps>) {
             const group = new THREE.Group();
             group.position.z = z;
 
-            for (let i = 0; i <= cols; i++) {
-                const x = -hw + i * colW;
-                group.add(tube(geoTubeZ, x, -hh));
-                group.add(tube(geoTubeZ, x, hh));
+            // Depth columns: a straight ray out from the camera at every angle,
+            // converging on the vanishing point — the thing that makes the pass
+            // read as motion into a tube rather than forward along a box.
+            for (let i = 0; i < CELLS; i++) {
+                const th = i * dTh;
+                group.add(
+                    tube(geoRay, Math.cos(th) * RADIUS, Math.sin(th) * RADIUS, 0)
+                );
             }
-            for (let i = 1; i < rows; i++) {
-                const y = -hh + i * rowH;
-                group.add(tube(geoTubeZ, -hw, y));
-                group.add(tube(geoTubeZ, hw, y));
-            }
-            group.add(tube(geoTubeX, -hw, -hh));
-            group.add(tube(geoTubeX, -hw, hh));
-            group.add(tube(geoTubeY, -hw, -hh));
-            group.add(tube(geoTubeY, hw, -hh));
+            // One smooth ring at the segment's near face, closing the throat of
+            // the tube — this is what reads as "round" where the box read as
+            // "corners". It is traced in the X/Y plane, so it already sits
+            // perpendicular to the depth axis with no extra rotation.
+            group.add(tube(geoRing, 0, 0, 0));
 
             const slabs: THREE.Mesh[] = SLOTS.map((slot) => {
                 const m = new THREE.Mesh(slot.geo, colorMats[0]);
                 m.position.copy(slot.pos);
-                m.rotation.copy(slot.rot);
+                m.quaternion.copy(slot.quat);
                 m.visible = false;
                 group.add(m);
                 return m;
@@ -430,11 +422,9 @@ function __OriginkitBase_ImageBox(props: Partial<ImageBoxProps>) {
             frame.removeEventListener("pointerdown", onDown);
             window.removeEventListener("pointerup", onUp);
 
-            geoFloor.dispose();
-            geoWall.dispose();
-            geoTubeZ.dispose();
-            geoTubeX.dispose();
-            geoTubeY.dispose();
+            geoPanel.dispose();
+            geoRay.dispose();
+            geoRing.dispose();
             for (const m of colorMats) m.dispose();
             for (const m of imageMats) {
                 m.map?.dispose();

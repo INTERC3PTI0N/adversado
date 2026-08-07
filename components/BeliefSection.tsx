@@ -1,142 +1,15 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
+import Spline from "@splinetool/react-spline";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
-import {
-  BoxGeometry,
-  Color,
-  EdgesGeometry,
-  Group,
-  LineBasicMaterial,
-  LineSegments,
-  PerspectiveCamera,
-  Scene,
-  WebGLRenderer,
-} from "three";
 import { RepelText } from "@/components/Interactions";
 import { Magnify } from "@/components/Magnify";
 import { ScrollReveal } from "@/components/ScrollReveal";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
-
-const GOLD = 0xe6b325;
-const CREAM = 0xf9f7f2;
-
-const FLOORS = 40;
-const FLOOR_H = 1.2;
-
-/**
- * Wireframe monolith: forty tapering slabs around a constant central core.
- *
- * It is the section's argument as an object — the core never changes width
- * while everything outside it narrows floor by floor, which is the whole
- * point about brands being built by the same thing repeated rather than by
- * any one launch. Every fifth slab is picked out in gold so the repetition
- * is legible instead of turning into a texture.
- *
- * Raw three.js on its own canvas rather than a share of the page's cinematic
- * scene: this object has to sit in its own pane, framed by its own camera.
- */
-function Monolith() {
-  const hostRef = useRef<HTMLDivElement>(null);
-  const progressRef = useRef(0);
-
-  useEffect(() => {
-    const host = hostRef.current;
-    if (!host) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    const scene = new Scene();
-    const camera = new PerspectiveCamera(45, 1, 0.1, 1000);
-    const renderer = new WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    const canvas = renderer.domElement;
-    canvas.style.cssText = "position:absolute;inset:0;width:100%;height:100%;display:block";
-    host.appendChild(canvas);
-
-    const faint = new LineBasicMaterial({ color: new Color(CREAM), transparent: true, opacity: 0.22 });
-    const marker = new LineBasicMaterial({ color: new Color(GOLD), transparent: true, opacity: 0.85 });
-
-    const group = new Group();
-    scene.add(group);
-
-    const geos: (BoxGeometry | EdgesGeometry)[] = [];
-    for (let i = 0; i < FLOORS; i++) {
-      const taper = 1 - (i / FLOORS) * 0.4;
-      const slab = new BoxGeometry(10 * taper, FLOOR_H, 10 * taper);
-      const slabEdges = new EdgesGeometry(slab);
-      const line = new LineSegments(slabEdges, i % 5 === 0 ? marker : faint);
-      line.position.y = i * FLOOR_H;
-      group.add(line);
-
-      const core = new BoxGeometry(2, FLOOR_H, 2);
-      const coreEdges = new EdgesGeometry(core);
-      const coreLine = new LineSegments(coreEdges, faint);
-      coreLine.position.y = i * FLOOR_H;
-      group.add(coreLine);
-
-      geos.push(slab, slabEdges, core, coreEdges);
-    }
-
-    // The tower is 48 units tall in a frame that is now landscape rather than
-    // full-height, so the dolly distance is derived from the box's aspect:
-    // the wider and shorter the panel, the further back the camera has to sit
-    // for the whole structure to fit inside it.
-    let fit = 1;
-    const resize = () => {
-      const w = host.clientWidth || 1;
-      const h = host.clientHeight || 1;
-      renderer.setSize(w, h, false);
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      fit = Math.max(1, Math.min(2.2, (w / h) / 0.85));
-    };
-    const ro = new ResizeObserver(resize);
-    ro.observe(host);
-    resize();
-
-    let raf = 0;
-    const frame = () => {
-      raf = requestAnimationFrame(frame);
-      const p = progressRef.current;
-      group.rotation.y += 0.002;
-      // Scroll rides the tower: the group lifts while the camera drops, so
-      // passing the section reads as craning down the structure.
-      group.position.y = p * 20;
-      camera.position.set(21 * fit, 38 - p * 24, 35 * fit);
-      camera.lookAt(0, 24 - p * 12, 0);
-      renderer.render(scene, camera);
-    };
-    frame();
-
-    return () => {
-      cancelAnimationFrame(raf);
-      ro.disconnect();
-      geos.forEach((g) => g.dispose());
-      faint.dispose();
-      marker.dispose();
-      renderer.dispose();
-      host.removeChild(canvas);
-    };
-  }, []);
-
-  useGSAP(() => {
-    const st = ScrollTrigger.create({
-      trigger: hostRef.current,
-      start: "top bottom",
-      end: "bottom top",
-      scrub: 0.5,
-      onUpdate: (self) => {
-        progressRef.current = self.progress;
-      },
-    });
-    return () => st.kill();
-  }, []);
-
-  return <div ref={hostRef} aria-hidden className="absolute inset-0" />;
-}
 
 /** Small uppercase HUD label. Montserrat, per the brand book's primary face. */
 function Micro({ children, className }: { children: React.ReactNode; className?: string }) {
@@ -202,9 +75,9 @@ export function BeliefSection() {
               full-height pane, so the camera is framed to its aspect. */}
           <div
             data-reveal
-            className="relative h-[42vh] min-h-[200px] md:h-[60vh] md:pr-14"
+            className="relative h-[42vh] min-h-[200px] md:h-[90vh] md:pr-14"
           >
-            <Monolith />
+            <Spline scene="https://prod.spline.design/0jHViobWfk5chD2D/scene.splinecode" />
 
             <span className="pointer-events-none absolute left-0 top-1/2 origin-left -translate-y-1/2 -rotate-90">
               <Micro>Memory, not applause</Micro>
@@ -232,7 +105,7 @@ export function BeliefSection() {
         {/* No `data-reveal` here: the section's own fade would be writing
             opacity to the same element the word scrub is animating, and the
             two would fight. This paragraph reveals itself. */}
-        <ScrollReveal className="mt-12 font-sans text-[clamp(1.85rem,4.4vw,4rem)] font-light leading-[2.5] tracking-[-0.015em] text-cream/70">
+        <ScrollReveal className="mt-12 font-sans text-[clamp(1.85rem,4.4vw,4rem)] font-light leading-[2] tracking-[-0.015em] text-cream/70">
           The campaign <Hit>ends.</Hit> The event gets <Hit>packed down.</Hit> The post{" "}
           <Hit>scrolls away.</Hit> What stays is whatever people <Hit>remember.</Hit> So
           that’s what we build for. The <Hit>memory,</Hit> not the applause.

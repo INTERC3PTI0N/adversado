@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { CrowdCanvas } from "@/components/ui/skiper-ui/skiper39";
+import RippleDistortion from "@/components/reactbits/RippleDistortion";
 import {
   AdditiveBlending,
   BufferAttribute,
@@ -21,6 +22,7 @@ import {
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 const CREAM = 0xf9f7f2;
+const NAVY = "#1F355E";
 
 /**
  * The page's whole background: three sheets of constellations at different
@@ -47,19 +49,16 @@ const LAYERS = [
 ];
 
 /**
- * The descent. The page opens in space and lands in Kerala, and the scrollbar
- * is what flies it: the sky comes up a quarter of the way down, the stars go
- * out as the air thickens, and the ground arrives under it.
+ * The landing. The page opens on the landing page's own night sky — the
+ * /night-sky.svg wallpaper under the ripple shader — and the scrollbar is what
+ * flies the ground in underneath it: the stars stay lit, atmosphere stays put,
+ * and Kerala arrives under the sky a little under halfway down.
  *
- * All four numbers are fractions of the whole document, so the descent is
+ * The numbers below are fractions of the whole document, so the landing is
  * paced by the page rather than by a clock — a reader who scrolls slowly gets a
  * slow approach, which is the point of hanging it off scroll at all.
  */
-/** Where the sky starts bleeding in — a quarter of the way down the page. */
-const SKY_START = 0.22;
-const SKY_END = 0.52;
-/** The ground follows the sky rather than arriving with it: atmosphere first,
- * then something to land on. */
+/** The ground arrives once the reader is partway down the page. */
 const LAND_START = 0.44;
 const LAND_END = 0.86;
 
@@ -213,8 +212,6 @@ function KeralaHorizon({ attach }: { attach: ((el: SVGGElement | null) => void)[
 
 export function CinematicScene() {
   const hostRef = useRef<HTMLDivElement>(null);
-  const skyRef = useRef<HTMLDivElement>(null);
-  const hazeRef = useRef<HTMLDivElement>(null);
   const landRef = useRef<HTMLDivElement>(null);
   const bandRefs = useRef<(SVGGElement | null)[]>([]);
   // Handed to KeralaHorizon as a lookup rather than handing it the ref array
@@ -312,11 +309,9 @@ export function CinematicScene() {
     if (reduced) {
       universe.scale.setScalar(1);
       // No scroll-driven descent either, so the page is simply shown where the
-      // descent was going: landed, with the sky up and the horizon in. Holding
-      // it in space instead would mean this reader never sees the ground at
-      // all, which is the worse of the two answers.
-      if (skyRef.current) skyRef.current.style.opacity = "1";
-      if (hazeRef.current) hazeRef.current.style.opacity = "0.9";
+      // landing was going: the ground already in. Holding it away instead
+      // would mean this reader never sees the ground at all, which is the
+      // worse of the two answers.
       if (landRef.current) landRef.current.style.opacity = "1";
       sheets.forEach(({ points, L }) => {
         (points.material as PointsMaterial).opacity = L.opacity * 0.12;
@@ -380,14 +375,11 @@ export function CinematicScene() {
         universe.scale.setScalar(revealScale);
       }
 
-      // ── The descent ────────────────────────────────────────────────────
-      const sky = clamp01((p - SKY_START) / (SKY_END - SKY_START));
+      // ── The landing ────────────────────────────────────────────────────
+      // The night-sky wallpaper stays lit for the whole visit (it's the same
+      // background the landing page lives on), so only the ground arrives on
+      // scroll. The stars keep their own light too — nothing throttles them.
       const land = clamp01((p - LAND_START) / (LAND_END - LAND_START));
-      if (skyRef.current) skyRef.current.style.opacity = String(sky);
-      // The horizon glow trails the sky rather than tracking it — atmosphere
-      // arrives first and only starts catching the light once it's most of
-      // the way in.
-      if (hazeRef.current) hazeRef.current.style.opacity = String(sky * sky * 0.9);
       if (landRef.current) landRef.current.style.opacity = String(land);
       for (let i = 0; i < BANDS.length; i++) {
         const g = bandRefs.current[i];
@@ -403,10 +395,8 @@ export function CinematicScene() {
       }
 
       for (const { points, L } of sheets) {
-        // Stars go out as the atmosphere comes in. Not all the way — a trace
-        // left in the sky is what keeps the top of the page connected to where
-        // the reader started, rather than cutting to an unrelated daylight.
-        (points.material as PointsMaterial).opacity = L.opacity * (1 - sky * 0.88);
+        // Stars stay lit under the night sky.
+        (points.material as PointsMaterial).opacity = L.opacity;
         // The parallax itself: sheets rise past the viewport at rates set by
         // their depth, which is the whole effect.
         points.position.y = p * L.rate + eased.y * L.lean * 2;
@@ -439,28 +429,35 @@ export function CinematicScene() {
       style={{ background: "transparent" }}
     >
       {/* Under the stars (the canvas is given z-index 1 when it is appended):
-          the sky itself, brand navy running up to a lifted blue, and over it a
-          gold haze sitting on the horizon. Two layers rather than one gradient
-          because they arrive on different schedules — the blue is most of the
-          way in before the horizon starts to glow. */}
+          the night-sky wallpaper from the actual landing page — /night-sky.svg
+          driven by the ripple shader, shipped with the exact settings page.tsx
+          gives it. It sits on brand navy and stays lit for the whole visit;
+          the descent no longer fades a blue sky in, the landing keeps the
+          night. */}
+      <div className="absolute inset-0" style={{ zIndex: 0, background: NAVY }}>
+        <RippleDistortion
+          src="/night-sky.svg"
+          grayscale={false}
+          tint="#7fb0ff"
+          tintAmount={0.18}
+          highlightColor="#e8f0ff"
+          glint={0.3}
+          strength={0.12}
+          swirl={0.55}
+          rings={3}
+          dispersion={0.07}
+          brushSize={190}
+          quality="medium"
+        />
+      </div>
+      {/* The landing page's own vignette — keeps the wallpaper from swallowing
+          the type where the two overlap. */}
       <div
-        ref={skyRef}
         className="absolute inset-0"
         style={{
           zIndex: 0,
-          opacity: 0,
           background:
-            "linear-gradient(180deg, #04070f 0%, #0b1524 28%, #1f355e 62%, #2a4a80 86%, #35608f 100%)",
-        }}
-      />
-      <div
-        ref={hazeRef}
-        className="absolute inset-0"
-        style={{
-          zIndex: 0,
-          opacity: 0,
-          background:
-            "linear-gradient(180deg, rgba(230,179,37,0) 46%, rgba(230,179,37,0.18) 74%, rgba(230,179,37,0.42) 92%, rgba(249,247,242,0.30) 100%)",
+            "radial-gradient(ellipse 70% 60% at 50% 46%, rgba(5,10,22,0.72), rgba(5,10,22,0) 75%)",
         }}
       />
 

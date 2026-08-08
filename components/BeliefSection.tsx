@@ -11,17 +11,6 @@ import { ScrollReveal } from "@/components/ScrollReveal";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
-/** Small uppercase HUD label. Montserrat, per the brand book's primary face. */
-function Micro({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <span
-      className={`block text-[0.6rem] font-medium uppercase tracking-[0.25em] text-cream/50 ${className ?? ""}`}
-    >
-      {children}
-    </span>
-  );
-}
-
 /** The size the scene is framed for. Spline positions its camera in world
  *  units rather than CSS pixels, so shrinking the canvas crops the scene
  *  instead of zooming it out — on a phone that cut the keyboard in half. */
@@ -101,42 +90,29 @@ export function BeliefSection() {
     <section ref={ref} className="relative px-6 py-28 sm:px-10 sm:py-36 lg:px-16">
       <div className="mx-auto max-w-[1500px]">
         {/* ── Row 1: the headline, across the whole width ───────────────── */}
-        <div data-reveal className="text-center">
-          <Micro>01 // The Belief</Micro>
-        </div>
+        {/* Matched to every other section's eyebrow (gold, `text-sm`,
+            `0.35em`). It was the only one set in cream at `Micro` size, and
+            the only one carrying a number — with no 02 or 03 anywhere on the
+            page, the "01 //" was sequence notation for a sequence that
+            doesn't exist. */}
+        <p data-reveal className="mb-8 text-center text-sm uppercase tracking-[0.35em] text-gold">
+          The Belief
+        </p>
         <h2
           data-reveal
-          className="mx-auto mt-8 max-w-[22ch] text-center font-serif text-[clamp(2.5rem,5.5vw,4.75rem)] font-light leading-[1.1] tracking-[-0.01em] text-cream"
+          className="mx-auto max-w-[22ch] text-center font-serif text-[clamp(2.5rem,5.5vw,4.75rem)] font-light leading-[1.1] tracking-[-0.01em] text-cream"
         >
           Brands aren’t built in <Hit>launches.</Hit>
         </h2>
 
-        {/* ── Row 2: the object, then the argument ──────────────────────── */}
+        {/* ── Row 2: the argument, then the object ──────────────────────── */}
         <div className="mt-20 grid items-stretch gap-10 md:mt-28 md:grid-cols-2 md:gap-0">
-          {/* The panel the tower lives in. A real box now rather than a
-              full-height pane, so the camera is framed to its aspect. */}
-          {/* Sized by aspect rather than viewport height: the Spline camera is
-              framed to the scene's own proportions, so a box that changes shape
-              between a phone and a desktop crops or strands it. `max-h` is the
-              only vh here, and it just stops a tall column on a short screen. */}
-          <div
-            data-reveal
-            className="flex w-full flex-col gap-6 aspect-[4/5] max-h-[85vh] md:aspect-[3/4] md:pr-0"
-          >
-            <style>{`.spline-watermark { display: none !important; }`}</style>
-
-            {/* In flow above the scene rather than absolutely over it — as an
-                overlay it landed on the staircase at every width below md. */}
-            <Micro className="shrink-0 !text-[clamp(0.65rem,1.4vw,0.85rem)] !tracking-[0.3em] !text-cream/70">
-              * No two brands are alike
-            </Micro>
-
-            <FitScene scene="https://prod.spline.design/GLgtPJT5x743jtOQ/scene.splinecode" />
-          </div>
-
           {/* Hairline between the two, the way the schematic draws it. Only
-              once there is a side-by-side to divide. */}
-          <div className="flex flex-col justify-center md:border-l md:border-cream/15 md:pl-14">
+              once there is a side-by-side to divide — and it stays on this
+              column rather than the scene's: this one stretches to the row's
+              full height, where the scene's height is fixed by its aspect and
+              would leave the rule stopping short. */}
+          <div className="flex flex-col justify-center md:border-r md:border-cream/15 md:pr-14">
             <p
               data-reveal
               className="mt-8 max-w-[26ch] font-sans text-[clamp(1.5rem,2.6vw,2.4rem)] font-light leading-[2.5] text-cream/85"
@@ -145,6 +121,35 @@ export function BeliefSection() {
               <Magnify className="font-bold italic text-gold">unglamorous</Magnify> act of
               being unmistakably yourself, everywhere, every time, for years.
             </p>
+          </div>
+
+          {/* The panel the object lives in. Sized by aspect rather than
+              viewport height: the Spline camera is framed to the scene's own
+              proportions, so a box that changes shape between a phone and a
+              desktop crops or strands it. `max-h` is the only vh here, and it
+              just stops a tall column on a short screen. */}
+          <div
+            data-reveal
+            className="flex w-full flex-col gap-6 aspect-[4/5] max-h-[85vh] md:aspect-[3/4] md:pl-14"
+          >
+            <style>{`.spline-watermark { display: none !important; }`}</style>
+
+            {/* In flow above the scene rather than absolutely over it — as an
+                overlay it landed on the keys at every width below md. Set at
+                reading weight with the gold marker landing on the words the
+                keys underneath are literally pressing. */}
+            <div className="shrink-0 space-y-3">
+              <p className="font-sans text-[clamp(0.95rem,2.1vw,1.3rem)] font-bold leading-snug tracking-tight text-cream/80">
+                {/* `box-decoration-break: clone` so the marker keeps its ends
+                    when the phrase wraps in the narrow mobile column. */}
+                <span className="rounded-[0.3em] bg-gold/18 px-[0.22em] py-[0.04em] text-gold [box-decoration-break:clone] [-webkit-box-decoration-break:clone]">
+                  Copy + paste
+                </span>{" "}
+                doesn’t work. <span className="text-gold">We build what stays.</span>
+              </p>
+            </div>
+
+            <FitScene scene="https://prod.spline.design/GLgtPJT5x743jtOQ/scene.splinecode" />
           </div>
         </div>
 

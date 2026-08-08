@@ -28,6 +28,25 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Keyboard focus. The brand's accessibility gates commit to a 2px ring at 3px
+   offset, but Tailwind's preflight clears the UA outline and nothing had ever
+   replaced it — every control on the site (wordmark, vertical cards, both
+   CTAs, the whole contact form) was keyboard-invisible. Declared once here
+   rather than per component so anything added later inherits it.
+
+   `:focus-visible` rather than `:focus`, so a mouse click doesn't leave a ring
+   sitting on the button afterwards. */
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 3px;
+}
+
+/* The vertical cards clip their shader to a rounded corner, so an offset ring
+   would be cropped by the tile's own overflow. Drawn inside instead. */
+.focus-inset:focus-visible {
+  outline-offset: -4px;
+}
+
 /* Scroll cue nudge. Kept in CSS rather than JS so it costs nothing to run
    and stops cleanly for anyone who'd rather it didn't move. */
 @keyframes scroll-hint-bob {
@@ -72,9 +91,13 @@ body {
 
 /* Emphasised word in a revealed headline — swells and lights up once its own
    block reveal has uncovered it. */
+/* Exponential ease-out rather than the overshoot curve this used to carry.
+   The brand's own motion constraint rules out bounce easing, and a word that
+   springs past its size and settles back reads as a UI toy — it should arrive
+   and stop. Same swell, no rebound. */
 .emphasis-word {
   display: inline-block;
-  transition: transform 0.6s cubic-bezier(0.34, 1.4, 0.4, 1), text-shadow 0.6s ease,
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), text-shadow 0.6s ease,
     color 0.6s ease;
 }
 .emphasis-word.is-lit {

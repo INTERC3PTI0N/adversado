@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
-import { CrowdCanvas } from "@/components/ui/skiper-ui/skiper39";
 import RippleDistortion from "@/components/reactbits/RippleDistortion";
 import {
   AdditiveBlending,
@@ -83,35 +82,6 @@ const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 const SCRUB_TAU = 0.14;
 
 /**
- * The two knobs on the crowd, both of them here rather than in the component —
- * Skiper's canvas takes neither, and it is vendored as it ships.
- *
- * `CROWD_SCALE` is figure size: how far the canvas is scaled down from the
- * sprite sheet's native 240×324 cells. 0.5 puts a peep at about 120×162 on
- * screen.
- *
- * `CROWD_SPREAD` is how much wider than the viewport the walking stage is. The
- * overflow is clipped, so at 2 only about half the cast is in shot at a time
- * and the rest are walking on and off past the edges of frame.
- *
- * Density is really set by the sheet, though, not by this. The component walks
- * every sprite it is given and takes no count, so spread alone can only ration
- * a fixed crowd: thinning the full 105-peep sheet to something sparse this way
- * would need a stage some twenty viewports wide. Hence the reduced sheet below
- * — 30 figures sampled across the original's cast by scripts/build-peep-sheet.py.
- * Want more people? Rebuild it with more rows, or point back at all-peeps.png
- * and set cols to 7.
- *
- * Scale and spread pull against each other on canvas size — the stage is
- * `spread / scale` viewports wide — so bigger figures buy back most of what
- * extra spread costs.
- */
-const CROWD_SCALE = 0.5;
-const CROWD_SPREAD = 2;
-/** Rows on peeps-thinned.png. 15 per row, so this is the cast size / 15. */
-const CROWD_SHEET_ROWS = 2;
-
-/**
  * Kerala, in silhouette — what the descent lands on.
  *
  * Everything here is a shape rather than a picture: at background weight, under
@@ -119,8 +89,12 @@ const CROWD_SHEET_ROWS = 2;
  * anyway, and it stays out of the way of the text on top of it. The vocabulary
  * is Kochi's own — the cantilevered Chinese fishing nets on the harbour, a
  * kettuvallam on the backwaters, and a chundan vallam snake boat — drawn once
- * in `defs` and placed with `use`. The crowd walking in front of all this is
- * Skiper UI's canvas, mounted alongside rather than drawn here.
+ * in `defs` and placed with `use`.
+ *
+ * A crowd of Open Peeps sprites used to walk along the foot of this, on
+ * Skiper UI's canvas. It has been removed. `components/ui/skiper-ui/skiper39`,
+ * `public/images/peeps/*` and `scripts/build-peep-sheet.py` are all dead now
+ * and can be deleted.
  */
 function KeralaHorizon({ attach }: { attach: ((el: SVGGElement | null) => void)[] }) {
   // Pulled out into named callbacks rather than indexed inline: `ref={attach[i]}`
@@ -461,45 +435,11 @@ export function CinematicScene() {
         }}
       />
 
-      {/* Over the stars: the ground, and the crowd walking along it. Both live
-          inside this one layer so they arrive together on the `land` fade —
-          the people are part of the place being landed on, not a separate
-          element that turns up on its own schedule. */}
+      {/* Over the stars: the ground the descent lands on, arriving on the
+          `land` fade. The walking crowd that used to stand in front of it is
+          gone — see the note above KeralaHorizon. */}
       <div ref={landRef} className="absolute inset-0" style={{ zIndex: 2, opacity: 0 }}>
         <KeralaHorizon attach={attachBand} />
-        {/* Skiper UI's crowd canvas, in place of the palms that used to stand
-            here, vendored exactly as it ships — so both the figure size and the
-            density are done to it from out here rather than inside it.
-
-            It draws each figure at the sprite sheet's own native cell size,
-            which is most of the viewport tall. So the inner box is given a
-            stage `CROWD_SPREAD / CROWD_SCALE` viewports wide and then scaled
-            back down by `CROWD_SCALE`: the peeps stay native-sized in canvas
-            space, land smaller on screen, and have more ground to walk across
-            than fits in frame. Anchored bottom-left so the scale collapses
-            toward the ground they walk on, then pulled left by half the
-            overspill so the extra width falls evenly either side.
-
-            The outer box clips. Without it the stage is wider than the document
-            and puts a horizontal scrollbar on the page; with it, the figures
-            simply walk in and out past the edges of frame. */}
-        <div className="absolute inset-x-0 bottom-0 h-[90vh] overflow-hidden">
-          <div
-            className="absolute bottom-0 origin-bottom-left"
-            style={{
-              width: `${(100 / CROWD_SCALE) * CROWD_SPREAD}%`,
-              left: `${-(CROWD_SPREAD - 1) * 50}%`,
-              height: "90vh",
-              transform: `scale(${CROWD_SCALE})`,
-            }}
-          >
-            <CrowdCanvas
-              src="/images/peeps/peeps-thinned.png"
-              rows={15}
-              cols={CROWD_SHEET_ROWS}
-            />
-          </div>
-        </div>
       </div>
     </div>
   );

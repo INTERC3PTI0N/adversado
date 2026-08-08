@@ -3,10 +3,15 @@
 import { useEffect, useState } from "react";
 
 /**
- * Hero scroll cue. Appears a beat after the headline has finished landing —
- * long enough that it reads as "there's more below" rather than competing
- * with the copy — and retires itself the moment the visitor actually
- * scrolls, since a hint that outlives its purpose is just clutter.
+ * Hero scroll cue. Sits in flow directly under the question rather than pinned
+ * to the bottom of the viewport — down there it read as page furniture and got
+ * lost on a short screen, where the whole point is that it answers "WHY?" by
+ * pointing at what's below. Appears a beat after the question has finished
+ * typing, and retires itself the moment the visitor actually scrolls, since a
+ * hint that outlives its purpose is just clutter.
+ *
+ * Its space is held from mount and only its opacity changes, so arriving
+ * doesn't shove the hero's centred block upward.
  */
 export function ScrollHint({ delay = 6900 }: { delay?: number }) {
   const [visible, setVisible] = useState(false);
@@ -32,15 +37,17 @@ export function ScrollHint({ delay = 6900 }: { delay?: number }) {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute bottom-10 left-1/2 flex -translate-x-1/2 flex-col items-center gap-3"
+      className="pointer-events-none flex flex-col items-center gap-4"
       style={{
         opacity: visible && !dismissed ? 1 : 0,
         transition: "opacity 700ms ease",
       }}
     >
-      <span className="text-[0.65rem] uppercase tracking-[0.3em] text-gold/80">Scroll</span>
+      <span className="text-[clamp(0.85rem,1.6vw,1.15rem)] font-bold uppercase tracking-[0.3em] text-gold/80">
+        Scroll
+      </span>
       <span className="animate-scroll-hint block">
-        <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
+        <svg width="44" height="30" viewBox="0 0 16 11" fill="none">
           <path
             d="M1.5 1.5 L8 8.5 L14.5 1.5"
             stroke="currentColor"

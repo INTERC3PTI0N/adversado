@@ -7,10 +7,17 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { BoxReveal, CinematicScene, useDepthReveal } from "@/components/Cinematic";
 import { BeliefSection } from "@/components/BeliefSection";
-import { useCursorVars, useMagnetic, useNearViewport } from "@/components/Interactions";
+import { useMagnetic, useNearViewport } from "@/components/Interactions";
 import { ContactDialog } from "@/components/ContactDialog";
+import { Magnify } from "@/components/Magnify";
 import { Silk } from "@/components/Silk";
+import { SlideBreaker } from "@/components/SlideBreaker";
 import { IntroCard } from "@/components/vendor/IntroCard";
+import LaserFlow from "@/components/reactbits/LaserFlow";
+import "@/components/reactbits/LaserFlow.css";
+
+/** Brand gold, for the props that take a colour rather than a class. */
+const GOLD = "#e6b325";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -125,7 +132,7 @@ function VerticalCard({
         if (e.key === "ArrowLeft" || e.key === "ArrowUp")
           onActivate((i - 1 + VERTICALS.length) % VERTICALS.length);
       }}
-      className="group relative h-[240px] min-w-0 cursor-pointer overflow-hidden rounded-2xl border border-cream/12 transition-[flex-grow] duration-700 ease-out sm:h-full"
+      className="focus-inset group relative h-[240px] min-w-0 cursor-pointer overflow-hidden rounded-2xl border border-cream/12 transition-[flex-grow] duration-700 ease-out sm:h-full"
       style={{ flexGrow: active ? 5 : 1, flexBasis: 0 }}
     >
       {/* The card keeps its own colour underneath, so a panel that hasn't
@@ -208,7 +215,9 @@ function Verticals() {
             ref={ctaRef}
             href="/services"
             prefetch={false}
-            className="group inline-flex items-center gap-3 text-base uppercase tracking-[0.2em] text-gold"
+            /* `min-h-11` (44px): the link's own line box is 17px tall, which
+               is well under the touch-target floor on a phone. */
+            className="group inline-flex min-h-11 items-center gap-3 text-base uppercase tracking-[0.2em] text-gold"
           >
             Explore the full journey
             <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
@@ -301,51 +310,192 @@ function SixDs() {
 
 /* ── The Invitation ─────────────────────────────────────────────────────── */
 
+/** The three moves, each its own line of the rhythm. */
+const MOVES = ["Launching.", "Repositioning.", "Expanding."];
+
 function Invitation() {
   const ref = useDepthReveal<HTMLElement>();
-  const glowRef = useCursorVars<HTMLDivElement>();
   const magnetRef = useMagnetic<HTMLButtonElement>({ strength: 0.4, radius: 110 });
+  const movesRef = useRef<HTMLParagraphElement>(null);
+  const revealRef = useRef<HTMLDivElement>(null);
+  const [laserRef, laserNear] = useNearViewport<HTMLDivElement>();
+
+  // Written straight to the style attribute rather than through state, the way
+  // the demo does it and the way `useCursorVars` does it elsewhere here — the
+  // gesture fires on every pointer move and must not cost a render.
+  const onStageMove = (e: React.MouseEvent<HTMLElement>) => {
+    const el = revealRef.current;
+    if (!el) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    el.style.setProperty("--mx", `${e.clientX - rect.left}px`);
+    el.style.setProperty("--my", `${e.clientY - rect.top}px`);
+  };
+  const onStageLeave = () => {
+    const el = revealRef.current;
+    if (!el) return;
+    el.style.setProperty("--mx", "-9999px");
+    el.style.setProperty("--my", "-9999px");
+  };
   const [contactOpen, setContactOpen] = useState(false);
+
+  useGSAP(
+    () => {
+      const mm = gsap.matchMedia();
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        // Struck onto the page one at a time rather than faded in — the copy
+        // is three clipped sentences and the reveal should read the same way.
+        // (Same wipe the refusals used to carry, which is free again now.)
+        gsap.from("[data-move]", {
+          clipPath: "inset(0 100% 0 0)",
+          duration: 0.7,
+          ease: "power4.inOut",
+          stagger: 0.16,
+          scrollTrigger: { trigger: movesRef.current, start: "top 82%", once: true },
+        });
+      });
+      return () => mm.revert();
+    },
+    { scope: ref }
+  );
 
   return (
     // The last section on the page now that the footer is gone, so its own
     // bottom padding is what sets how much air the button sits in — no
     // trailing footer left to supply that space.
-    <section ref={ref} className="relative overflow-hidden px-6 pb-32 pt-28 sm:pb-48 sm:pt-40">
+    <section
+      ref={ref}
+      onMouseMove={onStageMove}
+      onMouseLeave={onStageLeave}
+      // `--stage` is the height of the beam's run before it strikes. The card
+      // is placed at 70% of it, which is where the demo puts its box and
+      // therefore where the beam's flare actually lands.
+      className="relative overflow-hidden px-6 pb-32 [--stage:400px] sm:pb-48 sm:[--stage:620px]"
+    >
+      {/* The laser wants black to burn against — over the starfield and the
+          horizon silhouette it read as a hairline. Transparent at the very top
+          so there is no seam where the section starts. */}
       <div
-        ref={glowRef}
         aria-hidden
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(560px circle at var(--mx, 50%) var(--my, 50%), rgba(230,179,37,0.10), transparent 70%)",
+            "linear-gradient(to bottom, rgba(3,5,10,0) 0%, rgba(3,5,10,0.94) 20%, rgba(3,5,10,0.98) 100%)",
         }}
       />
 
-      <div className="relative mx-auto max-w-4xl text-center">
+      {/* React Bits' LaserFlow, in brand gold, run over the stage only rather
+          than the whole section — the beam has to end on the card's top edge,
+          and a full-height canvas puts it straight through the copy, which is
+          what made this unreadable before.
+
+          Offsets are the demo's own box-example values (0.1 / -0.2); they are
+          what put the flare at 70% of the canvas. One more WebGL context, so
+          it is gated behind `useNearViewport` like every other shader here —
+          the component pauses its own loop off-screen, but it takes the
+          context at mount, and the budget is what the gating is about. */}
+      <div
+        ref={laserRef}
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-[var(--stage)]"
+      >
+        {laserNear && (
+          <LaserFlow
+            color={GOLD}
+            horizontalBeamOffset={0.1}
+            verticalBeamOffset={-0.2}
+            flowSpeed={0.3}
+            wispDensity={0.8}
+            wispIntensity={4}
+            fogIntensity={0.32}
+            mouseTiltStrength={0.06}
+            mouseSmoothTime={0.18}
+          />
+        )}
+      </div>
+
+      {/* The demo's cursor-tracked reveal — a soft circle masked to follow the
+          pointer, sitting between the beam and the card exactly as theirs sits
+          between beam and box. Theirs lights a stock image through the mask;
+          this lights a gold sheen, so the page carries no hotlinked
+          third-party asset. `lighten` so it only ever adds light. */}
+      <div
+        ref={revealRef}
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-[2] mix-blend-lighten"
+        style={
+          {
+            background:
+              "radial-gradient(circle at var(--mx) var(--my), rgba(230,179,37,0.32), rgba(230,179,37,0.10) 45%, rgba(230,179,37,0) 70%)",
+            "--mx": "-9999px",
+            "--my": "-9999px",
+            WebkitMaskImage:
+              "radial-gradient(circle at var(--mx) var(--my), rgba(255,255,255,1) 0px, rgba(255,255,255,0.95) 60px, rgba(255,255,255,0.6) 120px, rgba(255,255,255,0.25) 180px, rgba(255,255,255,0) 240px)",
+            maskImage:
+              "radial-gradient(circle at var(--mx) var(--my), rgba(255,255,255,1) 0px, rgba(255,255,255,0.95) 60px, rgba(255,255,255,0.6) 120px, rgba(255,255,255,0.25) 180px, rgba(255,255,255,0) 240px)",
+            WebkitMaskRepeat: "no-repeat",
+            maskRepeat: "no-repeat",
+          } as React.CSSProperties
+        }
+      />
+
+      {/* The card the beam lands on. Same treatment as the demo's box — near
+          black fill, 2px gold edge, 20px radius, above the reveal at z-6 — and
+          it starts at 70% of the stage so its top edge is exactly where the
+          beam terminates. Unlike the demo's fixed 60%-height box this grows
+          with the copy, which is the whole point of putting the copy in it. */}
+      <div className="relative z-[6] mx-auto mt-[calc(var(--stage)*0.7)] max-w-4xl rounded-[20px] border-2 border-gold bg-[#120F17] px-6 py-14 text-center sm:px-12 sm:py-20">
         <p data-depth className="mb-8 text-sm uppercase tracking-[0.35em] text-gold">
           The Invitation
         </p>
         <BoxReveal>
           <h2 className="font-serif text-[clamp(2.5rem,6.5vw,5rem)] leading-[1.1] text-cream">
-            We’re not for everyone. That’s deliberate.
+            We’re not for everyone. <span className="text-gold">That’s deliberate.</span>
           </h2>
         </BoxReveal>
+
         <p
           data-depth
           className="mx-auto mt-10 max-w-2xl text-[clamp(1.15rem,1.9vw,1.5rem)] leading-[1.8] text-cream/70"
         >
-          We do our best work at turning points — launching, relaunching, repositioning,
-          expanding. Brands ready to treat branding as an investment, take one partner over
-          ten vendors, and hear the honest answer even when a comfortable one is available.
-          If reading that felt like relief, we should talk.
+          We work with <Magnify className="font-bold italic text-gold">ambitious</Magnify>{" "}
+          brands ready to make{" "}
+          <span className="rounded-[0.3em] bg-gold/18 px-[0.22em] py-[0.04em] font-bold text-gold [box-decoration-break:clone] [-webkit-box-decoration-break:clone]">
+            bold moves.
+          </span>
+        </p>
+
+        {/* The turn in the copy, and the only place it stops being a paragraph.
+            Three clipped sentences set as one line of rhythm — sans and loud
+            against the serif headline above them, so the eye lands here. */}
+        <p
+          ref={movesRef}
+          className="mx-auto mt-12 flex flex-wrap items-baseline justify-center gap-x-6 gap-y-2 font-sans text-[clamp(1.5rem,3.6vw,2.75rem)] font-black uppercase leading-tight tracking-tight text-gold sm:gap-x-10"
+        >
+          {MOVES.map((move) => (
+            // `inline-block` so the wipe has a box of its own to clip against;
+            // on an inline span it would clip the whole line.
+            <span key={move} data-move className="inline-block">
+              {move}
+            </span>
+          ))}
+        </p>
+
+        <p
+          data-depth
+          className="mx-auto mt-12 max-w-2xl text-[clamp(1.15rem,1.9vw,1.5rem)] leading-[1.8] text-cream/70"
+        >
+          If you’re looking for{" "}
+          <span className="font-bold text-cream">a partner,</span>{" "}
+          {/* Dimmed rather than marked: it's the thing being ruled out, so it
+              should read quieter than what it's being set against. */}
+          <span className="text-cream/40">not another agency,</span> we’d love to meet.
         </p>
         <div data-depth className="mt-12">
           <button
             ref={magnetRef}
             type="button"
             onClick={() => setContactOpen(true)}
-            className="group inline-flex items-center gap-3 bg-gold px-9 py-4 text-sm font-bold uppercase tracking-[0.2em] text-charcoal transition-colors duration-300 hover:bg-cream"
+            className="group inline-flex min-h-11 items-center gap-3 bg-gold px-9 py-4 text-sm font-bold uppercase tracking-[0.2em] text-charcoal transition-colors duration-300 hover:bg-cream"
           >
             Tell us where it hurts
             <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
@@ -378,6 +528,7 @@ export function HomeSections() {
         <BeliefSection />
         <Introduction />
         <Verticals />
+        <SlideBreaker />
         <SixDs />
         <Invitation />
       </div>

@@ -10,8 +10,9 @@ import { Typewriter } from "@/components/Typewriter";
 const GOLD = "#e6b325";
 
 const HEADLINE_2 = "SO DO MOST BRANDS.";
-const SUBHEADING =
-  "Adversado builds the ones that stay. Strategy to execution, one team, end to end.";
+/** The whole of the second line now — one word doing the work a sentence used
+ *  to. Typed into a gold marker stroke, which is why it is set in navy. */
+const SUBHEADING = "WHY?";
 
 const REVEAL_STAGGER = 0.08;
 const REVEAL_DURATION = 0.5;
@@ -53,11 +54,13 @@ const HEADLINE_2_DONE_MS = (3 * REVEAL_STAGGER + REVEAL_DURATION * 2) * 1000;
 // still closing, but the subheading shouldn't start typing until there is
 // something legible to type underneath.
 const TYPE_DELAY_MS = ARRIVE_SETTLE_MS + HEADLINE_2_DONE_MS + 250;
-// Roughly how long the typed line takes. The scroll cue lands right behind
-// the last character rather than waiting the subheading out and then some —
-// by the time the sentence has finished typing, the hero has said everything
-// it has to say, and the next thing to communicate is "keep going".
-const TYPE_RUN_MS = 4200;
+// One character at a time, slowly — four letters rattled out at the default
+// speed would be over before the eye reached them.
+const TYPE_SPEED_MS = 200;
+// The scroll cue lands right behind the last character: by the time the
+// question is on screen, the hero has said everything it has to say, and the
+// next thing to communicate is "keep going".
+const TYPE_RUN_MS = SUBHEADING.length * TYPE_SPEED_MS;
 const SCROLL_HINT_DELAY_MS = TYPE_DELAY_MS + TYPE_RUN_MS + 400;
 
 export function Hero({ active = true }: { active?: boolean }) {
@@ -66,6 +69,9 @@ export function Hero({ active = true }: { active?: boolean }) {
   // up on the other side of that blackout — "So do most brands." is the
   // answer to a line the reader has just watched vanish.
   const [phase, setPhase] = useState<"idle" | "second">("idle");
+  // Gates the marker stroke behind the question, so it arrives with the first
+  // character rather than sitting empty through the whole approach.
+  const [typing, setTyping] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const headlineRef = useRef<HTMLHeadingElement>(null);
   const subRef = useRef<HTMLParagraphElement>(null);
@@ -77,7 +83,11 @@ export function Hero({ active = true }: { active?: boolean }) {
     // over by the time anyone can see it.
     if (!active) return;
     const t = setTimeout(() => setPhase("second"), 0);
-    return () => clearTimeout(t);
+    const ink = setTimeout(() => setTyping(true), TYPE_DELAY_MS);
+    return () => {
+      clearTimeout(t);
+      clearTimeout(ink);
+    };
   }, [active]);
 
   useEffect(() => {
@@ -174,15 +184,41 @@ export function Hero({ active = true }: { active?: boolean }) {
             </h1>
             <p
               ref={subRef}
-              className="max-w-3xl font-serif text-[clamp(1.25rem,2.6vw,2.1rem)] font-light leading-[1.7] text-cream/90"
+              className="font-sans text-[clamp(3.5rem,13vw,10rem)] font-black leading-none tracking-tight"
             >
-              <Typewriter text={SUBHEADING} delay={TYPE_DELAY_MS} />
+              {/* The marker stroke is its own span rather than classes on the
+                  Typewriter: that component absolutely positions the typed
+                  copy over an invisible spacer with `inset-0`, so any padding
+                  of its own would offset the two from each other.
+
+                  Faded in on the same beat the typing starts — the block is
+                  sized for the finished word from the first frame, and an
+                  empty gold rectangle sitting through the whole arrival reads
+                  as a bug rather than a highlight. */}
+              <span
+                className="inline-block rounded-[0.08em] bg-gold px-[0.16em] pb-[0.06em] text-navy"
+                style={{
+                  opacity: typing ? 1 : 0,
+                  transition: "opacity 450ms ease",
+                }}
+              >
+                {/* The caret defaults to gold, which is invisible on gold. */}
+                <Typewriter
+                  text={SUBHEADING}
+                  delay={TYPE_DELAY_MS}
+                  speed={TYPE_SPEED_MS}
+                  className="[&_.caret]:text-navy"
+                />
+              </span>
             </p>
+
+            {/* Directly under the question, not pinned to the bottom of the
+                section: the cue is the answer to "WHY?" — it points at where
+                the answer is. */}
+            <ScrollHint delay={SCROLL_HINT_DELAY_MS} />
           </div>
         )}
       </div>
-
-      {phase === "second" && <ScrollHint delay={SCROLL_HINT_DELAY_MS} />}
     </section>
   );
 }

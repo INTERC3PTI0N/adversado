@@ -49,18 +49,23 @@ export function IntroCard({ className }: { className?: string }) {
       rotateTouch={false}
       rotateXMax={9}
       rotateYMax={9}
-      innerClassName="flex w-full flex-col items-center gap-6 text-center text-cream"
+      innerClassName="flex w-full flex-col items-center text-center text-cream"
     >
       {/* Typed out once the section has actually been scrolled to, not on
           mount — `useNearViewport` latches the first time this heading nears
           the viewport and stays true, so it never retypes on scroll-back. */}
       <h2
         ref={headRef}
-        className="font-sans text-[clamp(2.2rem,6vw,5rem)] font-black uppercase tracking-tight text-gold"
+        className="font-sans text-[clamp(2.2rem,6vw,5rem)] font-black uppercase leading-[1.1] tracking-tight text-gold"
       >
         {headNear && <Typewriter text="Welcome to Adversado" speed={38} />}
       </h2>
-      <p className=" shrink-0 font-serif text-[clamp(1.05rem,1.9vw,1.7rem)] font-normal italic tracking-[0.18em] uppercase">
+
+      {/* The three blocks were on a flat `gap-6` and read as one stack with no
+          air in it. Spacing is proportional now — the tagline sits close under
+          the wordmark it belongs to, and the argument gets a real break before
+          it starts. */}
+      <p className="mt-6 shrink-0 font-serif text-[clamp(1.05rem,1.9vw,1.7rem)] font-normal italic uppercase tracking-[0.18em] sm:mt-8">
         <ShinyText text="Brand Behind the Brands" color={GOLD} shineColor={CREAM} speed={4} spread={100} />
       </p>
 
@@ -74,7 +79,7 @@ export function IntroCard({ className }: { className?: string }) {
           page's sections. */}
       <div
         ref={bodyRef}
-        className="flex w-full flex-col gap-y-2 font-sans text-[clamp(1.6rem,3.6vw,3.4rem)] leading-[2.15] tracking-[-0.02em] sm:gap-y-3"
+        className="mt-14 flex w-full flex-col gap-y-3 font-sans text-[clamp(1.6rem,3.6vw,3.4rem)] leading-[2.15] tracking-[-0.02em] sm:mt-20 sm:gap-y-5"
       >
         {BODY.map((sentence, si) => (
           <p key={si}>

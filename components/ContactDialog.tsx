@@ -22,7 +22,15 @@ const FIELDS = [
  */
 export function ContactDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const sentRef = useRef<HTMLParagraphElement>(null);
   const [sent, setSent] = useState(false);
+
+  // Submitting replaces the form with the confirmation, which destroys the
+  // element that had focus — without this, focus falls back to the body and a
+  // keyboard or screen-reader user is left with no idea the send succeeded.
+  useEffect(() => {
+    if (sent) sentRef.current?.focus();
+  }, [sent]);
 
   useEffect(() => {
     const d = ref.current;
@@ -59,7 +67,7 @@ export function ContactDialog({ open, onClose }: { open: boolean; onClose: () =>
       <div className="border border-gold/30 bg-navy p-8 text-left sm:p-10">
         <div className="flex items-start justify-between gap-6">
           <div>
-            <p className="text-[0.65rem] uppercase tracking-[0.3em] text-gold">Start with an audit</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-gold">Start with an audit</p>
             <h2
               id="contact-dialog-title"
               className="mt-3 font-serif text-[clamp(1.5rem,3.4vw,2.1rem)] leading-tight text-cream"
@@ -67,18 +75,40 @@ export function ContactDialog({ open, onClose }: { open: boolean; onClose: () =>
               Tell us where it hurts.
             </h2>
           </div>
+          {/* A drawn glyph rather than the `×` character: the multiplication
+              sign is not an icon, it inherits the text metrics, and it left a
+              hit area far under the touch-target floor. */}
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="-mt-1 shrink-0 text-2xl leading-none text-cream/50 transition-colors hover:text-gold"
+            className="-mr-2 -mt-2 flex size-11 shrink-0 items-center justify-center text-cream/60 transition-colors hover:text-gold"
           >
-            ×
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              aria-hidden
+              focusable="false"
+            >
+              <path
+                d="M3.5 3.5 L12.5 12.5 M12.5 3.5 L3.5 12.5"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              />
+            </svg>
           </button>
         </div>
 
         {sent ? (
-          <p className="mt-8 leading-relaxed text-cream/80">
+          <p
+            ref={sentRef}
+            tabIndex={-1}
+            role="status"
+            className="mt-8 leading-relaxed text-cream/80 focus:outline-none"
+          >
             Got it. You’ll hear from us within one working day, and if anything shifts,
             you’ll hear from us sooner. That’s how we work with clients, so it’s how we
             start with them too.
@@ -93,7 +123,7 @@ export function ContactDialog({ open, onClose }: { open: boolean; onClose: () =>
           >
             {FIELDS.map((f) => (
               <label key={f.name} className="flex flex-col gap-2">
-                <span className="text-[0.65rem] uppercase tracking-[0.22em] text-cream/60">
+                <span className="text-xs uppercase tracking-[0.22em] text-cream/60">
                   {f.label}
                 </span>
                 <input
@@ -102,13 +132,13 @@ export function ContactDialog({ open, onClose }: { open: boolean; onClose: () =>
                   type={f.type}
                   autoComplete={f.autoComplete}
                   placeholder={f.placeholder}
-                  className="border border-cream/20 bg-charcoal/40 px-4 py-3 text-cream placeholder:text-cream/30 focus:border-gold focus:outline-none"
+                  className="border border-cream/20 bg-charcoal/40 px-4 py-3 text-cream placeholder:text-cream/55 focus:border-gold"
                 />
               </label>
             ))}
 
             <label className="flex flex-col gap-2">
-              <span className="text-[0.65rem] uppercase tracking-[0.22em] text-cream/60">
+              <span className="text-xs uppercase tracking-[0.22em] text-cream/60">
                 Your query
               </span>
               <textarea
@@ -116,7 +146,7 @@ export function ContactDialog({ open, onClose }: { open: boolean; onClose: () =>
                 name="query"
                 rows={4}
                 placeholder="Be honest. We will be."
-                className="resize-none border border-cream/20 bg-charcoal/40 px-4 py-3 text-cream placeholder:text-cream/30 focus:border-gold focus:outline-none"
+                className="resize-none border border-cream/20 bg-charcoal/40 px-4 py-3 text-cream placeholder:text-cream/55 focus:border-gold"
               />
             </label>
 

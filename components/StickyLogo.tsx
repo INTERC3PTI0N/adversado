@@ -64,7 +64,14 @@ export function StickyLogo() {
     <Link
       href="/"
       aria-label="Adversado — home"
-      className="fixed top-6 left-6 z-40 block h-8 w-40"
+      /* 44px tall for the touch-target floor, pulled up 6px so the wordmark
+         itself still sits on the same optical line as before — the mark is
+         width-bound under `object-contain`, so the taller box only adds hit
+         area, it doesn't scale the logo.
+
+         Note: `href="/"` is the countdown holding page, not this homepage.
+         Left as-is deliberately; it resolves when /home becomes /. */
+      className="fixed top-[1.125rem] left-6 z-40 flex h-11 w-40 items-center"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{ filter: onLight ? "brightness(0)" : "none", transition: "filter 0.4s ease" }}

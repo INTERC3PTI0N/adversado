@@ -48,6 +48,45 @@ const LAYERS = [
 ];
 
 /**
+ * The three star sheets as a ready-made group.
+ *
+ * Extracted so the preloader's orb scene (BrandOrb.tsx) renders the *same*
+ * constellations the page itself does, rather than a second field with its own
+ * count, colour and spread that then has to be kept in sync by hand. The
+ * caller owns the group and the disposal; `sheets` is handed back because
+ * CinematicScene drives each one's parallax individually.
+ */
+export function createStarSheets() {
+  const group = new Group();
+  const sheets = LAYERS.map((L) => {
+    const pos = new Float32Array(L.count * 3);
+    for (let i = 0; i < L.count; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * L.spreadX;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * L.spreadY;
+      // A little thickness per sheet, so a layer never reads as a decal.
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 4;
+    }
+    const geo = new BufferGeometry();
+    geo.setAttribute("position", new BufferAttribute(pos, 3));
+    const points = new Points(
+      geo,
+      new PointsMaterial({
+        color: new Color(CREAM),
+        size: L.size,
+        transparent: true,
+        opacity: L.opacity,
+        blending: AdditiveBlending,
+        depthWrite: false,
+      })
+    );
+    points.position.z = L.z;
+    group.add(points);
+    return { points, geo, L };
+  });
+  return { group, sheets };
+}
+
+/**
  * The landing. The page opens on the landing page's own night sky — the
  * /night-sky.svg wallpaper under the ripple shader — and the scrollbar is what
  * flies the ground in underneath it: the stars stay lit, atmosphere stays put,
@@ -220,34 +259,8 @@ export function CinematicScene() {
     // Every sheet hangs off one group rather than going straight into the
     // scene, so the reveal pulse below can scale the whole sky as a unit
     // without disturbing each sheet's own parallax position.
-    const universe = new Group();
+    const { group: universe, sheets } = createStarSheets();
     scene.add(universe);
-
-    const sheets = LAYERS.map((L) => {
-      const pos = new Float32Array(L.count * 3);
-      for (let i = 0; i < L.count; i++) {
-        pos[i * 3] = (Math.random() - 0.5) * L.spreadX;
-        pos[i * 3 + 1] = (Math.random() - 0.5) * L.spreadY;
-        // A little thickness per sheet, so a layer never reads as a decal.
-        pos[i * 3 + 2] = (Math.random() - 0.5) * 4;
-      }
-      const geo = new BufferGeometry();
-      geo.setAttribute("position", new BufferAttribute(pos, 3));
-      const points = new Points(
-        geo,
-        new PointsMaterial({
-          color: new Color(CREAM),
-          size: L.size,
-          transparent: true,
-          opacity: L.opacity,
-          blending: AdditiveBlending,
-          depthWrite: false,
-        })
-      );
-      points.position.z = L.z;
-      universe.add(points);
-      return { points, geo, L };
-    });
 
     camera.position.set(0, 0, 0);
 

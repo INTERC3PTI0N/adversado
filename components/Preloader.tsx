@@ -1,14 +1,13 @@
 "use client";
 
-import { forwardRef, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { animate, useMotionValue } from "motion/react";
 import { Silk } from "@/components/Silk";
-import WarpText from "@/components/vendor/WarpText";
-import { Highlighter } from "@/components/vendor/Highlighter";
-import { EventHorizon } from "@/components/vendor/EventHorizon";
+import { BrandOrb } from "@/components/vendor/BrandOrb";
 import GalleryTunnel from "@/components/vendor/GalleryTunnel";
 import { Globe } from "@/components/ui/cobe-globe";
 import { generateBrandTiles } from "@/components/brandTiles";
+import { useConstrainedDevice } from "@/components/useConstrainedDevice";
 
 /** The one marker the preloader's globe carries — where Adversado is from. */
 const KOCHI_MARKER = [{ id: "kochi", location: [9.9312, 76.2673] as [number, number], label: "Kochi, Kerala" }];
@@ -110,17 +109,21 @@ const GLOBE_SHIFT_PCT = 34;
  * bolted on after it.
  */
 const COUNT_WORDS: Record<number, string> = { 3: "THREE", 2: "TWO", 1: "ONE" };
-const COUNT_STEP_MS = 1000;
+// Whole sequence tightened. The old pacing was set when every headline word
+// was a WarpText canvas that needed a beat to be *looked at* — plain type
+// reads instantly, so the holds around it were dead air. A 650ms tick still
+// reads as a countdown; it just stops feeling like waiting.
+const COUNT_STEP_MS = 650;
 /** The wordmark act, from first frame to its own fade being finished. */
 const DARK_MS = 4050;
 /** Lights coming up over the wordmark's last frame. */
-const LIGHT_IN_MS = 500;
+const LIGHT_IN_MS = 400;
 /** Beat to read the line in, then the three ticks it promises. */
-const LIGHT_HOLD_MS = 700 + COUNT_STEP_MS * 3;
-/** The event horizon swallowing the stage: the words break apart and fly
- * into it while the universe rushes up to meet the reader. Long enough to
- * read as its own cinematic beat rather than a quick cut. */
-const SUCK_MS = 2600;
+const LIGHT_HOLD_MS = 420 + COUNT_STEP_MS * 3;
+/** The orb swallowing the stage: the words break apart and fly into it while
+ * the marble rushes up to meet the reader. Still its own beat, just no longer
+ * a long one. */
+const SUCK_MS = 1700;
 /** How long the Gallery Tunnel ride runs before handing off to the site.
  * Short — the tunnel's own raised speed below is what keeps it from feeling
  * slow, so a 2s window reads as a fast pass rather than a long one. */
@@ -144,22 +147,6 @@ const LENS_MASK =
 const LIGHT_ON_MS = DARK_MS + LIGHT_IN_MS;
 
 const SENTENCE_WORDS = ["THIS", "HEADLINE", "WILL", "VANISH", "IN "];
-/** The headline's type size, set on the line so each word's WarpText can size
- * itself in `em` against it. Tuned so all six words hold a single line — the
- * old single-canvas version got there by auto-shrinking the whole sentence,
- * which per-word boxes can't do without every word landing at its own size. */
-const HEADLINE_SIZE = "clamp(1.6rem, 5.3vw, 4.8rem)";
-/**
- * WarpText shrinks its text to fit 86% × 78% of its own box, so a box even
- * slightly too tight makes that word rasterise smaller than its neighbours.
- * Rather than guessing a width per word, each word's wrapper is sized by a
- * hidden copy of the word set in the same face, and the canvas is floated over
- * it with this much bleed on every side — enough that the fit factor stays
- * pinned at 1 for every word, and that the ambient warp has somewhere to push
- * the glyphs into instead of clipping them at the edge.
- */
-const WARP_BLEED = "-16%";
-
 const TAGLINE_1: { text: string; color: string }[] = [
   { text: "The", color: GOLD },
   { text: "Brand", color: WHITE },
@@ -167,74 +154,6 @@ const TAGLINE_1: { text: string; color: string }[] = [
   { text: "The", color: WHITE },
   { text: "Brands.", color: GOLD },
 ];
-
-/**
- * One word of the headline, as its own sheet of warped glass.
- *
- * The hidden span is what actually occupies space — it sets the word in the
- * same face and weight WarpText will rasterise it in, so the box ends up the
- * word's natural width without anyone having to guess at one. The canvas then
- * floats over that box with a margin of bleed all round.
- */
-const WarpWord = forwardRef<HTMLSpanElement, { text: string; color: string; sizer?: string }>(
-  function WarpWord({ text, color, sizer }, ref) {
-    return (
-      <span
-        ref={ref}
-        className="relative inline-block"
-        style={{ willChange: "transform, opacity", padding: "0 0.09em" }}
-      >
-        {/* Kerning and ligatures are turned off deliberately. WarpText draws
-            the word by walking one character at a time and summing advances,
-            which is what an unkerned run measures — leave the browser kerning
-            this and the box comes out narrower than the canvas paints, so long
-            words overflow and collide with their neighbours. The padding above
-            covers the last of the difference (letter-spacing lands after the
-            final character in the DOM but not on the canvas). */}
-        <span
-          aria-hidden
-          className="invisible font-black"
-          style={{
-            letterSpacing: "-0.06em",
-            lineHeight: 1,
-            fontKerning: "none",
-            fontVariantLigatures: "none",
-          }}
-        >
-          {sizer ?? text}
-        </span>
-        <WarpText
-          text={text}
-          color={color}
-          warpStrength={0.08}
-          warpScale={3}
-          speed={0.55}
-          // Held well back from the vendored defaults: six independent lenses
-          // sitting side by side each chasing the pointer on their own made the
-          // sentence squirm, where one canvas for the whole line had bent as a
-          // single sheet. Enough to catch the light, not enough to break the
-          // line's spacing.
-          pointerInfluence={0.3}
-          pointerStrength={0.18}
-          refraction={0.018}
-          ripple
-          fontSize="1em"
-          fontWeight={900}
-          style={{
-            position: "absolute",
-            left: WARP_BLEED,
-            right: WARP_BLEED,
-            top: "-0.32em",
-            bottom: "-0.32em",
-            width: "auto",
-            height: "auto",
-            minHeight: 0,
-          }}
-        />
-      </span>
-    );
-  }
-);
 
 export function Preloader({
   onDone,
@@ -246,6 +165,10 @@ export function Preloader({
    * arriving now, so the reader sees it through the opening rather than after it. */
   onHandoff?: () => void;
 }) {
+  // Phones cannot hold this many WebGL contexts. See useConstrainedDevice —
+  // the heavy layers below are swapped for painted equivalents rather than
+  // simply removed, so the sequence still reads the same, just cheaper.
+  const constrained = useConstrainedDevice();
   const rootRef = useRef<HTMLDivElement>(null);
   const groupWrapRef = useRef<SVGGElement>(null);
   const introClipRef = useRef<SVGRectElement>(null);
@@ -386,8 +309,10 @@ export function Preloader({
     // The countdown runs on React state — one word changing once a second
     // doesn't need a motion value, and it reads better in the markup.
     const ticks = [
-      setTimeout(() => setCount(2), LIGHT_ON_MS + 700 + COUNT_STEP_MS),
-      setTimeout(() => setCount(1), LIGHT_ON_MS + 700 + COUNT_STEP_MS * 2),
+      // Same 420ms read-in beat LIGHT_HOLD_MS is built from, so the last tick
+      // lands exactly as the suck starts rather than drifting off it.
+      setTimeout(() => setCount(2), LIGHT_ON_MS + 420 + COUNT_STEP_MS),
+      setTimeout(() => setCount(1), LIGHT_ON_MS + 420 + COUNT_STEP_MS * 2),
     ];
 
     const controls = animate([
@@ -613,7 +538,12 @@ export function Preloader({
           {/* cobe globe, recoloured white: white ocean, white marker and
               glow. Wrapped `pointer-events-none` — this component drags on
               pointerdown, and nothing under a preloader should be grabbable. */}
+          {/* Skipped on constrained devices: a WebGL globe that also fetches
+              coastline data over the network, sat behind the wordmark's own
+              dot. Dropping it costs a decorative flourish and buys back a
+              context the phone actually needs. */}
           <div className="pointer-events-none h-full w-full">
+            {constrained ? null : (
             <Globe
               markers={KOCHI_MARKER}
               dark={1}
@@ -623,6 +553,7 @@ export function Preloader({
               mapBrightness={8}
               markerSize={0.06}
             />
+            )}
           </div>
         </div>
 
@@ -710,99 +641,129 @@ export function Preloader({
         className="absolute inset-0 z-40 flex items-center justify-center overflow-hidden px-6"
         style={{ opacity: 0 }}
       >
-        {/* The Event Horizon shader, vendored verbatim, in its own layer so
-            the outro can zoom it independently of the text above it. Its
-            tilt/rotate follow the pointer on hover rather than needing a
-            drag. */}
+        {/* The brand orb, in its own layer so the outro can zoom it
+            independently of the text above it. Its tilt follows the pointer
+            on hover rather than needing a drag. */}
         <div ref={universeRef} className="absolute inset-0">
-          <EventHorizon rotationSpeed={0.3} diskIntensity={1.0} chromatic={0.0} />
+          {constrained ? (
+            // The orb, painted. BrandOrb is a real three.js scene with a
+            // bloom pass and a constellation field, and on a phone that's
+            // three more WebGL demands than the budget in
+            // useConstrainedDevice allows — this is the same read (a solid
+            // core, a gold rim, falling off into the navy ground) without a
+            // context.
+            <div
+              aria-hidden
+              className="absolute inset-0"
+              style={{
+                background: [
+                  "radial-gradient(30vmin 30vmin at 50% 50%, rgba(255,241,206,0.95), rgba(230,179,37,0.85) 40%, rgba(230,179,37,0.15) 68%, rgba(230,179,37,0) 78%)",
+                  "radial-gradient(90vmin 90vmin at 50% 50%, rgba(31,53,94,0.55), #02030a 72%)",
+                ].join(","),
+              }}
+            />
+          ) : (
+            <BrandOrb rotationSpeed={0.3} />
+          )}
         </div>
 
-        {/* The headline, one React Bits WarpText per word rather than one for
-            the whole sentence. A single canvas can't be torn into pieces, and
-            a DOM copy laid over it to do the tearing can never match it —
-            WarpText rasterises with its own letter-spacing, line-height and an
-            auto-shrink fit factor, so the swap always showed as a jump in
-            type. Per word, the glass IS the thing that flies, so the collapse
-            starts from exactly the frame already on screen. */}
-<h1
-          ref={contentRef}
-          aria-label="THIS HEADLINE WILL VANISH INs"
-          className="relative flex w-full max-w-[1600px] flex-wrap items-center justify-center gap-x-[0.26em] gap-y-2"
-          style={{ perspective: 1800, transformStyle: "preserve-3d", fontSize: HEADLINE_SIZE }}
-        >
-          {/* The human-drawn marker strokes over the vanishing headline — a
-              rough highlight behind "HEADLINE" and a sketchy underline under
-              "VANISH", the two words whose meaning the countdown is about to
-              make literal. The wobble is the exact opposite of the clinical
-              warp glass above it, on a line whose whole job is to promise its
-              own disappearance.
+        {/* Readability scrim, between the marble and the type.
 
-              Each annotated word is one flying unit: the ref lands on the
-              Highlighter's own span so the suck can carry it (and its
-              sibling `.rough-annotation` svg) away along with the plain
-              words. */}
-          <WarpWord
+            The headline sits dead centre, which is exactly where the orb is
+            brightest — gold type on a lit yellow sphere had almost no
+            contrast left. A band of the page's own near-black navy, widest
+            across the middle and falling off to nothing well before the
+            edges, buys the type its contrast back without boxing it in or
+            hiding the orb.
+
+            A sibling of the orb layer rather than a child, deliberately: the
+            outro scales `universeRef` to rush the marble at the reader, and
+            nested in there this would be scaled with it — the scrim would
+            balloon over the whole frame just as the words are flying away. */}
+        <div
+          aria-hidden
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 62% 30% at 50% 50%, rgba(2,3,10,0.88) 0%, rgba(2,3,10,0.72) 45%, rgba(2,3,10,0.28) 72%, rgba(2,3,10,0) 90%)",
+          }}
+        />
+
+        {/* The headline, restyled around the glass marble behind it.
+
+            It used to be six React Bits WarpText canvases — one warped-glass
+            lens per word — with rough-notation marker scribbles over two of
+            them. Both were wrong once the orb became a polished marble: the
+            hand-drawn wobble fought the glass, the warped lettering competed
+            with the one thing in frame that is supposed to look refractive,
+            and six WebGL contexts sat in front of a scene that needs the
+            budget. This is plain type instead, stacked and staged so the
+            sentence builds: a quiet tracked-out first line, the promise set
+            huge in gold, and the count carrying the weight underneath.
+
+            Still one span per flying unit, so the suck below is unchanged. */}
+        <h1
+          ref={contentRef}
+          aria-label="THIS HEADLINE WILL VANISH IN"
+          className="relative flex w-full max-w-[1600px] flex-col items-center justify-center gap-[0.18em] text-center"
+          style={{
+            perspective: 1800,
+            transformStyle: "preserve-3d",
+            // Last of the separation, on top of the scrim. A tight dark halo
+            // rather than a drop shadow — the orb behind is in motion, so the
+            // type needs to hold its edge against whatever passes under it,
+            // and an offset shadow would only ever cover one side.
+            textShadow: "0 0 18px rgba(2,3,10,0.95), 0 0 42px rgba(2,3,10,0.8)",
+          }}
+        >
+          {/* Line one, quiet: small, tracked wide open, cream at reduced
+              weight. It sets up the sentence without competing with it. */}
+          <span
             ref={(el) => {
               wordRefs.current[0] = el;
             }}
-            text={SENTENCE_WORDS[0]}
-            color={GOLD}
-          />
-          <Highlighter
+            className="block font-sans text-[clamp(0.7rem,1.5vw,1.05rem)] font-medium uppercase tracking-[0.55em] text-cream/60"
+          >
+            {SENTENCE_WORDS[0]} {SENTENCE_WORDS[1]} {SENTENCE_WORDS[2]}
+          </span>
+
+          {/* Line two, the promise: as large as the line will take, black
+              weight, tight tracking, in gold. `-0.04em` because at this size
+              default tracking reads loose and the word stops being one shape. */}
+          <span
             ref={(el) => {
               wordRefs.current[1] = el;
             }}
-            action="highlight"
-            color={SILK_HIGH}
-            strokeWidth={3}
-            iterations={2}
-            animationDuration={900}
-            padding={10}
-            className="inline-flex items-center"
+            className="block font-sans text-[clamp(3rem,11vw,9rem)] font-black uppercase leading-[0.88] tracking-[-0.04em] text-gold"
           >
-            <WarpWord text={SENTENCE_WORDS[1]} color={GOLD} />
-          </Highlighter>
-          <WarpWord
+            {SENTENCE_WORDS[3]}
+          </span>
+
+          {/* Line three: the preposition hairline-ruled on both sides, so the
+              count below reads as the thing being counted to rather than a
+              fourth line of copy. */}
+          <span
             ref={(el) => {
               wordRefs.current[2] = el;
             }}
-            text={SENTENCE_WORDS[2]}
-            color={GOLD}
-          />
-          <Highlighter
+            className="flex items-center justify-center gap-4 font-sans text-[clamp(0.65rem,1.3vw,0.9rem)] font-semibold uppercase tracking-[0.5em] text-cream/45"
+          >
+            <span aria-hidden className="h-px w-[clamp(2rem,7vw,5.5rem)] bg-cream/25" />
+            IN
+            <span aria-hidden className="h-px w-[clamp(2rem,7vw,5.5rem)] bg-cream/25" />
+          </span>
+          {/* The count: cream, the one word on the stack that isn't gold or
+              muted. `tabular-nums` is no use on spelled-out words, so the
+              reflow on each tick is stopped by giving the line a fixed min
+              width sized for THREE, the longest it will ever hold. */}
+          <span
             ref={(el) => {
               wordRefs.current[3] = el;
             }}
-            action="underline"
-            color={GOLD}
-            strokeWidth={3}
-            iterations={2}
-            animationDuration={900}
-            padding={12}
-            className="inline-flex items-center"
+            className="block min-w-[6ch] font-sans text-[clamp(1.6rem,4.6vw,3.6rem)] font-bold uppercase leading-none tracking-[0.14em] text-cream"
           >
-            <WarpWord text={SENTENCE_WORDS[3]} color={GOLD} />
-          </Highlighter>
-          <WarpWord
-            ref={(el) => {
-              wordRefs.current[4] = el;
-            }}
-            text={SENTENCE_WORDS[4]}
-            color={GOLD}
-          />
-          {/* The count word: same glass, its own colour — the one word on
-              the line that isn't gold. Sized off the longest word it will
-              ever hold, so the line doesn't reflow on each tick of the
-              countdown. */}
-          <WarpWord
-            ref={(el) => {
-              wordRefs.current[SENTENCE_WORDS.length] = el;
-            }}
-            text={COUNT_WORDS[count]}
-            sizer="three"
-            color={WHITE}
-          />
+            {COUNT_WORDS[count]}
+          </span>
         </h1>
       </div>
       </>

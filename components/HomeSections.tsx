@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -11,13 +11,22 @@ import { useMagnetic, useNearViewport } from "@/components/Interactions";
 import { ContactDialog } from "@/components/ContactDialog";
 import { Magnify } from "@/components/Magnify";
 import { Silk } from "@/components/Silk";
+import { SectionWipe } from "@/components/SectionWipe";
 import { SlideBreaker } from "@/components/SlideBreaker";
 import { IntroCard } from "@/components/vendor/IntroCard";
+import TargetCursor from "@/components/vendor/TargetCursor";
+import "@/components/vendor/TargetCursor.css";
+import TubesCursor from "@/components/vendor/TubesCursor";
 import LaserFlow from "@/components/reactbits/LaserFlow";
 import "@/components/reactbits/LaserFlow.css";
 
 /** Brand gold, for the props that take a colour rather than a class. */
 const GOLD = "#e6b325";
+
+/** Brand cream, for the cursor's locked-on colour — pops against the CTA's
+    gold fill and the MOVES line the way white would, without pulling the
+    palette off the brand. */
+const CREAM = "#f9f7f2";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -83,7 +92,10 @@ function Introduction() {
   const ref = useDepthReveal<HTMLElement>();
 
   return (
-    <section ref={ref} className="px-6 py-28 sm:py-40">
+    // `id`, not a ref: SectionWipe (HomeSections.tsx) needs this element as a
+    // ScrollTrigger target, and a selector string resolved lazily by GSAP
+    // sidesteps having to coordinate two components' ref timing.
+    <section id="introduction" ref={ref} className="px-6 py-28 sm:py-40">
       <IntroCard className="mx-auto w-full max-w-[130rem]" />
     </section>
   );
@@ -313,12 +325,37 @@ function SixDs() {
 /** The three moves, each its own line of the rhythm. */
 const MOVES = ["Launching.", "Repositioning.", "Expanding."];
 
-function Invitation() {
+function Invitation({
+  active,
+  onVisibilityChange,
+}: {
+  /** Whether this section currently occupies the viewport. The home page's
+      cursor switches at this boundary: the tubes cursor runs everywhere else,
+      and this section's targeting cursor only takes over while `active`. */
+  active: boolean;
+  onVisibilityChange: (visible: boolean) => void;
+}) {
   const ref = useDepthReveal<HTMLElement>();
   const magnetRef = useMagnetic<HTMLButtonElement>({ strength: 0.4, radius: 110 });
   const movesRef = useRef<HTMLParagraphElement>(null);
   const revealRef = useRef<HTMLDivElement>(null);
   const [laserRef, laserNear] = useNearViewport<HTMLDivElement>();
+
+  // Viewport gate for the cursor swap. The section runs for the whole page
+  // lifetime, so the gate has to follow scroll position — once `active` flips
+  // off it must hand back to the tubes cursor as the section scrolls away.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) onVisibilityChange(entry.isIntersecting);
+      },
+      { threshold: 0 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [onVisibilityChange, ref]);
 
   // Written straight to the style attribute rather than through state, the way
   // the demo does it and the way `useCursorVars` does it elsewhere here — the
@@ -442,8 +479,29 @@ function Invitation() {
           black fill, 2px gold edge, 20px radius, above the reveal at z-6 — and
           it starts at 70% of the stage so its top edge is exactly where the
           beam terminates. Unlike the demo's fixed 60%-height box this grows
-          with the copy, which is the whole point of putting the copy in it. */}
-      <div className="relative z-[6] mx-auto mt-[calc(var(--stage)*0.7)] max-w-4xl rounded-[20px] border-2 border-gold bg-[#120F17] px-6 py-14 text-center sm:px-12 sm:py-20">
+          with the copy, which is the whole point of putting the copy in it.
+
+          Widened to `max-w-6xl` so the two closing sentences each read as a
+          single centered line across the card rather than a pair of narrow
+          columns sitting in a sea of black. */}
+      <div className="relative z-[6] mx-auto mt-[calc(var(--stage)*0.7)] max-w-6xl rounded-[20px] border-2 border-gold bg-[#120F17] px-6 py-14 text-center sm:px-12 sm:py-20">
+        {/* The Invitation's own cursor. Fixed to the viewport, so it covers
+            the whole page once mounted — it must therefore only be live while
+            this section actually owns the viewport (`active`), or it would
+            stack on the tubes cursor everywhere else. `display: contents` on
+            the gate wrapper means the toggle adds no box, while `visibility`
+            (inherited) hides the whole fixed cursor with it. */}
+        <div className="contents" style={{ visibility: active ? "visible" : "hidden" }}>
+          <TargetCursor
+            targetSelector=".cursor-target"
+            cursorColor={GOLD}
+            cursorColorOnTarget={CREAM}
+            hideDefaultCursor
+            spinDuration={2}
+            parallaxOn
+          />
+        </div>
+
         <p data-depth className="mb-8 text-sm uppercase tracking-[0.35em] text-gold">
           The Invitation
         </p>
@@ -455,7 +513,7 @@ function Invitation() {
 
         <p
           data-depth
-          className="mx-auto mt-10 max-w-2xl text-[clamp(1.15rem,1.9vw,1.5rem)] leading-[1.8] text-cream/70"
+          className="mx-auto mt-10 max-w-3xl text-[clamp(1.25rem,2vw,1.6rem)] leading-[1.8] text-cream/70"
         >
           We work with <Magnify className="font-bold italic text-gold">ambitious</Magnify>{" "}
           brands ready to make{" "}
@@ -466,10 +524,12 @@ function Invitation() {
 
         {/* The turn in the copy, and the only place it stops being a paragraph.
             Three clipped sentences set as one line of rhythm — sans and loud
-            against the serif headline above them, so the eye lands here. */}
+            against the serif headline above them, so the eye lands here. A
+            `cursor-target` so the TargetCursor's brackets close around the
+            whole line rather than each word. */}
         <p
           ref={movesRef}
-          className="mx-auto mt-12 flex flex-wrap items-baseline justify-center gap-x-6 gap-y-2 font-sans text-[clamp(1.5rem,3.6vw,2.75rem)] font-black uppercase leading-tight tracking-tight text-gold sm:gap-x-10"
+          className="cursor-target mx-auto mt-12 flex flex-wrap items-baseline justify-center gap-x-6 gap-y-2 font-sans text-[clamp(1.5rem,3.6vw,2.75rem)] font-black uppercase leading-tight tracking-tight text-gold sm:gap-x-10"
         >
           {MOVES.map((move) => (
             // `inline-block` so the wipe has a box of its own to clip against;
@@ -482,7 +542,7 @@ function Invitation() {
 
         <p
           data-depth
-          className="mx-auto mt-12 max-w-2xl text-[clamp(1.15rem,1.9vw,1.5rem)] leading-[1.8] text-cream/70"
+          className="mx-auto mt-12 max-w-3xl text-[clamp(1.25rem,2vw,1.6rem)] leading-[1.8] text-cream/70"
         >
           If you’re looking for{" "}
           <span className="font-bold text-cream">a partner,</span>{" "}
@@ -495,7 +555,7 @@ function Invitation() {
             ref={magnetRef}
             type="button"
             onClick={() => setContactOpen(true)}
-            className="group inline-flex min-h-11 items-center gap-3 bg-gold px-9 py-4 text-sm font-bold uppercase tracking-[0.2em] text-charcoal transition-colors duration-300 hover:bg-cream"
+            className="group cursor-target inline-flex min-h-11 items-center gap-3 bg-gold px-9 py-4 text-sm font-bold uppercase tracking-[0.2em] text-charcoal transition-colors duration-300 hover:bg-cream"
           >
             Tell us where it hurts
             <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
@@ -509,6 +569,14 @@ function Invitation() {
 }
 
 export function HomeSections() {
+  // Cursor handoff. `invitationActive` follows the Invitation's own
+  // IntersectionObserver (inside the section): while it owns the viewport the
+  // TargetCursor is live and the tubes cursor is blanked, everywhere else the
+  // tubes cursor is the page's pointer. Latched in _this_ component because
+  // the two cursor mounts live at different tree positions (tubes here, the
+  // target cursor inside the Invitation) and both must agree on one value.
+  const [invitationActive, setInvitationActive] = useState(false);
+
   return (
     <>
       {/* One camera move, one space. The scene is fixed behind the whole run
@@ -521,16 +589,33 @@ export function HomeSections() {
           back on is one line. */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 bg-black" />
       <CinematicScene />
+      {/* The site-wide cursor: threejs's tubes, tinted in brand navy + gold,
+          drawn between the starfield (z-2) and the copy (z-10) so it reads as
+          light behind the type, the way the component's own demo layers it.
+          `visibility` (not unmount) toggles it during the invitation so the
+          swap is instant. */}
+      {/* z-20: the Belief's Spline canvas lives inside the z-10 copy wrapper
+          below, so at z-5 the cursor was stacking *under* that canvas and
+          vanishing every time it crossed over the 3D scene. Raised above the
+          whole page instead — `pointer-events-none` + `mix-blend-screen`
+          means it still reads as light passing over the copy, not a layer
+          sitting on top of it. */}
+      <TubesCursor className="z-20" hidden={invitationActive} />
       {/* Clipped sideways: the tilted vertical cards swing their corners a few
           px past the viewport at the extremes of the effect, which is enough
           to put a horizontal scrollbar on the whole page. */}
+      {/* The Belief closes on "Attention is rented. Memory is owned."; this is
+          the wipe that carries the reader across the seam into Introduction
+          rather than a plain scroll cut. Scoped here rather than inside
+          either section since it belongs to neither — it's the boundary. */}
+      <SectionWipe trigger="#introduction" />
       <div className="relative z-10 overflow-x-hidden">
         <BeliefSection />
         <Introduction />
         <Verticals />
         <SlideBreaker />
         <SixDs />
-        <Invitation />
+        <Invitation active={invitationActive} onVisibilityChange={setInvitationActive} />
       </div>
     </>
   );

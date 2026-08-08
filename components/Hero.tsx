@@ -2,9 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { animate } from "motion/react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
 import { TextReveal } from "@/components/TextReveal";
 import { ScrollHint } from "@/components/ScrollHint";
 import { Typewriter } from "@/components/Typewriter";
+
+gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 // Brand book palette.
 const GOLD = "#e6b325";
@@ -63,6 +68,48 @@ const TYPE_SPEED_MS = 200;
 const TYPE_RUN_MS = SUBHEADING.length * TYPE_SPEED_MS;
 const SCROLL_HINT_DELAY_MS = TYPE_DELAY_MS + TYPE_RUN_MS + 400;
 
+/** The hand-off zoom. The hero doesn't scroll away — it is pinned for one
+ *  viewport of scroll and flown *through*, and the Belief picks the same
+ *  camera move up on the other side (BeliefSection.tsx). Scrubbed, so the
+ *  scrollbar is the camera position and dragging back runs it in reverse for
+ *  free. `+=100%` of pin is what puts the Belief's top exactly at the bottom
+ *  of the viewport as the pin lets go, so the two halves meet with no gap. */
+const FLY_THROUGH_SCALE = 6.5;
+
+/**
+ * Auto-complete for a scrubbed section transition.
+ *
+ * Nearest-end snapping (`snapTo: [0, 1]`) would drag the reader *backwards*
+ * out of a move they had just started, any time they stopped before halfway.
+ * Committing to the direction of travel instead means a nudge of the wheel
+ * finishes the zoom and a nudge the other way rewinds it — the camera is never
+ * left parked between two sections, which is the whole point of snapping it.
+ *
+ * `delay` is short because the trigger fires when scrolling stops, and the
+ * gap between "I stopped" and "the page moved on its own" is what reads as lag.
+ * `inertia: false` for the same reason: velocity projection would let a hard
+ * flick overshoot past the snap point and skip the move entirely.
+ *
+ * The `value` guard is load-bearing, not defensive. Resting exactly at an end
+ * is the normal state — it is where the page sits the whole time the preloader
+ * is up — and a rule that only ever answers "0 or 1" answers "1" there too.
+ * ScrollTrigger settling once on its own during the intro was enough to fire
+ * it: the page scrolled a full viewport behind the preloader and handed the
+ * reader a hero they had already flown past. Returning the value unchanged at
+ * either end makes the snap a no-op until there is a half-finished move to
+ * finish, which is also exactly the "after a slight scroll" behaviour.
+ */
+export const COMMIT_SNAP = {
+  snapTo: (value: number, self?: { direction: number }) => {
+    if (value <= 0.001 || value >= 0.999) return value;
+    return self && self.direction === -1 ? 0 : 1;
+  },
+  duration: { min: 0.3, max: 0.7 },
+  delay: 0.04,
+  inertia: false,
+  ease: "power2.inOut",
+} as const;
+
 export function Hero({ active = true }: { active?: boolean }) {
   // The disappearing headline and its countdown now open the site, inside the
   // preloader, and end with the lights going out. The hero picks the thought
@@ -76,6 +123,12 @@ export function Hero({ active = true }: { active?: boolean }) {
   const headlineRef = useRef<HTMLHeadingElement>(null);
   const subRef = useRef<HTMLParagraphElement>(null);
   const scrimRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  // Separate from `contentRef` on purpose: that one is owned frame-by-frame by
+  // the motion arrival above, and two drivers writing the same `transform`
+  // would fight. This wrapper holds the scrim *and* the copy, so the whole
+  // hero — air included — flies as one object.
+  const zoomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Hero renders from page load, underneath the preloader/transition — but
@@ -142,28 +195,63 @@ export function Hero({ active = true }: { active?: boolean }) {
     return () => controls.stop();
   }, [phase]);
 
+  useGSAP(
+    () => {
+      const mm = gsap.matchMedia();
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top top",
+            end: "+=100%",
+            pin: true,
+            scrub: true,
+            snap: COMMIT_SNAP,
+          },
+        });
+        // Scale runs linear across the whole pin — that is the camera, and a
+        // camera that eases is a camera that stutters against the scrollbar.
+        tl.to(zoomRef.current, { scale: FLY_THROUGH_SCALE, ease: "none", duration: 1 }, 0)
+          // The fade is held back and then dropped quickly, so the copy stays
+          // readable well into the approach instead of dissolving the moment
+          // the wheel moves, and is fully gone before the pin releases.
+          .to(zoomRef.current, { opacity: 0, filter: "blur(16px)", ease: "power2.in", duration: 0.75 }, 0.25);
+      });
+      return () => mm.revert();
+    },
+    { scope: sectionRef }
+  );
+
   return (
-    <section className="relative flex h-screen w-full items-center justify-center overflow-hidden">
+    // `z-20`: pinning swaps the section to `position: fixed`, which promotes it
+    // into the positioned-element layer alongside the page's fixed black
+    // ground (z-0, HomeSections) — and that ground comes later in the DOM, so
+    // at equal z-index it would paint straight over the pinned hero.
+    <section
+      ref={sectionRef}
+      className="relative z-20 flex h-screen w-full items-center justify-center overflow-hidden"
+    >
       {/* No background of its own. The page's cinematic scene is fixed to the
           viewport and sits behind this too, so the hero opens in the same
           space every section below it lives in — the story starts in the room
           rather than cutting into it. A field here would only have been
           painted over by that scene anyway, at the cost of a WebGL context. */}
 
-      {/* Soft navy scrim, so a star or a stray highlight never lands straight
-          through the headline and eats its contrast. Falls off well before
-          the edges, keeping the field continuous. */}
-      <div
-        ref={scrimRef}
-        aria-hidden
-        className="absolute inset-0 z-[1]"
-        style={{
-          background:
-            "radial-gradient(ellipse 62% 46% at 50% 48%, rgba(31,53,94,0.78), rgba(31,53,94,0) 72%)",
-        }}
-      />
+      <div ref={zoomRef} className="absolute inset-0 flex items-center justify-center">
+        {/* Soft navy scrim, so a star or a stray highlight never lands straight
+            through the headline and eats its contrast. Falls off well before
+            the edges, keeping the field continuous. */}
+        <div
+          ref={scrimRef}
+          aria-hidden
+          className="absolute inset-0 z-[1]"
+          style={{
+            background:
+              "radial-gradient(ellipse 62% 46% at 50% 48%, rgba(31,53,94,0.78), rgba(31,53,94,0) 72%)",
+          }}
+        />
 
-      <div className="relative z-10 flex w-full flex-col items-center px-4 text-center">
+        <div className="relative z-10 flex w-full flex-col items-center px-4 text-center">
         {phase === "second" && (
           <div
             ref={contentRef}
@@ -218,6 +306,7 @@ export function Hero({ active = true }: { active?: boolean }) {
             <ScrollHint delay={SCROLL_HINT_DELAY_MS} />
           </div>
         )}
+        </div>
       </div>
     </section>
   );

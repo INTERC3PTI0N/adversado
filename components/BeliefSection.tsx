@@ -5,6 +5,7 @@ import Spline from "@splinetool/react-spline";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import { COMMIT_SNAP } from "@/components/Hero";
 import { RepelText } from "@/components/Interactions";
 import { Magnify } from "@/components/Magnify";
 import { ScrollReveal } from "@/components/ScrollReveal";
@@ -80,6 +81,39 @@ export function BeliefSection() {
           ease: "power3.out",
           scrollTrigger: { trigger: ref.current, start: "top 72%", once: true },
         });
+
+        // The receiving half of the hero's fly-through (Hero.tsx). The hero is
+        // pinned and flown past for one viewport of scroll; this section is
+        // waiting on the far side of it, small and far off, and closes on the
+        // camera as it rises. Scrubbed, so scrolling back reverses it exactly.
+        //
+        // Animating the inner block, not the <section>: the section is the
+        // trigger, and ScrollTrigger measures a trigger's *transformed* box —
+        // scaling the thing whose position decides the progress feeds back on
+        // itself and the scrub jitters. The section stays untransformed and
+        // only what's inside it moves.
+        //
+        // Origin near the top rather than dead centre: this block runs well
+        // past a viewport tall, so a centred origin at 0.42 scale would park
+        // its first line hundreds of pixels below the fold and eat most of the
+        // runway before anything was visible. No blur here either — the Spline
+        // canvas in row two would be re-rastered every frame for it.
+        gsap.from("[data-zoom]", {
+          scale: 0.42,
+          opacity: 0,
+          transformOrigin: "50% 10%",
+          ease: "none",
+          scrollTrigger: {
+            trigger: ref.current,
+            start: "top bottom",
+            end: "top 18%",
+            scrub: true,
+            // Same rule as the hero's half, imported rather than restated —
+            // the two are one move and a snap that behaved differently on
+            // each side of the handoff would read as two.
+            snap: COMMIT_SNAP,
+          },
+        });
       });
       return () => mm.revert();
     },
@@ -88,7 +122,7 @@ export function BeliefSection() {
 
   return (
     <section ref={ref} className="relative px-6 py-28 sm:px-10 sm:py-36 lg:px-16">
-      <div className="mx-auto max-w-[1500px]">
+      <div data-zoom className="mx-auto max-w-[1500px]">
         {/* ── Row 1: the headline, across the whole width ───────────────── */}
         {/* Matched to every other section's eyebrow (gold, `text-sm`,
             `0.35em`). It was the only one set in cream at `Micro` size, and

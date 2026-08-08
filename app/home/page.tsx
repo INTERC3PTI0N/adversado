@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Preloader } from "@/components/Preloader";
 import { Hero } from "@/components/Hero";
 import { HomeSections } from "@/components/HomeSections";
-import { CursorTrail } from "@/components/CursorTrail";
-import SpinCursor from "@/components/vendor/SpinCursor";
+
+gsap.registerPlugin(ScrollTrigger);
 
 export default function Home() {
   const [loading, setLoading] = useState(true);
@@ -23,6 +25,11 @@ export default function Home() {
   // wheel scrolls the homepage out of frame while the intro is still playing.
   useEffect(() => {
     document.body.style.overflow = loading ? "hidden" : "";
+    // Every ScrollTrigger on the page is built while this lock is on, so they
+    // all measure a document with no scroll range — the hero's pin in
+    // particular comes out with a start and an end of zero and simply never
+    // fires. Nothing tells them the lock has lifted, so this has to.
+    if (!loading) ScrollTrigger.refresh();
     return () => {
       document.body.style.overflow = "";
     };
@@ -50,20 +57,26 @@ export default function Home() {
           onDone={() => setLoading(false)}
         />
       )}
-      <Hero active={heroActive} />
+      {/* Plain block wrapper, and it has to stay one. ScrollTrigger pins the
+          hero by swapping in a pin-spacer that reserves the scrolled distance
+          as padding — and as a direct child of the flex column above, that
+          padding was absorbed instead of adding height, so the spacer came out
+          one viewport short and every trigger below it (the Belief's half of
+          the zoom) measured against the wrong document position. */}
+      <div>
+        <Hero active={heroActive} />
+      </div>
       <HomeSections />
 
-      {/* Cursor. Fixed over the whole viewport and above everything, because
-          it replaces the pointer rather than decorating a panel — it hides
-          the native cursor for exactly the area its own frame covers. The
-          trail sits just under it, so the ring stays the sharp thing and the
-          trail reads as its wake rather than competing with it. */}
-      <div className="pointer-events-none fixed inset-0 z-[55]">
-        <CursorTrail />
-      </div>
-      <div className="pointer-events-none fixed inset-0 z-[60]">
-        <SpinCursor label={false} fillColor="#e6b325" cursorSize={34} enableGlow glowColor="#e6b325" glowIntensity={45} />
-      </div>
+      {/* Cursor. Both live inside HomeSections, which owns the swap: the
+          site-wide tubes cursor (threejs, brand navy + gold) renders under the
+          copy everywhere, and the React Bits TargetCursor takes over only
+          while the Invitation occupies the viewport, locking its brackets
+          around `.cursor-target` (the move set and CTA). HomeSections pairs
+          them through one `invitationActive` bit so only one is visible at a
+          time. There's no cursor markup here — the page's old SpinCursor +
+          CursorTrail stack was removed when the tubes cursor took its place,
+          since a second/third fixed cursor would stack on top of it. */}
     </div>
   );
 }

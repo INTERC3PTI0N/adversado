@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Spline from "@splinetool/react-spline";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -19,6 +19,48 @@ function Micro({ children, className }: { children: React.ReactNode; className?:
     >
       {children}
     </span>
+  );
+}
+
+/** The size the scene is framed for. Spline positions its camera in world
+ *  units rather than CSS pixels, so shrinking the canvas crops the scene
+ *  instead of zooming it out — on a phone that cut the keyboard in half. */
+const SCENE_W = 800;
+const SCENE_H = 1000;
+
+/** Renders the scene at its design size and scales the whole canvas to fit the
+ *  available box, so the framing is identical on a phone and a desktop. */
+function FitScene({ scene }: { scene: string }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0);
+
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      setScale(Math.min(width / SCENE_W, height / SCENE_H));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div ref={box} className="relative min-h-0 flex-1 overflow-hidden">
+      <div
+        className="absolute left-1/2 top-1/2 origin-center"
+        style={{
+          width: SCENE_W,
+          height: SCENE_H,
+          // Held invisible until the first measurement, or it paints once at
+          // full size and jumps.
+          visibility: scale ? "visible" : "hidden",
+          transform: `translate(-50%, -50%) scale(${scale})`,
+        }}
+      >
+        <Spline scene={scene} className="h-full w-full" />
+      </div>
+    </div>
   );
 }
 
@@ -73,15 +115,23 @@ export function BeliefSection() {
         <div className="mt-20 grid items-stretch gap-10 md:mt-28 md:grid-cols-2 md:gap-0">
           {/* The panel the tower lives in. A real box now rather than a
               full-height pane, so the camera is framed to its aspect. */}
+          {/* Sized by aspect rather than viewport height: the Spline camera is
+              framed to the scene's own proportions, so a box that changes shape
+              between a phone and a desktop crops or strands it. `max-h` is the
+              only vh here, and it just stops a tall column on a short screen. */}
           <div
             data-reveal
-            className="relative h-[42vh] min-h-[200px] md:h-[90vh] md:pr-14"
+            className="flex w-full flex-col gap-6 aspect-[4/5] max-h-[85vh] md:aspect-[3/4] md:pr-0"
           >
-            <Spline scene="https://prod.spline.design/0jHViobWfk5chD2D/scene.splinecode" />
+            <style>{`.spline-watermark { display: none !important; }`}</style>
 
-            <span className="pointer-events-none absolute left-0 top-1/2 origin-left -translate-y-1/2 -rotate-90">
-              <Micro>Memory, not applause</Micro>
-            </span>
+            {/* In flow above the scene rather than absolutely over it — as an
+                overlay it landed on the staircase at every width below md. */}
+            <Micro className="shrink-0 !text-[clamp(0.65rem,1.4vw,0.85rem)] !tracking-[0.3em] !text-cream/70">
+              * No two brands are alike
+            </Micro>
+
+            <FitScene scene="https://prod.spline.design/GLgtPJT5x743jtOQ/scene.splinecode" />
           </div>
 
           {/* Hairline between the two, the way the schematic draws it. Only

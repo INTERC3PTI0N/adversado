@@ -30,7 +30,6 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
  *   Belief       — the monolith, craned down as you scroll past it
  *   Introduction — navy wash that tracks the cursor across the whole block
  *   Verticals    — accordion of shader panels, magnetic CTA under them
- *   Refusals     — hover strikes the line through and swells it
  *   Six Ds       — hovering one step dims the rest
  *   Invitation   — gold wash and a magnetic CTA that leans toward the pointer
  */
@@ -56,12 +55,6 @@ const VERTICALS = [
     tagline: "Make people feel it.",
     quip: "Nobody ever fell in love with a PDF.",
   },
-];
-
-const REFUSALS = [
-  "We don’t execute without strategy.",
-  "We don’t say yes to briefs we don’t believe in.",
-  "We don’t compete on price.",
 ];
 
 const SIX_DS = [
@@ -228,66 +221,6 @@ function Verticals() {
 
 /* ── What We Don’t Do ───────────────────────────────────────────────────── */
 
-function Refusals() {
-  const ref = useRef<HTMLElement>(null);
-  const linesRef = useRef<HTMLUListElement>(null);
-
-  useGSAP(
-    () => {
-      const mm = gsap.matchMedia();
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
-        const lines = gsap.utils.toArray<HTMLElement>("li", linesRef.current);
-        // Clip-path wipe rather than a fade: the refusals are meant to land
-        // like statements being struck onto the page, not drift in.
-        gsap.from(lines, {
-          clipPath: "inset(0 100% 0 0)",
-          duration: 0.8,
-          ease: "power4.inOut",
-          stagger: 0.15,
-          scrollTrigger: { trigger: ref.current, start: "top 70%", once: true },
-        });
-        gsap.from("[data-depth]", {
-          opacity: 0,
-          duration: 0.6,
-          ease: "power2.out",
-          stagger: 0.1,
-          scrollTrigger: { trigger: ref.current, start: "top 70%", once: true },
-        });
-      });
-      return () => mm.revert();
-    },
-    { scope: ref }
-  );
-
-  return (
-    <section ref={ref} className="px-6 py-28 sm:py-40">
-      <div className="mx-auto max-w-5xl">
-        <p data-depth className="mb-10 text-sm uppercase tracking-[0.35em] text-gold">
-          What We Don’t Do
-        </p>
-        <ul ref={linesRef} className="space-y-9">
-          {REFUSALS.map((line) => (
-            <li key={line} className="group w-fit max-w-full cursor-default">
-              {/* Sized to hold the longest refusal on one line from `sm` up.
-                  Below that it's allowed to wrap, and the strike still lands
-                  correctly because it's painted per line fragment rather than
-                  as one bar across the block. */}
-              <span className="inline-block origin-left transition-transform duration-500 group-hover:scale-[1.02]">
-                <span className="strike-hover text-[clamp(1.2rem,3vw,2.9rem)] font-bold leading-[1.25] tracking-tight text-cream sm:whitespace-nowrap">
-                  {line}
-                </span>
-              </span>
-            </li>
-          ))}
-        </ul>
-        <p data-depth className="mt-10 font-serif text-lg font-light italic text-cream/45">
-          Saves everyone time, honestly.
-        </p>
-      </div>
-    </section>
-  );
-}
-
 /* ── How We Work ────────────────────────────────────────────────────────── */
 
 function SixDs() {
@@ -445,7 +378,6 @@ export function HomeSections() {
         <BeliefSection />
         <Introduction />
         <Verticals />
-        <Refusals />
         <SixDs />
         <Invitation />
       </div>

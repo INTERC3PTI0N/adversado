@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -10,8 +11,7 @@ import { BeliefSection } from "@/components/BeliefSection";
 import { useMagnetic, useNearViewport } from "@/components/Interactions";
 import { ContactDialog } from "@/components/ContactDialog";
 import { Magnify } from "@/components/Magnify";
-import { Silk } from "@/components/Silk";
-import { SectionWipe } from "@/components/SectionWipe";
+import { ClipScrollPanel } from "@/components/ClipScrollPanel";
 import { SlideBreaker } from "@/components/SlideBreaker";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { RepelText } from "@/components/Interactions";
@@ -48,7 +48,7 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
  * saying rather than repeating one effect six times:
  *   Belief       — fly-through into the belief, then the navy memory stamp
  *   Introduction — gold inverse of that stamp: welcome argument + wordmark
- *   Verticals    — accordion of shader panels, magnetic CTA under them
+ *   Verticals    — pinned pack-44 flip cards, magnetic CTA under them
  *   Six Ds       — hovering one step dims the rest
  *   Invitation   — gold wash and a magnetic CTA that leans toward the pointer
  */
@@ -58,21 +58,33 @@ const VERTICALS = [
     name: "Brand Foundation",
     tagline: "Build what you stand on.",
     quip: "Because “vibes” is not a positioning.",
+    rank: "A",
+    cat: "/images/cards/1.png",
+    catAlt: "Gold cat sitting, head tilted",
   },
   {
     name: "Brand Marketing",
     tagline: "Say it so people listen.",
     quip: "Talking is not the same as being heard.",
+    rank: "K",
+    cat: "/images/cards/2.png",
+    catAlt: "Navy cat in a play-bow stretch",
   },
   {
     name: "Brand Reach",
     tagline: "Make sure the right people find you.",
     quip: "Van Gogh sold one painting in his lifetime. Don’t be Van Gogh.",
+    rank: "Q",
+    cat: "/images/cards/3.png",
+    catAlt: "Gold cat stretching forward",
   },
   {
     name: "Brand Experience",
     tagline: "Make people feel it.",
     quip: "Nobody ever fell in love with a PDF.",
+    rank: "J",
+    cat: "/images/cards/4.png",
+    catAlt: "Gold cat mid-leap",
   },
 ];
 
@@ -86,12 +98,33 @@ const SIX_DS = [
 ];
 
 /* ── The Introduction ───────────────────────────────────────────────────── */
-/* Same full-bleed statement frame as the campaign / memory section, with the
- * colours inverted: gold field, navy type, navy hits. Welcome copy lands in
- * the same quiet/loud split. */
+/* Full-bleed dusk landscape from `background-1.svg` (split under
+ * `/images/welcome-bg/`). Cream type sits directly on the art — no cream plate —
+ * with a soft shadow so navy/gold hills stay visible and copy stays legible. */
+
+const WELCOME_BG_LAYERS = [
+  { src: "/images/welcome-bg/00-sky.svg", offset: -6 },
+  { src: "/images/welcome-bg/01-hill-far.svg", offset: -4.5, dim: 0.42 },
+  { src: "/images/welcome-bg/02-hill-mid.svg", offset: -3.5, dim: 0.48 },
+  { src: "/images/welcome-bg/03-hill-near.svg", offset: -2.5, dim: 0.52 },
+  { src: "/images/welcome-bg/04-detail-dark.svg", offset: -2 },
+  { src: "/images/welcome-bg/05-hill-right.svg", offset: -1.5, dim: 0.55 },
+  { src: "/images/welcome-bg/06-accent-red.svg", offset: -1, dim: 0.55 },
+  { src: "/images/welcome-bg/07-layer-c1.svg", offset: -0.5 },
+  { src: "/images/welcome-bg/08-foreground.svg", offset: 0.5 },
+  { src: "/images/welcome-bg/09-layer-c2.svg", offset: 1 },
+  { src: "/images/welcome-bg/10-layer-c3.svg", offset: 1.5 },
+  { src: "/images/welcome-bg/11-layer-c4.svg", offset: 2 },
+  { src: "/images/welcome-bg/12-layer-c5.svg", offset: 2.5 },
+  { src: "/images/welcome-bg/13-detail-path.svg", offset: 3 },
+] as const;
+
+/** Soft dark halo — keeps cream type crisp over busy gold/navy silhouette. */
+const WELCOME_TEXT_SHADOW =
+  "0 0 1px rgba(8,14,28,0.9), 0 2px 4px rgba(8,14,28,0.85), 0 8px 32px rgba(8,14,28,0.75), 0 0 64px rgba(8,14,28,0.55)";
 
 function WelcomeHit({ children }: { children: React.ReactNode }) {
-  return <span className="font-bold text-navy">{children}</span>;
+  return <span className="font-bold text-gold">{children}</span>;
 }
 
 /** Scales its child down to fit the section height on short/wide viewports
@@ -141,221 +174,367 @@ function FitWelcome({ children }: { children: React.ReactNode }) {
 }
 
 function Introduction() {
-  const sectionRef = useRef<HTMLElement>(null);
   const [playId, setPlayId] = useState(0);
+  const open = () => setPlayId((n) => n + 1);
+
+  return (
+    // Clip-path scrub from pack 51 — opens as Campaign scrolls away, closes
+    // toward Verticals. Sticky viewport panel inside a 150vh shell.
+    <ClipScrollPanel
+      id="introduction"
+      heightVh={160}
+      onOpen={open}
+      className="bg-navy"
+    >
+      {/* Atropos is larger than the viewport so 3D tilt never exposes its
+          rectangle edges. Content is inset back to the visible frame.
+          Explicit % width/height (not inset) — inset % was collapsing height. */}
+      <Atropos
+        className="absolute left-[-45%] top-[-45%] h-[190%] w-[190%]"
+        shadow={false}
+        highlight={false}
+        rotateTouch={false}
+        rotateXMax={9}
+        rotateYMax={9}
+        activeOffset={36}
+        innerClassName="relative h-full w-full overflow-hidden"
+      >
+        {WELCOME_BG_LAYERS.map((layer) => (
+          // Atropos root is already 190% of the viewport — layers just cover it.
+          // Avoid CSS translate here — Atropos owns transform on offset nodes.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={layer.src}
+            src={`${layer.src}?v=dusk`}
+            alt=""
+            aria-hidden
+            data-atropos-offset={layer.offset}
+            className="pointer-events-none absolute inset-0 h-full w-full max-w-none object-cover select-none"
+            style={
+              "dim" in layer
+                ? { filter: `brightness(${layer.dim}) contrast(1.15) saturate(1.05)` }
+                : undefined
+            }
+            draggable={false}
+          />
+        ))}
+
+        {/* 45/190 ≈ 23.7% — maps the oversized root back to the section frame. */}
+        <div
+          data-atropos-offset="4"
+          className="absolute inset-[23.7%] z-10 flex flex-col px-6 py-[clamp(1rem,3.5vh,5rem)] sm:px-10 lg:px-16"
+        >
+          <FitWelcome>
+            <div
+              className="mx-auto flex w-full max-w-[1500px] flex-col items-center text-center"
+              style={{ textShadow: WELCOME_TEXT_SHADOW }}
+            >
+              <h2 className="font-sans text-[clamp(2.25rem,min(9vw,11vh),6.5rem)] font-black leading-[0.95] tracking-[-0.04em] text-cream">
+                Welcome to <RepelText text="ADVERSADO" radius={140} strength={22} />
+              </h2>
+              <p className="mt-[clamp(0.75rem,1.5vh,1.5rem)] font-serif text-[clamp(1.05rem,min(2.4vw,2.8vh),1.85rem)] font-light italic leading-[1.4] tracking-[0.02em] text-cream/85">
+                Brand Behind the Brands.
+              </p>
+
+              <div className="relative mt-[clamp(1.5rem,4vh,5rem)] w-full">
+                {/* Soft navy bloom only — darkens the art under type without a cream plate. */}
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute left-1/2 top-1/2 h-[135%] w-[115%] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(ellipse_at_center,rgba(8,14,28,0.88)_0%,rgba(8,14,28,0.55)_45%,rgba(8,14,28,0.2)_68%,transparent_82%)]"
+                />
+                <ScrollReveal
+                  scrub={false}
+                  playId={playId}
+                  baseOpacity={0.15}
+                  enableBlur={false}
+                  className="relative w-full font-sans text-[clamp(1.35rem,min(4.4vw,5.2vh),4rem)] font-semibold leading-[1.75] tracking-[-0.015em] text-cream"
+                >
+                  Bringing branding, advertising, marketing, events and performance{" "}
+                  <WelcomeHit>under one roof.</WelcomeHit> Because your customers don’t
+                  experience your business <WelcomeHit>in departments.</WelcomeHit> Why
+                  should your <WelcomeHit>marketing?</WelcomeHit>
+                </ScrollReveal>
+              </div>
+            </div>
+          </FitWelcome>
+        </div>
+      </Atropos>
+    </ClipScrollPanel>
+  );
+}
+
+/* ── The Four Verticals ─────────────────────────────────────────────────── */
+/* Pack 44 (Lusion cards): pin the stage, spread the stack, then flip each
+ * card to the vertical. Faces are brand playing cards — navy backs, cream
+ * ranks, and the four cats from /public/images/cards. */
+
+const CARD_SPREAD_X = [14, 38, 62, 86];
+const CARD_SPREAD_ROT = [-15, -7.5, 7.5, 15];
+
+function Verticals() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const tiltRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const ctaRef = useMagnetic<HTMLAnchorElement>({ strength: 0.35, radius: 100 });
 
   useGSAP(
     () => {
-      const mm = gsap.matchMedia();
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
-        const SECTION_SNAP = {
-          snapTo: (value: number, self?: { direction: number }) => {
-            if (value <= 0.001 || value >= 0.999) return value;
-            const goingBack = self && self.direction === -1;
-            if (goingBack) return value < 0.97 ? 0 : 1;
-            return value > 0.02 ? 1 : 0;
-          },
-          duration: { min: 0.04, max: 0.1 },
-          delay: 0,
-          inertia: false,
-          ease: "power3.out",
-        } as const;
+      const stage = stageRef.current;
+      if (!stage) return;
 
-        ScrollTrigger.create({
-          trigger: sectionRef.current,
-          start: "top bottom",
-          end: "top top",
-          snap: SECTION_SNAP,
-        });
-        ScrollTrigger.create({
-          trigger: sectionRef.current,
-          start: "top top",
-          end: "+=100%",
-          pin: true,
-          snap: SECTION_SNAP,
-          onEnter: () => setPlayId((n) => n + 1),
-          onEnterBack: () => setPlayId((n) => n + 1),
+      const mm = gsap.matchMedia();
+
+      const flipToBack = (card: HTMLDivElement) => {
+        const front = card.querySelector<HTMLElement>("[data-card-front]");
+        const back = card.querySelector<HTMLElement>("[data-card-back]");
+        if (front) front.style.transform = "rotateY(-180deg)";
+        if (back) back.style.transform = "rotateY(0deg)";
+      };
+
+      // Desktop: scrubbed spread + flip (pack 44).
+      mm.add(
+        "(min-width: 768px) and (prefers-reduced-motion: no-preference)",
+        () => {
+          const cards = cardRefs.current.filter(Boolean) as HTMLDivElement[];
+          const tilts = tiltRefs.current.filter(Boolean) as HTMLDivElement[];
+          if (cards.length !== VERTICALS.length || tilts.length !== VERTICALS.length) return;
+
+          const scrollLen = () => window.innerHeight * 3;
+
+          ScrollTrigger.create({
+            trigger: stage,
+            start: "top top",
+            end: () => `+=${scrollLen()}`,
+            pin: true,
+            pinSpacing: true,
+          });
+
+          cards.forEach((card, index) => {
+            gsap.fromTo(
+              card,
+              { left: "50%" },
+              {
+                left: `${CARD_SPREAD_X[index]}%`,
+                ease: "none",
+                scrollTrigger: {
+                  trigger: stage,
+                  start: "top top",
+                  end: () => `+=${window.innerHeight}`,
+                  scrub: 0.5,
+                },
+              }
+            );
+
+            gsap.fromTo(
+              tilts[index],
+              { rotation: 0 },
+              {
+                rotation: CARD_SPREAD_ROT[index],
+                ease: "none",
+                scrollTrigger: {
+                  trigger: stage,
+                  start: "top top",
+                  end: () => `+=${window.innerHeight}`,
+                  scrub: 0.5,
+                },
+              }
+            );
+          });
+
+          cards.forEach((card, index) => {
+            const front = card.querySelector<HTMLElement>("[data-card-front]");
+            const back = card.querySelector<HTMLElement>("[data-card-back]");
+            const tilt = tilts[index];
+            if (!front || !back || !tilt) return;
+
+            const staggerOffset = index * 0.05;
+            const startOffset = 1 / 3 + staggerOffset;
+            const endOffset = 2 / 3 + staggerOffset;
+
+            ScrollTrigger.create({
+              trigger: stage,
+              start: "top top",
+              end: () => `+=${scrollLen()}`,
+              scrub: 1,
+              onUpdate: (self) => {
+                const progress = self.progress;
+                if (progress < startOffset) {
+                  front.style.transform = "rotateY(0deg)";
+                  back.style.transform = "rotateY(180deg)";
+                  return;
+                }
+                if (progress > endOffset) {
+                  front.style.transform = "rotateY(-180deg)";
+                  back.style.transform = "rotateY(0deg)";
+                  gsap.set(tilt, { rotation: 0 });
+                  return;
+                }
+
+                const t = (progress - startOffset) / (1 / 3);
+                front.style.transform = `rotateY(${-180 * t}deg)`;
+                back.style.transform = `rotateY(${180 - 180 * t}deg)`;
+                gsap.set(tilt, { rotation: CARD_SPREAD_ROT[index] * (1 - t) });
+              },
+            });
+          });
+        }
+      );
+
+      // Desktop, reduced motion: final fan, already flipped.
+      mm.add("(min-width: 768px) and (prefers-reduced-motion: reduce)", () => {
+        const cards = cardRefs.current.filter(Boolean) as HTMLDivElement[];
+        const tilts = tiltRefs.current.filter(Boolean) as HTMLDivElement[];
+        cards.forEach((card, index) => {
+          gsap.set(card, { left: `${CARD_SPREAD_X[index]}%` });
+          if (tilts[index]) gsap.set(tilts[index], { rotation: 0 });
+          flipToBack(card);
         });
       });
-      mm.add("(prefers-reduced-motion: reduce)", () => {
-        setPlayId((n) => n + 1);
+
+      // Mobile: quiet 2×2 grid, backs showing.
+      mm.add("(max-width: 767px)", () => {
+        const cards = cardRefs.current.filter(Boolean) as HTMLDivElement[];
+        cards.forEach((card) => {
+          gsap.set(card, { clearProps: "left,transform" });
+          flipToBack(card);
+        });
       });
+
       return () => mm.revert();
     },
     { scope: sectionRef, dependencies: [] }
   );
 
   return (
-    // `id` kept for SectionWipe — GSAP resolves the selector lazily.
-    // `data-nav-navy`: sticky wordmark swaps to navy letters + white O-dot.
-    <section
-      id="introduction"
-      ref={sectionRef}
-      data-nav-navy
-      className="relative z-10 flex h-screen w-full flex-col overflow-hidden bg-gold px-6 py-[clamp(1rem,3.5vh,5rem)] sm:px-10 lg:px-16"
-    >
-      <FitWelcome>
-        <Atropos
-          className="mx-auto w-full max-w-[1500px]"
-          shadow={false}
-          highlight={false}
-          rotateTouch={false}
-          rotateXMax={9}
-          rotateYMax={9}
-          innerClassName="flex w-full flex-col items-center text-center"
-        >
-          <h2 className="font-sans text-[clamp(2.25rem,min(9vw,11vh),6.5rem)] font-black leading-[0.95] tracking-[-0.04em] text-navy">
-            Welcome to <RepelText text="ADVERSADO" radius={140} strength={22} />
+    <section ref={sectionRef} className="relative">
+      <div
+        ref={stageRef}
+        className="relative flex min-h-screen w-full flex-col overflow-hidden px-6 py-16 sm:h-screen sm:px-10 sm:py-0 lg:px-16"
+      >
+        <div className="relative z-10 mx-auto w-full max-w-[1500px] text-center sm:pt-[clamp(1.5rem,4vh,3.25rem)]">
+          <p className="text-sm uppercase tracking-[0.35em] text-gold">The Four Verticals</p>
+          <h2 className="mx-auto mt-5 max-w-[14ch] font-serif text-[clamp(2.25rem,5.2vw,4rem)] font-light leading-[1.12] tracking-[-0.01em] text-cream">
+            Four verticals.{" "}
+            <em className="font-bold not-italic text-gold sm:italic">One journey.</em>
           </h2>
-          <p className="mt-[clamp(0.75rem,1.5vh,1.5rem)] font-serif text-[clamp(1.05rem,min(2.4vw,2.8vh),1.85rem)] font-light italic leading-[1.4] tracking-[0.02em] text-navy/70">
-            Brand Behind the Brands.
-          </p>
-
-          <ScrollReveal
-            scrub={false}
-            playId={playId}
-            className="mt-[clamp(1.5rem,4vh,5rem)] w-full font-sans text-[clamp(1.35rem,min(4.4vw,5.2vh),4rem)] font-light leading-[1.75] tracking-[-0.015em] text-navy/70"
-          >
-            Bringing branding, advertising, marketing, events and performance{" "}
-            <WelcomeHit>under one roof.</WelcomeHit> Because your customers don’t
-            experience your business <WelcomeHit>in departments.</WelcomeHit> Why
-            should your <WelcomeHit>marketing?</WelcomeHit>
-          </ScrollReveal>
-        </Atropos>
-      </FitWelcome>
-    </section>
-  );
-}
-
-/* ── The Four Verticals ─────────────────────────────────────────────────── */
-/* Accordion gallery (reactbits.dev/components/accordion-gallery): the hovered
- * panel grows, the rest collapse to a spine. Media is swapped for the Silk
- * shader, tinted per card, in place of a photo. */
-
-const VERTICAL_THEMES = [
-  { primary: "#1f355e", secondary: "#0a1220" },
-  { primary: "#e6b325", secondary: "#241a05" },
-  { primary: "#7a2e2e", secondary: "#1a0808" },
-  { primary: "#2f6b4f", secondary: "#081712" },
-];
-
-function VerticalCard({
-  v,
-  i,
-  active,
-  onActivate,
-}: {
-  v: (typeof VERTICALS)[number];
-  i: number;
-  active: boolean;
-  onActivate: (i: number) => void;
-}) {
-  const theme = VERTICAL_THEMES[i % VERTICAL_THEMES.length];
-  // Four shaders, four WebGL contexts, all of them far below the fold while
-  // the preloader is still running its own ten. Held back until the card is
-  // nearly in view — see `useNearViewport`.
-  const [cardRef, near] = useNearViewport<HTMLLIElement>();
-
-  return (
-    <li
-      ref={cardRef}
-      data-depth
-      tabIndex={0}
-      role="listitem"
-      aria-current={active ? "true" : undefined}
-      onMouseEnter={() => onActivate(i)}
-      onFocus={() => onActivate(i)}
-      onKeyDown={(e) => {
-        if (e.key === "ArrowRight" || e.key === "ArrowDown") onActivate((i + 1) % VERTICALS.length);
-        if (e.key === "ArrowLeft" || e.key === "ArrowUp")
-          onActivate((i - 1 + VERTICALS.length) % VERTICALS.length);
-      }}
-      className="focus-inset group relative h-[240px] min-w-0 cursor-pointer overflow-hidden rounded-2xl border border-cream/12 transition-[flex-grow] duration-700 ease-out sm:h-full"
-      style={{ flexGrow: active ? 5 : 1, flexBasis: 0 }}
-    >
-      {/* The card keeps its own colour underneath, so a panel that hasn't
-          been scrolled to yet is still the right shape and tone rather than a
-          hole — the shader fades in over it once it arrives. */}
-      <span aria-hidden className="absolute inset-0" style={{ background: theme.secondary }} />
-      {near && (
-        <Silk
-          className="absolute inset-0 h-full w-full"
-          primaryColor={theme.primary}
-          secondaryColor={theme.secondary}
-          speed={0.7}
-          interactive={0.25}
-          intensity={0.3}
-        />
-      )}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-charcoal/90 via-charcoal/15 to-transparent transition-opacity duration-500"
-        style={{ opacity: active ? 0.5 : 0.85 }}
-      />
-
-      <div className="relative flex h-full flex-col justify-end p-6 sm:p-8">
-        <span className="font-serif text-sm text-cream/70">{String(i + 1).padStart(2, "0")}</span>
-        <h3 className="mt-3 text-lg font-bold uppercase tracking-[0.14em] text-cream sm:text-xl">
-          {v.name}
-        </h3>
-        <div
-          className="grid transition-[grid-template-rows,opacity] duration-500 ease-out"
-          style={{ gridTemplateRows: active ? "1fr" : "0fr", opacity: active ? 1 : 0 }}
-        >
-          <div className="overflow-hidden">
-            <p className="mt-4 text-[clamp(1.15rem,2.2vw,1.6rem)] leading-snug text-cream">
-              {v.tagline}
-            </p>
-            <p className="mt-3 font-serif text-base font-light italic leading-relaxed text-cream/60">
-              {v.quip}
-            </p>
-          </div>
         </div>
-        <span
-          className="mt-6 block h-px w-full origin-left bg-gold transition-transform duration-500"
-          style={{ transform: active ? "scaleX(1)" : "scaleX(0)" }}
-        />
-      </div>
-    </li>
-  );
-}
 
-function Verticals() {
-  const ref = useDepthReveal<HTMLElement>(0.1);
-  const ctaRef = useMagnetic<HTMLAnchorElement>({ strength: 0.35, radius: 100 });
-  const [active, setActive] = useState(0);
-
-  return (
-    <section ref={ref} className="px-6 py-28 sm:py-40">
-      <div className="mx-auto max-w-6xl">
-        <p data-depth className="mb-8 text-sm uppercase tracking-[0.35em] text-gold">
-          The Four Verticals
-        </p>
-        <BoxReveal>
-          <h2 className="text-[clamp(2.5rem,6.5vw,5rem)] font-bold leading-[1.08] tracking-tight text-cream">
-            Four verticals. One journey.
-          </h2>
-        </BoxReveal>
-
-        <ul
-          data-depth
-          role="list"
+        <div
+          className="relative z-[1] mx-auto mt-12 grid w-full max-w-[720px] grid-cols-2 gap-4 sm:pointer-events-none sm:absolute sm:inset-0 sm:mt-0 sm:max-w-none sm:grid-cols-none sm:gap-0"
           aria-label="The four verticals"
-          className="mt-16 flex flex-col gap-3 sm:h-[520px] sm:flex-row"
         >
           {VERTICALS.map((v, i) => (
-            <VerticalCard key={v.name} v={v} i={i} active={active === i} onActivate={setActive} />
-          ))}
-        </ul>
+            <div
+              key={v.name}
+              ref={(el) => {
+                cardRefs.current[i] = el;
+              }}
+              className="vertical-flip-card relative aspect-[5/7] w-full [perspective:1000px] sm:absolute sm:top-[54%] sm:left-1/2 sm:aspect-auto sm:h-[min(56vh,470px)] sm:w-[min(20vw,268px)] sm:pointer-events-auto"
+              style={{ zIndex: i + 1 }}
+            >
+              <div
+                ref={(el) => {
+                  tiltRefs.current[i] = el;
+                }}
+                className="h-full w-full"
+              >
+                <div
+                  className="vertical-card-float absolute top-1/2 left-1/2 h-full w-full"
+                  style={{ animationDelay: `${i * 0.2}s` }}
+                >
+                  <div className="relative h-full w-full [transform-style:preserve-3d]">
+                    {/* Deck back — patterned navy, shown in the stack */}
+                    <div
+                      data-card-front
+                      className="playing-card playing-card-back absolute inset-0 [backface-visibility:hidden]"
+                    >
+                      <div className="playing-card-frame">
+                        <div className="playing-card-back-pattern absolute inset-0" aria-hidden />
+                        <div className="relative flex h-full items-center justify-center p-[12%]">
+                          <Image
+                            src={v.cat}
+                            alt=""
+                            width={220}
+                            height={220}
+                            className="h-auto w-[72%] max-h-[58%] object-contain opacity-90"
+                            draggable={false}
+                          />
+                        </div>
+                        <span className="pointer-events-none absolute inset-x-0 bottom-[9%] text-center font-sans text-[0.75rem] font-medium uppercase tracking-[0.35em] text-gold/70">
+                          Adversado
+                        </span>
+                      </div>
+                    </div>
 
-        <div data-depth className="mt-14">
+                    {/* Face — cream rank card with the vertical */}
+                    <div
+                      data-card-back
+                      className="playing-card playing-card-face absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)]"
+                    >
+                      <div className="playing-card-frame">
+                        <div className="playing-card-corner absolute top-[6%] left-[7%]">
+                          <span className="playing-card-rank">{v.rank}</span>
+                          <Image
+                            src={v.cat}
+                            alt=""
+                            width={36}
+                            height={36}
+                            className="mt-0.5 h-5 w-5 object-contain sm:h-6 sm:w-6"
+                            draggable={false}
+                          />
+                        </div>
+                        <div className="playing-card-corner absolute right-[7%] bottom-[6%] rotate-180">
+                          <span className="playing-card-rank">{v.rank}</span>
+                          <Image
+                            src={v.cat}
+                            alt=""
+                            width={36}
+                            height={36}
+                            className="mt-0.5 h-5 w-5 object-contain sm:h-6 sm:w-6"
+                            draggable={false}
+                          />
+                        </div>
+
+                        <div className="relative flex h-full flex-col items-center px-[14%] pb-[10%] pt-[16%]">
+                          <div className="flex min-h-0 flex-1 items-center justify-center">
+                            <Image
+                              src={v.cat}
+                              alt={v.catAlt}
+                              width={280}
+                              height={280}
+                              className="h-auto max-h-[min(42%,180px)] w-[78%] object-contain"
+                              draggable={false}
+                              priority={i === 0}
+                            />
+                          </div>
+                          <div className="mt-auto w-full text-center">
+                            <h3 className="font-sans text-[clamp(0.72rem,1.5vw,0.95rem)] font-bold uppercase leading-tight tracking-[0.14em] text-navy">
+                              {v.name}
+                            </h3>
+                            <p className="mt-2 font-sans text-[clamp(0.8rem,1.4vw,0.95rem)] font-medium leading-snug text-navy/85">
+                              {v.tagline}
+                            </p>
+                            <p className="mt-1.5 font-serif text-[0.72rem] font-light italic leading-snug text-navy/55 sm:text-[0.78rem]">
+                              {v.quip}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="relative z-10 mx-auto mt-12 w-full max-w-[1500px] text-center sm:absolute sm:inset-x-0 sm:bottom-[clamp(1.25rem,3vh,2.5rem)] sm:mt-0 sm:px-6 lg:px-16">
           <Link
             ref={ctaRef}
             href="/services"
             prefetch={false}
-            /* `min-h-11` (44px): the link's own line box is 17px tall, which
-               is well under the touch-target floor on a phone. */
-            className="group inline-flex min-h-11 items-center gap-3 text-base uppercase tracking-[0.2em] text-gold"
+            className="group inline-flex min-h-11 items-center gap-3 text-sm uppercase tracking-[0.2em] text-gold"
           >
             Explore the full journey
             <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
@@ -700,13 +879,25 @@ function Invitation({
 }
 
 export function HomeSections() {
-  // Cursor handoff. `invitationActive` follows the Invitation's own
-  // IntersectionObserver (inside the section): while it owns the viewport the
-  // TargetCursor is live and the tubes cursor is blanked, everywhere else the
-  // tubes cursor is the page's pointer. Latched in _this_ component because
-  // the two cursor mounts live at different tree positions (tubes here, the
-  // target cursor inside the Invitation) and both must agree on one value.
+  // SplashCursor is a full-viewport WebGL fluid — only worth the context while
+  // the hero is on screen. Invitation still owns TargetCursor when active.
   const [invitationActive, setInvitationActive] = useState(false);
+  const [heroInView, setHeroInView] = useState(true);
+
+  useEffect(() => {
+    const el = document.getElementById("hero");
+    if (!el) return;
+    if (typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        setHeroInView(entries.some((e) => e.isIntersecting));
+      },
+      // Drop as soon as the hero leaves; no margin — that was the whole point.
+      { rootMargin: "0px", threshold: 0 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   return (
     <>
@@ -715,20 +906,13 @@ export function HomeSections() {
           paints a ground of its own, so there is no seam anywhere to read as
           the end of one page and the start of the next. */}
       {/* Two fixed layers under the copy: black ground, then the parallax
-          constellations over it. The authored figure scene is off for now —
-          `PeachScene` is still in Cinematic.tsx, unmounted, so turning it
-          back on is one line. */}
+          constellations over it (sky + stars only). */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 bg-black" />
       <CinematicScene />
-      {/* The site-wide cursor: the same gold fluid trail the countdown page
-          runs (SplashCursor, reactbits) rather than the threejs tubes this
-          used to be — the request was to bring the landing page's cursor over
-          here. It renders itself `fixed`/`z-50`/`pointer-events-none` with no
-          prop to blank it, so it's unmounted for the Invitation instead of
-          hidden; TargetCursor takes over there. Unmounting also means a fresh
-          fluid sim on every re-entry rather than one asked to resume mid-decay,
-          which is the cheaper and simpler of the two anyway. */}
-      {!invitationActive && (
+      {/* Gold fluid trail — mounted only while `#hero` intersects, so Belief
+          and below don't pay for a second always-on WebGL context. Unmounting
+          (vs hiding) tears the sim down; re-entry builds a fresh one. */}
+      {heroInView && !invitationActive && (
         <SplashCursor
           RAINBOW_MODE={false}
           COLOR={GOLD}
@@ -741,11 +925,8 @@ export function HomeSections() {
       {/* Clipped sideways: the tilted vertical cards swing their corners a few
           px past the viewport at the extremes of the effect, which is enough
           to put a horizontal scrollbar on the whole page. */}
-      {/* The Belief closes on "Attention is rented. Memory is owned."; this is
-          the wipe that carries the reader across the seam into Introduction
-          rather than a plain scroll cut. Scoped here rather than inside
-          either section since it belongs to neither — it's the boundary. */}
-      <SectionWipe trigger="#introduction" />
+      {/* The Belief closes on "Attention is rented. Memory is owned."; Welcome
+          opens with the pack-51 clip-path scrub across this seam. */}
       <div className="relative z-10 overflow-x-hidden">
         <BeliefSection />
         <Introduction />

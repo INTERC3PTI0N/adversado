@@ -10,6 +10,7 @@ import { RepelText } from "@/components/Interactions";
 import { Magnify } from "@/components/Magnify";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { Typewriter } from "@/components/Typewriter";
+import { CLIP_FULL, CLIP_LEAVE } from "@/components/ClipScrollPanel";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -98,10 +99,9 @@ function Hit({ children }: { children: React.ReactNode }) {
 export function BeliefSection() {
   const ref = useRef<HTMLElement>(null);
   const memoryRef = useRef<HTMLElement>(null);
-  // Remount Typewriter on each full enter (including scroll-back) so it
-  // retypes from scratch; hold the line's box with an invisible spacer while off.
+  // Latches true the first time the Belief section fully arrives; the typed
+  // line stays after that — never cleared on leave, never remounted away.
   const [closingOn, setClosingOn] = useState(false);
-  const [closingGen, setClosingGen] = useState(0);
   // Bumps each time the navy section fully enters — reveal replays on arrival
   // only. Never cleared on leave, so the text does not vanish mid-wipe.
   const [memoryPlayId, setMemoryPlayId] = useState(0);
@@ -141,55 +141,62 @@ export function BeliefSection() {
           },
         });
 
-        // Type only once the section has fully arrived in the viewport
-        // (top at the top). Replay every time you scroll back into it.
-        const playClosing = () => {
-          setClosingGen((g) => g + 1);
-          setClosingOn(true);
-        };
-        const stopClosing = () => setClosingOn(false);
-
+        // Type once the section has fully arrived. Leave the finished line
+        // alone after that — no hide on leave, no remount on scroll-back.
         ScrollTrigger.create({
           trigger: ref.current,
           start: "top top",
           end: "bottom bottom",
-          onEnter: playClosing,
-          onEnterBack: playClosing,
-          onLeave: stopClosing,
-          onLeaveBack: stopClosing,
+          onEnter: () => setClosingOn(true),
+          onEnterBack: () => setClosingOn(true),
         });
 
-        // Memory / "The campaign ends…" section: snap fully on (top→top) or
-        // fully off. Near-instant, commits on a tiny nudge so the section
-        // lands as a hard cut rather than a half-in scroll.
-        const SECTION_SNAP = {
+        // Memory / campaign panel: snap + pin to park full-screen from Belief.
+        // Leave clip (pack 51) still scrubs after the pin as Welcome opens.
+        const PANEL_SNAP = {
           snapTo: (value: number, self?: { direction: number }) => {
             if (value <= 0.001 || value >= 0.999) return value;
             const goingBack = self && self.direction === -1;
-            if (goingBack) return value < 0.97 ? 0 : 1;
-            return value > 0.02 ? 1 : 0;
+            if (goingBack) return value < 0.94 ? 0 : 1;
+            return value > 0.06 ? 1 : 0;
           },
-          duration: { min: 0.04, max: 0.1 },
+          duration: { min: 0.05, max: 0.14 },
           delay: 0,
           inertia: false,
-          ease: "power3.out",
+          ease: "power2.inOut",
         } as const;
 
         ScrollTrigger.create({
           trigger: memoryRef.current,
           start: "top bottom",
           end: "top top",
-          snap: SECTION_SNAP,
+          snap: PANEL_SNAP,
         });
         ScrollTrigger.create({
           trigger: memoryRef.current,
           start: "top top",
-          end: "+=100%",
+          end: "+=50%",
           pin: true,
-          snap: SECTION_SNAP,
+          snap: PANEL_SNAP,
           onEnter: () => setMemoryPlayId((n) => n + 1),
           onEnterBack: () => setMemoryPlayId((n) => n + 1),
         });
+
+        const memory = memoryRef.current;
+        if (memory) {
+          gsap.set(memory, { clipPath: CLIP_FULL });
+          ScrollTrigger.create({
+            trigger: memory,
+            start: "bottom bottom",
+            end: "bottom top",
+            scrub: 0.5,
+            animation: gsap.fromTo(
+              memory,
+              { clipPath: CLIP_FULL },
+              { clipPath: CLIP_LEAVE, ease: "none" }
+            ),
+          });
+        }
       });
       mm.add("(prefers-reduced-motion: reduce)", () => {
         setClosingOn(true);
@@ -246,7 +253,6 @@ export function BeliefSection() {
             >
               {closingOn ? (
                 <Typewriter
-                  key={closingGen}
                   text={CLOSING_LINE}
                   speed={CLOSING_TYPE_SPEED_MS}
                   persistCaret
@@ -286,8 +292,9 @@ export function BeliefSection() {
     {/* Full-bleed navy field: the argument resolves here. One job — land
         the memory line. Snaps binary — fully on, or fully off. */}
     <section
+      id="campaign"
       ref={memoryRef}
-      className="relative z-10 flex h-screen w-full items-center overflow-hidden bg-navy px-6 py-24 sm:px-10 sm:py-28 lg:px-16"
+      className="relative z-10 flex h-screen w-full items-center overflow-hidden bg-navy px-6 py-24 will-change-[clip-path] sm:px-10 sm:py-28 lg:px-16"
     >
       <div className="mx-auto flex w-full max-w-[1500px] flex-col justify-center">
         {/* Reveal replays only when this section re-enters; it stays put

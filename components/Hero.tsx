@@ -228,6 +228,7 @@ export function Hero({ active = true }: { active?: boolean }) {
     // ground (z-0, HomeSections) — and that ground comes later in the DOM, so
     // at equal z-index it would paint straight over the pinned hero.
     <section
+      id="hero"
       ref={sectionRef}
       className="relative z-20 flex h-screen w-full items-center justify-center overflow-hidden"
     >

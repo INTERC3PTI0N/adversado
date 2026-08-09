@@ -69,6 +69,115 @@ body {
   }
 }
 
+/* Four Verticals flip cards (pack 44): keep the card centered while GSAP
+   owns left/rotation on the outer shell, and give the wrapper a soft float. */
+.vertical-flip-card {
+  transform: translate(-50%, -50%);
+}
+
+@media (max-width: 767px) {
+  .vertical-flip-card {
+    transform: none;
+  }
+}
+
+@keyframes vertical-card-float {
+  0%,
+  100% {
+    transform: translate(-50%, -50%);
+  }
+  50% {
+    transform: translate(-50%, -58%);
+  }
+}
+
+.vertical-card-float {
+  transform: translate(-50%, -50%);
+}
+
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .vertical-card-float {
+    animation: vertical-card-float 3s ease-in-out infinite;
+  }
+}
+
+@media (max-width: 767px) {
+  .vertical-card-float {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+  }
+}
+
+/* Playing-card shell for the Four Verticals — poker proportions, double
+   frame, patterned navy backs, cream faces. Brand gold/navy only. */
+.playing-card {
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.playing-card-back {
+  background: var(--color-navy);
+  border: 2px solid var(--color-gold);
+}
+
+.playing-card-face {
+  background: var(--color-cream);
+  border: 2px solid var(--color-navy);
+}
+
+.playing-card-frame {
+  position: absolute;
+  inset: 0.45rem;
+  border-radius: 0.3em;
+  overflow: hidden;
+}
+
+.playing-card-back .playing-card-frame {
+  border: 1px solid color-mix(in srgb, var(--color-gold) 55%, transparent);
+}
+
+.playing-card-face .playing-card-frame {
+  border: 1px solid color-mix(in srgb, var(--color-navy) 35%, transparent);
+}
+
+.playing-card-back-pattern {
+  background-color: var(--color-navy);
+  background-image:
+    radial-gradient(
+      circle at center,
+      color-mix(in srgb, var(--color-gold) 18%, transparent) 0 28%,
+      transparent 29%
+    ),
+    repeating-linear-gradient(
+      45deg,
+      transparent 0 7px,
+      color-mix(in srgb, var(--color-gold) 14%, transparent) 7px 8px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0 7px,
+      color-mix(in srgb, var(--color-gold) 14%, transparent) 7px 8px
+    );
+}
+
+.playing-card-corner {
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+
+.playing-card-rank {
+  font-family: var(--font-merriweather), Georgia, "Times New Roman", serif;
+  font-size: clamp(1.15rem, 2.4vw, 1.55rem);
+  font-weight: 700;
+  color: var(--color-navy);
+  letter-spacing: -0.02em;
+}
+
 /* Focus list: hovering one entry dims its siblings so the eye is pulled to a
    single step at a time. Plain CSS because the two rules have to beat each
    other by source order, which reads far clearer here than utility overrides. */

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
@@ -86,33 +86,6 @@ export function createStarSheets() {
   return { group, sheets };
 }
 
-/**
- * The landing. The page opens on the landing page's own night sky — the
- * /night-sky.svg wallpaper under the ripple shader — and the scrollbar is what
- * flies the ground in underneath it: the stars stay lit, atmosphere stays put,
- * and Kerala arrives under the sky a little under halfway down.
- *
- * The numbers below are fractions of the whole document, so the landing is
- * paced by the page rather than by a clock — a reader who scrolls slowly gets a
- * slow approach, which is the point of hanging it off scroll at all.
- */
-/** The ground arrives once the reader is partway down the page. */
-const LAND_START = 0.44;
-const LAND_END = 0.86;
-
-/**
- * The horizon, in three bands. `rise` is how far below the frame a band starts
- * — the far hills barely climb, the near bank swings up a long way, which is
- * what gives the landing depth. `parallax` is how far the band keeps drifting
- * for the rest of the scroll: the whole reason the background reads as further
- * away than the copy is that it moves less than the copy does.
- */
-const BANDS = [
-  { rise: 90, parallax: 34 }, // far: the hill line
-  { rise: 190, parallax: 88 }, // mid: the Chinese fishing nets and the houseboat
-  { rise: 330, parallax: 176 }, // near: the bank and the snake boat
-];
-
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
 /** Time constant for the scroll smoothing, in seconds — how long the sky takes
@@ -120,125 +93,8 @@ const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
  * `scrub: 0.6`. */
 const SCRUB_TAU = 0.14;
 
-/**
- * Kerala, in silhouette — what the descent lands on.
- *
- * Everything here is a shape rather than a picture: at background weight, under
- * copy, at whatever size the viewport is, a silhouette is all that survives
- * anyway, and it stays out of the way of the text on top of it. The vocabulary
- * is Kochi's own — the cantilevered Chinese fishing nets on the harbour, a
- * kettuvallam on the backwaters, and a chundan vallam snake boat — drawn once
- * in `defs` and placed with `use`.
- *
- * A crowd of Open Peeps sprites used to walk along the foot of this, on
- * Skiper UI's canvas. It has been removed. `components/ui/skiper-ui/skiper39`,
- * `public/images/peeps/*` and `scripts/build-peep-sheet.py` are all dead now
- * and can be deleted.
- */
-function KeralaHorizon({ attach }: { attach: ((el: SVGGElement | null) => void)[] }) {
-  // Pulled out into named callbacks rather than indexed inline: `ref={attach[i]}`
-  // reads to the react-hooks lint as a ref being dereferenced during render.
-  const [attachFar, attachMid, attachNear] = attach;
-  return (
-    <svg
-      viewBox="0 0 1600 420"
-      preserveAspectRatio="xMidYMax meet"
-      className="absolute inset-x-0 bottom-0 w-full"
-      aria-hidden
-    >
-      <defs>
-        {/* Cheena vala — the cantilevered Chinese fishing net. The one shape on
-            the Kochi waterfront nobody needs told the name of: an A-frame, a
-            long arm out over the water, the net slung off its end and the
-            counterweight stones hanging back at the near side. */}
-        <g id="kl-net">
-          <path d="M-10 0 L -3 -62 L 4 -62 L 2 0 Z" />
-          <path d="M26 0 L 15 -62 L 22 -62 L 34 0 Z" />
-          <path d="M8 -62 L 12 -104 L 19 -104 L 16 -62 Z" />
-          <path d="M2 -62 L -112 -20 L -110 -12 L 7 -53 Z" />
-          <path d="M15 -104 L -110 -18 L -108 -13 L 18 -99 Z" />
-          <path d="M-112 -16 L -150 34 L -70 34 Z" />
-          <path d="M30 -62 L 32 -32 L 39 -32 L 37 -62 Z" />
-          <circle cx="35" cy="-26" r="7" />
-          <circle cx="35" cy="-11" r="7" />
-        </g>
-
-        {/* Kettuvallam — the backwater houseboat, all hull and arched thatch. */}
-        <g id="kl-houseboat">
-          <path d="M0 0 C 34 9 152 9 186 0 C 176 -7 22 -7 0 0 Z" />
-          <path d="M28 -6 C 46 -38 142 -38 160 -6 Z" />
-          <path d="M74 -34 L 78 -46 L 84 -46 L 82 -34 Z" />
-        </g>
-
-        {/* Chundan vallam — the snake boat, named for the prow that rears up
-            behind the rowers. The rowers are what make it read as one. */}
-        <g id="kl-snakeboat">
-          <path d="M0 0 C 44 11 196 11 240 0 C 228 -7 208 -9 164 -10 L 34 -10 C 20 -10 9 -6 0 0 Z" />
-          <path d="M238 -2 C 258 -16 274 -44 277 -78 L 267 -78 C 263 -48 250 -22 232 -9 Z" />
-          {[46, 74, 102, 130, 158, 186].map((x) => (
-            <g key={x} transform={`translate(${x} -10)`}>
-              <circle cx="0" cy="-16" r="5" />
-              <path d="M-5 -11 L 5 -11 L 7 0 L -7 0 Z" />
-            </g>
-          ))}
-        </g>
-      </defs>
-
-      {/* Far: the hill line, lifted toward the sky colour so distance reads as
-          haze rather than as a lighter black. */}
-      <g
-        ref={attachFar}
-        fill="#16294a"
-        opacity="0.85"
-      >
-        <path d="M0 420 L 0 352 C 120 330 210 344 300 336 C 420 324 500 300 610 306 C 740 312 820 338 940 332 C 1080 324 1180 300 1300 308 C 1420 316 1520 340 1600 336 L 1600 420 Z" />
-      </g>
-
-      {/* Mid: the water, and the nets standing out over it. */}
-      {/* The nets are drawn large and near-black rather than to scale with the
-          water behind them. They are the one shape on this horizon that has to
-          be recognisable — at half size, in a colour close to the sky's, they
-          read as scratches on the waterline and the whole reference is lost. */}
-      <g ref={attachMid} fill="#050d1c">
-        <path
-          d="M0 420 L 0 372 C 200 362 360 378 560 372 C 760 366 900 356 1100 366 C 1300 376 1450 372 1600 366 L 1600 420 Z"
-          fill="#0a1830"
-        />
-        {[300, 700, 1120, 1500].map((x, i) => (
-          <use key={x} href="#kl-net" transform={`translate(${x} ${372 + (i % 2) * 4}) scale(${1.5 + (i % 3) * 0.12})`} />
-        ))}
-        <use href="#kl-houseboat" transform="translate(830 380) scale(0.85)" />
-      </g>
-
-      {/* Near: the bank the reader is standing on, and everything close enough
-          to be pure black against the sky. */}
-      <g
-        ref={attachNear}
-        fill="#02050c"
-      >
-        <path d="M0 420 L 0 400 C 240 388 420 404 700 398 C 980 392 1180 384 1400 396 C 1490 401 1550 400 1600 396 L 1600 420 Z" />
-        <use href="#kl-snakeboat" transform="translate(180 400) scale(0.8)" />
-      </g>
-    </svg>
-  );
-}
-
 export function CinematicScene() {
   const hostRef = useRef<HTMLDivElement>(null);
-  const landRef = useRef<HTMLDivElement>(null);
-  const bandRefs = useRef<(SVGGElement | null)[]>([]);
-  // Handed to KeralaHorizon as a lookup rather than handing it the ref array
-  // itself — a child writing into a ref it was passed is a lint error, and
-  // closing over the array keeps ownership here, where the frame loop reads it.
-  // The three callbacks are built once: returning a fresh one per render would
-  // have React detach and reattach every band on each render.
-  const attachBand = useMemo(
-    () =>
-      BANDS.map((_, i) => (el: SVGGElement | null) => {
-        bandRefs.current[i] = el;
-      }),
-    []
-  );
 
   useEffect(() => {
     const host = hostRef.current;
@@ -250,8 +106,7 @@ export function CinematicScene() {
     const renderer = new WebGLRenderer({ alpha: true, antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     const canvas = renderer.domElement;
-    // z-index 1 puts the stars above the sky gradient and below the ground,
-    // both of which are authored in the JSX below rather than appended here.
+    // z-index 1 puts the stars above the sky gradient.
     canvas.style.cssText =
       "position:absolute;inset:0;width:100%;height:100%;display:block;z-index:1";
     host.appendChild(canvas);
@@ -295,11 +150,6 @@ export function CinematicScene() {
     // No reveal pulse either — held at its resting scale from the first frame.
     if (reduced) {
       universe.scale.setScalar(1);
-      // No scroll-driven descent either, so the page is simply shown where the
-      // landing was going: the ground already in. Holding it away instead
-      // would mean this reader never sees the ground at all, which is the
-      // worse of the two answers.
-      if (landRef.current) landRef.current.style.opacity = "1";
       sheets.forEach(({ points, L }) => {
         (points.material as PointsMaterial).opacity = L.opacity * 0.12;
       });
@@ -362,27 +212,7 @@ export function CinematicScene() {
         universe.scale.setScalar(revealScale);
       }
 
-      // ── The landing ────────────────────────────────────────────────────
-      // The night-sky wallpaper stays lit for the whole visit (it's the same
-      // background the landing page lives on), so only the ground arrives on
-      // scroll. The stars keep their own light too — nothing throttles them.
-      const land = clamp01((p - LAND_START) / (LAND_END - LAND_START));
-      if (landRef.current) landRef.current.style.opacity = String(land);
-      for (let i = 0; i < BANDS.length; i++) {
-        const g = bandRefs.current[i];
-        if (!g) continue;
-        const B = BANDS[i];
-        // Two terms: the band swinging up into frame during the landing, and a
-        // slow ongoing drift for the rest of the scroll. The second is the
-        // parallax proper — the ground keeps moving under the copy, just far
-        // less than the copy moves, and less again the further back it is.
-        g.style.transform = `translate(${-eased.x * B.parallax * 0.35}px, ${
-          (1 - land) * B.rise - p * B.parallax
-        }px)`;
-      }
-
       for (const { points, L } of sheets) {
-        // Stars stay lit under the night sky.
         (points.material as PointsMaterial).opacity = L.opacity;
         // The parallax itself: sheets rise past the viewport at rates set by
         // their depth, which is the whole effect.
@@ -417,10 +247,8 @@ export function CinematicScene() {
     >
       {/* Under the stars (the canvas is given z-index 1 when it is appended):
           the night-sky wallpaper from the actual landing page — /night-sky.svg
-          driven by the ripple shader, shipped with the exact settings page.tsx
-          gives it. It sits on brand navy and stays lit for the whole visit;
-          the descent no longer fades a blue sky in, the landing keeps the
-          night. */}
+          driven by the ripple shader. Sky + stars only — the Kerala horizon
+          silhouette (nets, hills, boats) was removed. */}
       <div className="absolute inset-0" style={{ zIndex: 0, background: NAVY }}>
         <RippleDistortion
           src="/night-sky.svg"
@@ -447,13 +275,6 @@ export function CinematicScene() {
             "radial-gradient(ellipse 70% 60% at 50% 46%, rgba(5,10,22,0.72), rgba(5,10,22,0) 75%)",
         }}
       />
-
-      {/* Over the stars: the ground the descent lands on, arriving on the
-          `land` fade. The walking crowd that used to stand in front of it is
-          gone — see the note above KeralaHorizon. */}
-      <div ref={landRef} className="absolute inset-0" style={{ zIndex: 2, opacity: 0 }}>
-        <KeralaHorizon attach={attachBand} />
-      </div>
     </div>
   );
 }

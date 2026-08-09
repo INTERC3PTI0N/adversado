@@ -1,0 +1,72 @@
+[
+  {
+    "src": "/images/welcome-bg/00-sky.svg",
+    "offset": -6,
+    "name": "00-sky"
+  },
+  {
+    "src": "/images/welcome-bg/01-hill-far.svg",
+    "offset": -4.5,
+    "name": "01-hill-far"
+  },
+  {
+    "src": "/images/welcome-bg/02-hill-mid.svg",
+    "offset": -3.5,
+    "name": "02-hill-mid"
+  },
+  {
+    "src": "/images/welcome-bg/03-hill-near.svg",
+    "offset": -2.5,
+    "name": "03-hill-near"
+  },
+  {
+    "src": "/images/welcome-bg/04-detail-dark.svg",
+    "offset": -2,
+    "name": "04-detail-dark"
+  },
+  {
+    "src": "/images/welcome-bg/05-hill-right.svg",
+    "offset": -1.5,
+    "name": "05-hill-right"
+  },
+  {
+    "src": "/images/welcome-bg/06-accent-red.svg",
+    "offset": -1,
+    "name": "06-accent-red"
+  },
+  {
+    "src": "/images/welcome-bg/07-layer-c1.svg",
+    "offset": -0.5,
+    "name": "07-layer-c1"
+  },
+  {
+    "src": "/images/welcome-bg/08-foreground.svg",
+    "offset": 0.5,
+    "name": "08-foreground"
+  },
+  {
+    "src": "/images/welcome-bg/09-layer-c2.svg",
+    "offset": 1,
+    "name": "09-layer-c2"
+  },
+  {
+    "src": "/images/welcome-bg/10-layer-c3.svg",
+    "offset": 1.5,
+    "name": "10-layer-c3"
+  },
+  {
+    "src": "/images/welcome-bg/11-layer-c4.svg",
+    "offset": 2,
+    "name": "11-layer-c4"
+  },
+  {
+    "src": "/images/welcome-bg/12-layer-c5.svg",
+    "offset": 2.5,
+    "name": "12-layer-c5"
+  },
+  {
+    "src": "/images/welcome-bg/13-detail-path.svg",
+    "offset": 3,
+    "name": "13-detail-path"
+  }
+]

@@ -127,20 +127,37 @@ export function useCursorVars<T extends HTMLElement>() {
  * Cursor-tracked 3D tilt. Also publishes the pointer position as `--mx`/`--my`
  * so the card can hang a light source off the same gesture without a second
  * listener.
+ *
+ * `follow: "window"` keeps the panel looking at the cursor across the whole
+ * viewport (Invitation CTA), rather than only while the pointer is over it.
  */
-export function useTilt<T extends HTMLElement>(max = 7) {
+export function useTilt<T extends HTMLElement>(
+  max = 7,
+  { follow = "element" }: { follow?: "element" | "window" } = {}
+) {
   const ref = useRef<T>(null);
 
   useEffect(() => {
     const el = ref.current;
     if (!el || prefersReducedMotion()) return;
 
-    gsap.set(el, { transformPerspective: 900, transformOrigin: "center" });
-    const rx = gsap.quickTo(el, "rotationX", { duration: 0.6, ease: "power3.out" });
-    const ry = gsap.quickTo(el, "rotationY", { duration: 0.6, ease: "power3.out" });
+    gsap.set(el, { transformPerspective: 1100, transformOrigin: "center" });
+    const rx = gsap.quickTo(el, "rotationX", { duration: 0.55, ease: "power3.out" });
+    const ry = gsap.quickTo(el, "rotationY", { duration: 0.55, ease: "power3.out" });
 
     const onMove = (e: PointerEvent) => {
       const r = el.getBoundingClientRect();
+      if (follow === "window") {
+        const cx = r.left + r.width / 2;
+        const cy = r.top + r.height / 2;
+        const nx = Math.max(-1, Math.min(1, (e.clientX - cx) / (window.innerWidth * 0.45)));
+        const ny = Math.max(-1, Math.min(1, (e.clientY - cy) / (window.innerHeight * 0.45)));
+        rx(-ny * max);
+        ry(nx * max);
+        el.style.setProperty("--mx", `${50 + nx * 42}%`);
+        el.style.setProperty("--my", `${50 + ny * 42}%`);
+        return;
+      }
       const px = (e.clientX - r.left) / r.width;
       const py = (e.clientY - r.top) / r.height;
       rx(-(py - 0.5) * max * 2);
@@ -153,6 +170,14 @@ export function useTilt<T extends HTMLElement>(max = 7) {
       ry(0);
     };
 
+    if (follow === "window") {
+      window.addEventListener("pointermove", onMove);
+      return () => {
+        window.removeEventListener("pointermove", onMove);
+        gsap.set(el, { rotationX: 0, rotationY: 0 });
+      };
+    }
+
     el.addEventListener("pointermove", onMove);
     el.addEventListener("pointerleave", onLeave);
     return () => {
@@ -160,7 +185,7 @@ export function useTilt<T extends HTMLElement>(max = 7) {
       el.removeEventListener("pointerleave", onLeave);
       gsap.set(el, { rotationX: 0, rotationY: 0 });
     };
-  }, [max]);
+  }, [max, follow]);
 
   return ref;
 }

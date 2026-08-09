@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import gsap from "gsap";
@@ -8,28 +8,20 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { BoxReveal, CinematicScene, useDepthReveal } from "@/components/Cinematic";
 import { BeliefSection } from "@/components/BeliefSection";
-import { useMagnetic, useNearViewport } from "@/components/Interactions";
-import { ContactDialog } from "@/components/ContactDialog";
+import { useMagnetic } from "@/components/Interactions";
+import { InvitationContactForm } from "@/components/InvitationContactForm";
 import { Magnify } from "@/components/Magnify";
-import { ClipScrollPanel } from "@/components/ClipScrollPanel";
+import { ShapeOverlayBridge } from "@/components/ShapeOverlayBridge";
 import { SlideBreaker } from "@/components/SlideBreaker";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { RepelText } from "@/components/Interactions";
+import { WelcomeVerticalsRail } from "@/components/WelcomeVerticalsRail";
 import Atropos from "atropos/react";
 import "atropos/css";
-import TargetCursor from "@/components/vendor/TargetCursor";
-import "@/components/vendor/TargetCursor.css";
 import SplashCursor from "@/components/reactbits/SplashCursor";
-import LaserFlow from "@/components/reactbits/LaserFlow";
-import "@/components/reactbits/LaserFlow.css";
 
 /** Brand gold, for the props that take a colour rather than a class. */
 const GOLD = "#e6b325";
-
-/** Brand cream, for the cursor's locked-on colour — pops against the CTA's
-    gold fill and the MOVES line the way white would, without pulling the
-    palette off the brand. */
-const CREAM = "#f9f7f2";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -50,7 +42,7 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
  *   Introduction — gold inverse of that stamp: welcome argument + wordmark
  *   Verticals    — pinned pack-44 flip cards, magnetic CTA under them
  *   Six Ds       — hovering one step dims the rest
- *   Invitation   — gold wash and a magnetic CTA that leans toward the pointer
+ *   Invitation   — constellation field + gold limb; 3D audit form tracks the cursor
  */
 
 const VERTICALS = [
@@ -98,8 +90,8 @@ const SIX_DS = [
 ];
 
 /* ── The Introduction ───────────────────────────────────────────────────── */
-/* Full-bleed dusk landscape from `background-1.svg` (split under
- * `/images/welcome-bg/`). Cream type sits directly on the art — no cream plate —
+/* Full-bleed dusk landscape from `background-1.svg` (split + brand-recolored
+ * under `/images/welcome-bg/`). Cream type sits on the art — no cream plate —
  * with a soft shadow so navy/gold hills stay visible and copy stays legible. */
 
 const WELCOME_BG_LAYERS = [
@@ -173,93 +165,86 @@ function FitWelcome({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Introduction() {
-  const [playId, setPlayId] = useState(0);
-  const open = () => setPlayId((n) => n + 1);
-
+function Introduction({ playId }: { playId: number }) {
   return (
-    // Clip-path scrub from pack 51 — opens as Campaign scrolls away, closes
-    // toward Verticals. Sticky viewport panel inside a 150vh shell.
-    <ClipScrollPanel
+    <section
       id="introduction"
-      heightVh={160}
-      onOpen={open}
-      className="bg-navy"
+      className="relative z-10 h-screen w-full overflow-hidden bg-navy"
     >
-      {/* Atropos is larger than the viewport so 3D tilt never exposes its
-          rectangle edges. Content is inset back to the visible frame.
-          Explicit % width/height (not inset) — inset % was collapsing height. */}
-      <Atropos
-        className="absolute left-[-45%] top-[-45%] h-[190%] w-[190%]"
-        shadow={false}
-        highlight={false}
-        rotateTouch={false}
-        rotateXMax={9}
-        rotateYMax={9}
-        activeOffset={36}
-        innerClassName="relative h-full w-full overflow-hidden"
-      >
-        {WELCOME_BG_LAYERS.map((layer) => (
-          // Atropos root is already 190% of the viewport — layers just cover it.
-          // Avoid CSS translate here — Atropos owns transform on offset nodes.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            key={layer.src}
-            src={`${layer.src}?v=dusk`}
-            alt=""
-            aria-hidden
-            data-atropos-offset={layer.offset}
-            className="pointer-events-none absolute inset-0 h-full w-full max-w-none object-cover select-none"
-            style={
-              "dim" in layer
-                ? { filter: `brightness(${layer.dim}) contrast(1.15) saturate(1.05)` }
-                : undefined
-            }
-            draggable={false}
-          />
-        ))}
-
-        {/* 45/190 ≈ 23.7% — maps the oversized root back to the section frame. */}
-        <div
-          data-atropos-offset="4"
-          className="absolute inset-[23.7%] z-10 flex flex-col px-6 py-[clamp(1rem,3.5vh,5rem)] sm:px-10 lg:px-16"
+        {/* Atropos is larger than the viewport so 3D tilt never exposes its
+            rectangle edges. Content is inset back to the visible frame.
+            Explicit % width/height (not inset) — inset % was collapsing height. */}
+        <Atropos
+          className="absolute left-[-45%] top-[-45%] h-[190%] w-[190%]"
+          shadow={false}
+          highlight={false}
+          rotateTouch={false}
+          rotateXMax={9}
+          rotateYMax={9}
+          activeOffset={36}
+          innerClassName="relative h-full w-full overflow-hidden"
         >
-          <FitWelcome>
-            <div
-              className="mx-auto flex w-full max-w-[1500px] flex-col items-center text-center"
-              style={{ textShadow: WELCOME_TEXT_SHADOW }}
-            >
-              <h2 className="font-sans text-[clamp(2.25rem,min(9vw,11vh),6.5rem)] font-black leading-[0.95] tracking-[-0.04em] text-cream">
-                Welcome to <RepelText text="ADVERSADO" radius={140} strength={22} />
-              </h2>
-              <p className="mt-[clamp(0.75rem,1.5vh,1.5rem)] font-serif text-[clamp(1.05rem,min(2.4vw,2.8vh),1.85rem)] font-light italic leading-[1.4] tracking-[0.02em] text-cream/85">
-                Brand Behind the Brands.
-              </p>
+          {WELCOME_BG_LAYERS.map((layer) => (
+            // Atropos root is already 190% of the viewport — layers just cover it.
+            // Avoid CSS translate here — Atropos owns transform on offset nodes.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={layer.src}
+              src={`${layer.src}?v=dusk`}
+              alt=""
+              aria-hidden
+              data-atropos-offset={layer.offset}
+              className="pointer-events-none absolute inset-0 h-full w-full max-w-none object-cover select-none"
+              style={
+                "dim" in layer
+                  ? { filter: `brightness(${layer.dim}) contrast(1.15) saturate(1.05)` }
+                  : undefined
+              }
+              draggable={false}
+            />
+          ))}
 
-              <div className="relative mt-[clamp(1.5rem,4vh,5rem)] w-full">
-                {/* Soft navy bloom only — darkens the art under type without a cream plate. */}
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute left-1/2 top-1/2 h-[135%] w-[115%] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(ellipse_at_center,rgba(8,14,28,0.88)_0%,rgba(8,14,28,0.55)_45%,rgba(8,14,28,0.2)_68%,transparent_82%)]"
-                />
-                <ScrollReveal
-                  scrub={false}
-                  playId={playId}
-                  baseOpacity={0.15}
-                  enableBlur={false}
-                  className="relative w-full font-sans text-[clamp(1.35rem,min(4.4vw,5.2vh),4rem)] font-semibold leading-[1.75] tracking-[-0.015em] text-cream"
-                >
-                  Bringing branding, advertising, marketing, events and performance{" "}
-                  <WelcomeHit>under one roof.</WelcomeHit> Because your customers don’t
-                  experience your business <WelcomeHit>in departments.</WelcomeHit> Why
-                  should your <WelcomeHit>marketing?</WelcomeHit>
-                </ScrollReveal>
+          {/* 45/190 ≈ 23.7% — maps the oversized root back to the section frame. */}
+          <div
+            data-atropos-offset="4"
+            className="absolute inset-[23.7%] z-10 flex flex-col px-6 py-[clamp(1rem,3.5vh,5rem)] sm:px-10 lg:px-16"
+          >
+            <FitWelcome>
+              <div
+                className="mx-auto flex w-full max-w-[1500px] flex-col items-center text-center"
+                style={{ textShadow: WELCOME_TEXT_SHADOW }}
+              >
+                <h2 className="font-sans text-[clamp(2.25rem,min(9vw,11vh),6.5rem)] font-black leading-[0.95] tracking-[-0.04em] text-cream">
+                  Welcome to <RepelText text="ADVERSADO" radius={140} strength={22} />
+                </h2>
+                <p className="mt-[clamp(0.75rem,1.5vh,1.5rem)] font-serif text-[clamp(1.05rem,min(2.4vw,2.8vh),1.85rem)] font-light italic leading-[1.4] tracking-[0.02em] text-cream/85">
+                  Brand Behind the Brands.
+                </p>
+
+                <div className="relative mt-[clamp(1.5rem,4vh,5rem)] w-full">
+                  {/* Soft navy bloom only — darkens the art under type without a cream plate. */}
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute left-1/2 top-1/2 h-[135%] w-[115%] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(ellipse_at_center,rgba(8,14,28,0.88)_0%,rgba(8,14,28,0.55)_45%,rgba(8,14,28,0.2)_68%,transparent_82%)]"
+                  />
+                  <ScrollReveal
+                    scrub={false}
+                    playId={playId}
+                    baseOpacity={0.15}
+                    enableBlur={false}
+                    className="relative w-full font-sans text-[clamp(1.35rem,min(4.4vw,5.2vh),4rem)] font-semibold leading-[1.75] tracking-[-0.015em] text-cream"
+                  >
+                    Bringing branding, advertising, marketing, events and performance{" "}
+                    <WelcomeHit>under one roof.</WelcomeHit> Because your customers don’t
+                    experience your business <WelcomeHit>in departments.</WelcomeHit> Why
+                    should your <WelcomeHit>marketing?</WelcomeHit>
+                  </ScrollReveal>
+                </div>
               </div>
-            </div>
-          </FitWelcome>
-        </div>
-      </Atropos>
-    </ClipScrollPanel>
+            </FitWelcome>
+          </div>
+        </Atropos>
+    </section>
   );
 }
 
@@ -271,7 +256,13 @@ function Introduction() {
 const CARD_SPREAD_X = [14, 38, 62, 86];
 const CARD_SPREAD_ROT = [-15, -7.5, 7.5, 15];
 
-function Verticals() {
+function Verticals({
+  railDriven = false,
+  cardDriverRef,
+}: {
+  railDriven?: boolean;
+  cardDriverRef?: MutableRefObject<((progress: number) => void) | null>;
+}) {
   const sectionRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -292,13 +283,61 @@ function Verticals() {
         if (back) back.style.transform = "rotateY(0deg)";
       };
 
-      // Desktop: scrubbed spread + flip (pack 44).
+      const applyCardProgress = (progress: number) => {
+        const cards = cardRefs.current.filter(Boolean) as HTMLDivElement[];
+        const tilts = tiltRefs.current.filter(Boolean) as HTMLDivElement[];
+        if (cards.length !== VERTICALS.length) return;
+
+        const spreadT = Math.min(1, progress / (1 / 3));
+        cards.forEach((card, index) => {
+          const left = 50 + (CARD_SPREAD_X[index] - 50) * spreadT;
+          card.style.left = `${left}%`;
+          const tilt = tilts[index];
+          if (!tilt) return;
+          const front = card.querySelector<HTMLElement>("[data-card-front]");
+          const back = card.querySelector<HTMLElement>("[data-card-back]");
+          if (!front || !back) return;
+
+          const staggerOffset = index * 0.05;
+          const startOffset = 1 / 3 + staggerOffset;
+          const endOffset = 2 / 3 + staggerOffset;
+
+          if (progress < startOffset) {
+            front.style.transform = "rotateY(0deg)";
+            back.style.transform = "rotateY(180deg)";
+            gsap.set(tilt, { rotation: CARD_SPREAD_ROT[index] * spreadT });
+            return;
+          }
+          if (progress > endOffset) {
+            front.style.transform = "rotateY(-180deg)";
+            back.style.transform = "rotateY(0deg)";
+            gsap.set(tilt, { rotation: 0 });
+            return;
+          }
+          const t = (progress - startOffset) / (1 / 3);
+          front.style.transform = `rotateY(${-180 * t}deg)`;
+          back.style.transform = `rotateY(${180 - 180 * t}deg)`;
+          gsap.set(tilt, { rotation: CARD_SPREAD_ROT[index] * (1 - t) });
+        });
+      };
+
+      // Desktop inside the Welcome rail — parent scroll drives the cards.
       mm.add(
         "(min-width: 768px) and (prefers-reduced-motion: no-preference)",
         () => {
           const cards = cardRefs.current.filter(Boolean) as HTMLDivElement[];
           const tilts = tiltRefs.current.filter(Boolean) as HTMLDivElement[];
           if (cards.length !== VERTICALS.length || tilts.length !== VERTICALS.length) return;
+
+          if (railDriven) {
+            applyCardProgress(0);
+            if (cardDriverRef) cardDriverRef.current = applyCardProgress;
+            return () => {
+              if (cardDriverRef && cardDriverRef.current === applyCardProgress) {
+                cardDriverRef.current = null;
+              }
+            };
+          }
 
           const scrollLen = () => window.innerHeight * 3;
 
@@ -403,14 +442,19 @@ function Verticals() {
 
       return () => mm.revert();
     },
-    { scope: sectionRef, dependencies: [] }
+    { scope: sectionRef, dependencies: [railDriven] }
   );
 
   return (
-    <section ref={sectionRef} className="relative">
+    <section
+      ref={sectionRef}
+      className={`relative ${railDriven ? "h-full" : ""}`}
+    >
       <div
         ref={stageRef}
-        className="relative flex min-h-screen w-full flex-col overflow-hidden px-6 py-16 sm:h-screen sm:px-10 sm:py-0 lg:px-16"
+        className={`relative flex w-full flex-col overflow-hidden px-6 py-16 sm:px-10 sm:py-0 lg:px-16 ${
+          railDriven ? "h-full min-h-0 sm:h-full" : "min-h-screen sm:h-screen"
+        }`}
       >
         <div className="relative z-10 mx-auto w-full max-w-[1500px] text-center sm:pt-[clamp(1.5rem,4vh,3.25rem)]">
           <p className="text-sm uppercase tracking-[0.35em] text-gold">The Four Verticals</p>
@@ -626,28 +670,21 @@ function SixDs() {
 }
 
 /* ── The Invitation ─────────────────────────────────────────────────────── */
+/* Last section: live constellation field + a brand-gold planetary limb.
+ * No raster plate — the glow is CSS so the stars stay in the shot. */
 
 /** The three moves, each its own line of the rhythm. */
 const MOVES = ["Launching.", "Repositioning.", "Expanding."];
 
 function Invitation({
-  active,
   onVisibilityChange,
 }: {
-  /** Whether this section currently occupies the viewport. The home page's
-      cursor switches at this boundary: the tubes cursor runs everywhere else,
-      and this section's targeting cursor only takes over while `active`. */
-  active: boolean;
+  /** SplashCursor yields while this section is in view. */
   onVisibilityChange: (visible: boolean) => void;
 }) {
   const ref = useDepthReveal<HTMLElement>();
   const movesRef = useRef<HTMLParagraphElement>(null);
-  const revealRef = useRef<HTMLDivElement>(null);
-  const [laserRef, laserNear] = useNearViewport<HTMLDivElement>();
 
-  // Viewport gate for the cursor swap. The section runs for the whole page
-  // lifetime, so the gate has to follow scroll position — once `active` flips
-  // off it must hand back to the tubes cursor as the section scrolls away.
   useEffect(() => {
     const el = ref.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
@@ -661,31 +698,10 @@ function Invitation({
     return () => io.disconnect();
   }, [onVisibilityChange, ref]);
 
-  // Written straight to the style attribute rather than through state, the way
-  // the demo does it and the way `useCursorVars` does it elsewhere here — the
-  // gesture fires on every pointer move and must not cost a render.
-  const onStageMove = (e: React.MouseEvent<HTMLElement>) => {
-    const el = revealRef.current;
-    if (!el) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    el.style.setProperty("--mx", `${e.clientX - rect.left}px`);
-    el.style.setProperty("--my", `${e.clientY - rect.top}px`);
-  };
-  const onStageLeave = () => {
-    const el = revealRef.current;
-    if (!el) return;
-    el.style.setProperty("--mx", "-9999px");
-    el.style.setProperty("--my", "-9999px");
-  };
-  const [contactOpen, setContactOpen] = useState(false);
-
   useGSAP(
     () => {
       const mm = gsap.matchMedia();
       mm.add("(prefers-reduced-motion: no-preference)", () => {
-        // Struck onto the page one at a time rather than faded in — the copy
-        // is three clipped sentences and the reveal should read the same way.
-        // (Same wipe the refusals used to carry, which is free again now.)
         gsap.from("[data-move]", {
           clipPath: "inset(0 100% 0 0)",
           duration: 0.7,
@@ -700,189 +716,77 @@ function Invitation({
   );
 
   return (
-    // The last section on the page now that the footer is gone, so its own
-    // bottom padding is what sets how much air the button sits in — no
-    // trailing footer left to supply that space.
     <section
       ref={ref}
-      onMouseMove={onStageMove}
-      onMouseLeave={onStageLeave}
-      // `--stage` is the height of the beam's run before it strikes. The card
-      // is placed at 70% of it, which is where the demo puts its box and
-      // therefore where the beam's flare actually lands.
-      className="relative overflow-hidden px-6 pb-32 [--stage:400px] sm:pb-48 sm:[--stage:620px]"
+      className="relative min-h-screen overflow-hidden"
     >
-      {/* The laser wants black to burn against — over the starfield and the
-          horizon silhouette it read as a hairline. Transparent at the very top
-          so there is no seam where the section starts. */}
-      <div
-        aria-hidden
-        className="absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(to bottom, rgba(3,5,10,0) 0%, rgba(3,5,10,0.94) 20%, rgba(3,5,10,0.98) 100%)",
-        }}
-      />
-
-      {/* React Bits' LaserFlow, in brand gold, run over the stage only rather
-          than the whole section — the beam has to end on the card's top edge,
-          and a full-height canvas puts it straight through the copy, which is
-          what made this unreadable before.
-
-          Offsets are the demo's own box-example values (0.1 / -0.2); they are
-          what put the flare at 70% of the canvas. One more WebGL context, so
-          it is gated behind `useNearViewport` like every other shader here —
-          the component pauses its own loop off-screen, but it takes the
-          context at mount, and the budget is what the gating is about. */}
-      <div
-        ref={laserRef}
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-[var(--stage)]"
-      >
-        {laserNear && (
-          <LaserFlow
-            color={GOLD}
-            horizontalBeamOffset={0.1}
-            verticalBeamOffset={-0.2}
-            flowSpeed={0.3}
-            wispDensity={0.8}
-            wispIntensity={4}
-            fogIntensity={0.32}
-            mouseTiltStrength={0.06}
-            mouseSmoothTime={0.18}
-          />
-        )}
+      {/* Planetary limb — body + rim so the horizon reads as a finished object. */}
+      <div className="invitation-limb" aria-hidden>
+        <div className="invitation-limb__body" />
+        <div className="invitation-limb__haze" />
+        <div className="invitation-limb__rim" />
       </div>
 
-      {/* The demo's cursor-tracked reveal — a soft circle masked to follow the
-          pointer, sitting between the beam and the card exactly as theirs sits
-          between beam and box. Theirs lights a stock image through the mask;
-          this lights a gold sheen, so the page carries no hotlinked
-          third-party asset. `lighten` so it only ever adds light. */}
-      <div
-        ref={revealRef}
-        aria-hidden
-        className="pointer-events-none absolute inset-0 z-[2] mix-blend-lighten"
-        style={
-          {
-            background:
-              "radial-gradient(circle at var(--mx) var(--my), rgba(230,179,37,0.32), rgba(230,179,37,0.10) 45%, rgba(230,179,37,0) 70%)",
-            "--mx": "-9999px",
-            "--my": "-9999px",
-            WebkitMaskImage:
-              "radial-gradient(circle at var(--mx) var(--my), rgba(255,255,255,1) 0px, rgba(255,255,255,0.95) 60px, rgba(255,255,255,0.6) 120px, rgba(255,255,255,0.25) 180px, rgba(255,255,255,0) 240px)",
-            maskImage:
-              "radial-gradient(circle at var(--mx) var(--my), rgba(255,255,255,1) 0px, rgba(255,255,255,0.95) 60px, rgba(255,255,255,0.6) 120px, rgba(255,255,255,0.25) 180px, rgba(255,255,255,0) 240px)",
-            WebkitMaskRepeat: "no-repeat",
-            maskRepeat: "no-repeat",
-          } as React.CSSProperties
-        }
-      />
-
-      {/* The card the beam lands on. Same treatment as the demo's box — near
-          black fill, 2px gold edge, 20px radius, above the reveal at z-6 — and
-          it starts at 70% of the stage so its top edge is exactly where the
-          beam terminates. Unlike the demo's fixed 60%-height box this grows
-          with the copy, which is the whole point of putting the copy in it.
-
-          Widened to `max-w-6xl` so the two closing sentences each read as a
-          single centered line across the card rather than a pair of narrow
-          columns sitting in a sea of black. */}
-      <div className="relative z-[6] mx-auto mt-[calc(var(--stage)*0.7)] max-w-6xl rounded-[20px] border-2 border-gold bg-[#120F17] px-6 py-14 text-center sm:px-12 sm:py-20">
-        {/* The Invitation's own cursor. Fixed to the viewport, so it covers
-            the whole page once mounted — it must therefore only be live while
-            this section actually owns the viewport (`active`), or it would
-            stack on the splash cursor everywhere else.
-
-            Conditionally mounted rather than kept mounted and just visually
-            hidden: TargetCursor sets `document.body.style.cursor = "none"` on
-            mount and only restores it in its own unmount cleanup. Held
-            mounted-but-invisible (the previous `visibility` toggle), it set
-            that once on first entry to the Invitation and then never gave the
-            native cursor back for the rest of the page — the reader lost
-            their pointer everywhere, not just here. Unmounting on the way out
-            is what runs the cleanup that hands it back. */}
-        {active && (
-          <TargetCursor
-            targetSelector=".cursor-target"
-            cursorColor={GOLD}
-            cursorColorOnTarget={CREAM}
-            hideDefaultCursor
-            spinDuration={2}
-            parallaxOn
-          />
-        )}
-
-        <p data-depth className="mb-8 text-sm uppercase tracking-[0.35em] text-gold">
-          The Invitation
-        </p>
-        <BoxReveal>
-          <h2 className="font-serif text-[clamp(2.5rem,6.5vw,5rem)] leading-[1.1] text-cream">
-            We’re not for everyone. <span className="text-gold">That’s deliberate.</span>
-          </h2>
-        </BoxReveal>
-
-        <p
-          data-depth
-          className="mx-auto mt-10 max-w-3xl text-[clamp(1.25rem,2vw,1.6rem)] leading-[1.8] text-cream/70"
-        >
-          We work with <Magnify className="font-bold italic text-gold">ambitious</Magnify>{" "}
-          brands ready to make{" "}
-          <span className="rounded-[0.3em] bg-gold/18 px-[0.22em] py-[0.04em] font-bold text-gold [box-decoration-break:clone] [-webkit-box-decoration-break:clone]">
-            bold moves.
-          </span>
-        </p>
-
-        {/* The turn in the copy, and the only place it stops being a paragraph.
-            Three clipped sentences set as one line of rhythm — sans and loud
-            against the serif headline above them, so the eye lands here. A
-            `cursor-target` so the TargetCursor's brackets close around the
-            whole line rather than each word. */}
-        <p
-          ref={movesRef}
-          className="cursor-target mx-auto mt-12 flex flex-wrap items-baseline justify-center gap-x-6 gap-y-2 font-sans text-[clamp(1.5rem,3.6vw,2.75rem)] font-black uppercase leading-tight tracking-tight text-gold sm:gap-x-10"
-        >
-          {MOVES.map((move) => (
-            // `inline-block` so the wipe has a box of its own to clip against;
-            // on an inline span it would clip the whole line.
-            <span key={move} data-move className="inline-block">
-              {move}
-            </span>
-          ))}
-        </p>
-
-        <p
-          data-depth
-          className="mx-auto mt-12 max-w-3xl text-[clamp(1.25rem,2vw,1.6rem)] leading-[1.8] text-cream/70"
-        >
-          If you’re looking for{" "}
-          <span className="font-bold text-cream">a partner,</span>{" "}
-          {/* Dimmed rather than marked: it's the thing being ruled out, so it
-              should read quieter than what it's being set against. */}
-          <span className="text-cream/40">not another agency,</span> we’d love to meet.
-        </p>
-        <div data-depth className="mt-12">
-          <button
-            type="button"
-            onClick={() => setContactOpen(true)}
-            className="group cursor-target inline-flex min-h-11 items-center gap-3 bg-gold px-9 py-4 text-sm font-bold uppercase tracking-[0.2em] text-charcoal transition-colors duration-300 hover:bg-cream"
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1500px] items-center px-6 py-20 sm:px-10 sm:py-24 lg:px-16">
+        <div className="grid w-full items-center gap-12 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-16 xl:gap-20">
+          <div
+            className="max-w-3xl"
+            style={{
+              textShadow:
+                "0 1px 2px rgba(8,14,28,0.55), 0 6px 28px rgba(8,14,28,0.45)",
+            }}
           >
-            Tell us where it hurts
-            <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
-          </button>
+            <p className="mb-6 text-sm uppercase tracking-[0.35em] text-gold">The Invitation</p>
+
+            <BoxReveal>
+              <h2 className="font-serif text-[clamp(2.25rem,5.5vw,4.5rem)] font-light leading-[1.12] tracking-[-0.01em] text-cream">
+                We’re not for everyone.{" "}
+                <em className="font-bold not-italic text-gold sm:italic">That’s deliberate.</em>
+              </h2>
+            </BoxReveal>
+
+            <p className="mt-8 max-w-[36ch] font-sans text-[clamp(1.1rem,1.9vw,1.4rem)] font-light leading-[1.75] text-cream/80">
+              We work with <Magnify className="font-bold italic text-gold">ambitious</Magnify>{" "}
+              brands ready to make{" "}
+              <span className="rounded-[0.3em] bg-gold/18 px-[0.22em] py-[0.04em] font-bold text-gold [box-decoration-break:clone] [-webkit-box-decoration-break:clone]">
+                bold moves.
+              </span>
+            </p>
+
+            <p
+              ref={movesRef}
+              className="mt-10 flex flex-wrap items-baseline gap-x-5 gap-y-2 font-sans text-[clamp(1.2rem,2.8vw,2rem)] font-black uppercase leading-tight tracking-tight text-gold sm:gap-x-8"
+            >
+              {MOVES.map((move) => (
+                <span key={move} data-move className="inline-block">
+                  {move}
+                </span>
+              ))}
+            </p>
+
+            <p className="mt-10 max-w-[34ch] font-sans text-[clamp(1.1rem,1.9vw,1.4rem)] font-light leading-[1.75] text-cream/75">
+              If you’re looking for{" "}
+              <span className="font-semibold text-cream">a partner,</span>{" "}
+              <span className="text-cream/45">not another agency,</span> we’d love to meet.
+            </p>
+          </div>
+
+          <div className="relative z-20 flex w-full justify-start lg:justify-end">
+            <InvitationContactForm />
+          </div>
         </div>
       </div>
-
-      <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} />
     </section>
   );
 }
 
 export function HomeSections() {
   // SplashCursor is a full-viewport WebGL fluid — only worth the context while
-  // the hero is on screen. Invitation still owns TargetCursor when active.
+  // the hero is on screen. Dropped while Invitation owns the viewport.
   const [invitationActive, setInvitationActive] = useState(false);
   const [heroInView, setHeroInView] = useState(true);
+  const [welcomePlayId, setWelcomePlayId] = useState(0);
+  const verticalsCardDriverRef = useRef<((progress: number) => void) | null>(null);
 
   useEffect(() => {
     const el = document.getElementById("hero");
@@ -925,15 +829,27 @@ export function HomeSections() {
       {/* Clipped sideways: the tilted vertical cards swing their corners a few
           px past the viewport at the extremes of the effect, which is enough
           to put a horizontal scrollbar on the whole page. */}
-      {/* The Belief closes on "Attention is rented. Memory is owned."; Welcome
-          opens with the pack-51 clip-path scrub across this seam. */}
+      {/* Campaign ("The campaign ends…") → Welcome seam wipe. Lives between
+          those two sections only — not on Welcome’s pin or elsewhere. */}
       <div className="relative z-10 overflow-x-hidden">
         <BeliefSection />
-        <Introduction />
-        <Verticals />
+        {/* Fixed overlay over the Campaign↔Welcome seam — no spacer between them. */}
+        <ShapeOverlayBridge
+          from="#campaign"
+          to="#introduction"
+          onComplete={() => setWelcomePlayId((n) => n + 1)}
+        />
+        {/* Welcome → Verticals: vertical scroll drives a horizontal slide. */}
+        <WelcomeVerticalsRail
+          cardDriverRef={verticalsCardDriverRef}
+          welcome={<Introduction playId={welcomePlayId} />}
+          verticals={
+            <Verticals railDriven cardDriverRef={verticalsCardDriverRef} />
+          }
+        />
         <SlideBreaker />
         <SixDs />
-        <Invitation active={invitationActive} onVisibilityChange={setInvitationActive} />
+        <Invitation onVisibilityChange={setInvitationActive} />
       </div>
     </>
   );

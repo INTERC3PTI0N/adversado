@@ -4,7 +4,6 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
-import RippleDistortion from "@/components/reactbits/RippleDistortion";
 import {
   AdditiveBlending,
   BufferAttribute,
@@ -246,23 +245,15 @@ export function CinematicScene() {
       style={{ background: "transparent" }}
     >
       {/* Under the stars (the canvas is given z-index 1 when it is appended):
-          the night-sky wallpaper from the actual landing page — /night-sky.svg
-          driven by the ripple shader. Sky + stars only — the Kerala horizon
-          silhouette (nets, hills, boats) was removed. */}
+          the night-sky wallpaper from the landing page — static, no ripple. */}
       <div className="absolute inset-0" style={{ zIndex: 0, background: NAVY }}>
-        <RippleDistortion
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src="/night-sky.svg"
-          grayscale={false}
-          tint="#7fb0ff"
-          tintAmount={0.18}
-          highlightColor="#e8f0ff"
-          glint={0.3}
-          strength={0.12}
-          swirl={0.55}
-          rings={3}
-          dispersion={0.07}
-          brushSize={190}
-          quality="medium"
+          alt=""
+          aria-hidden
+          className="h-full w-full object-cover"
+          draggable={false}
         />
       </div>
       {/* The landing page's own vignette — keeps the wallpaper from swallowing

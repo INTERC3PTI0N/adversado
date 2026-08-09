@@ -170,12 +170,192 @@ body {
   line-height: 1;
 }
 
+/* Belief → Campaign morph: soft mask wipe driven by --belief-wipe
+   (100 = fully hidden, 0 = open with soft top, -30 = solid fill). */
+.belief-campaign-morph {
+  --belief-wipe: 100;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent calc(var(--belief-wipe) * 1%),
+    #000 calc(var(--belief-wipe) * 1% + 28%),
+    #000 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent calc(var(--belief-wipe) * 1%),
+    #000 calc(var(--belief-wipe) * 1% + 28%),
+    #000 100%
+  );
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .belief-campaign-morph {
+    transform-origin: 50% 100%;
+  }
+
+  .belief-campaign-copy {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .belief-campaign-morph {
+    --belief-wipe: -30;
+    -webkit-mask-image: none;
+    mask-image: none;
+    transform: none !important;
+  }
+
+  .belief-campaign-copy {
+    opacity: 1;
+  }
+}
+
 .playing-card-rank {
   font-family: var(--font-merriweather), Georgia, "Times New Roman", serif;
   font-size: clamp(1.15rem, 2.4vw, 1.55rem);
   font-weight: 700;
   color: var(--color-navy);
   letter-spacing: -0.02em;
+}
+
+/* Invitation limb — finished planetary object: dark body + gold atmospheric rim
+   spanning a continuous curved horizon across the lower frame. */
+.invitation-limb {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.invitation-limb__body,
+.invitation-limb__rim,
+.invitation-limb__haze {
+  position: absolute;
+  /* Bottom-weighted: continuous rim from lower-left → apex → lower-right. */
+  left: 46%;
+  top: 128%;
+  width: min(155vmax, 2300px);
+  height: min(155vmax, 2300px);
+  border-radius: 50%;
+  translate: -50% -50%;
+}
+
+/* Opaque planet disk — completes the object so the rim is an edge, not a float. */
+.invitation-limb__body {
+  background: radial-gradient(
+    circle closest-side,
+    #060a14 0%,
+    #0a1020 58%,
+    #0c1426 62.5%,
+    transparent 63.2%
+  );
+  opacity: 0.92;
+}
+
+.invitation-limb__haze,
+.invitation-limb__rim {
+  mix-blend-mode: screen;
+}
+
+/* Soft atmospheric wash beyond the limb (gold into navy — never red). */
+.invitation-limb__haze {
+  background: radial-gradient(
+    circle closest-side,
+    transparent 61%,
+    color-mix(in srgb, var(--color-gold) 40%, transparent) 64.5%,
+    color-mix(in srgb, var(--color-navy) 55%, transparent) 73%,
+    color-mix(in srgb, var(--color-navy) 22%, transparent) 84%,
+    transparent 94%
+  );
+  opacity: 0.95;
+  animation: invitation-limb-breathe 9s ease-in-out infinite;
+}
+
+/* Hot cream→gold edge, then gold falloff into navy. */
+.invitation-limb__rim {
+  background: radial-gradient(
+    circle closest-side,
+    transparent 62.85%,
+    color-mix(in srgb, var(--color-cream) 95%, transparent) 63.35%,
+    var(--color-gold) 63.95%,
+    color-mix(in srgb, var(--color-gold) 90%, transparent) 65.1%,
+    color-mix(in srgb, var(--color-gold) 45%, transparent) 68%,
+    color-mix(in srgb, var(--color-navy) 48%, transparent) 74%,
+    transparent 84%
+  );
+}
+
+@keyframes invitation-limb-breathe {
+  0%,
+  100% {
+    opacity: 0.78;
+    scale: 1;
+  }
+  50% {
+    opacity: 1;
+    scale: 1.008;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invitation-limb__haze {
+    animation: none;
+    opacity: 0.9;
+  }
+}
+
+/* Invitation CTA panel — lit by the same pointer that drives the tilt. */
+.invitation-form-stage {
+  width: min(100%, 26rem);
+}
+
+.invitation-form-panel {
+  --mx: 50%;
+  --my: 28%;
+  position: relative;
+  overflow: hidden;
+  border: 2px solid color-mix(in srgb, var(--color-gold) 85%, transparent);
+  border-radius: 20px;
+  background:
+    radial-gradient(
+      circle at var(--mx) var(--my),
+      color-mix(in srgb, var(--color-gold) 22%, transparent) 0%,
+      transparent 42%
+    ),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--color-navy) 55%, #120f17) 0%,
+      #120f17 55%,
+      #0c0a10 100%
+    );
+  padding: 1.75rem 1.5rem 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .invitation-form-panel {
+    padding: 2rem 1.75rem 1.75rem;
+  }
+}
+
+.invitation-form-panel__sheen {
+  background: linear-gradient(
+    125deg,
+    color-mix(in srgb, var(--color-cream) 10%, transparent) 0%,
+    transparent 38%,
+    transparent 62%,
+    color-mix(in srgb, var(--color-gold) 8%, transparent) 100%
+  );
+  opacity: 0.85;
+  mix-blend-mode: screen;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invitation-form-panel {
+    transform: none !important;
+  }
 }
 
 /* Focus list: hovering one entry dims its siblings so the eye is pulled to a

@@ -166,14 +166,80 @@ function FitWelcome({ children }: { children: React.ReactNode }) {
 }
 
 function Introduction({ playId }: { playId: number }) {
+  // Atropos tilt is desktop-only — on touch it costs layout (190% stage) and
+  // fights scrolling without adding anything the layers don't already give.
+  const [useAtropos, setUseAtropos] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const sync = () => setUseAtropos(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  const copy = (
+    <FitWelcome>
+      <div
+        className="mx-auto flex w-full max-w-[1500px] flex-col items-center text-center"
+        style={{ textShadow: WELCOME_TEXT_SHADOW }}
+      >
+        <h2 className="font-sans text-[clamp(2.25rem,min(9vw,11vh),6.5rem)] font-black leading-[0.95] tracking-[-0.04em] text-cream">
+          Welcome to <RepelText text="ADVERSADO" radius={140} strength={22} />
+        </h2>
+        <p className="mt-[clamp(0.75rem,1.5vh,1.5rem)] font-serif text-[clamp(1.05rem,min(2.4vw,2.8vh),1.85rem)] font-light italic leading-[1.4] tracking-[0.02em] text-cream/85">
+          Brand Behind the Brands.
+        </p>
+
+        <div className="relative mt-[clamp(1.5rem,4vh,5rem)] w-full">
+          {/* Soft navy bloom only — darkens the art under type without a cream plate. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute left-1/2 top-1/2 h-[135%] w-[115%] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(ellipse_at_center,rgba(8,14,28,0.88)_0%,rgba(8,14,28,0.55)_45%,rgba(8,14,28,0.2)_68%,transparent_82%)]"
+          />
+          <ScrollReveal
+            scrub={false}
+            playId={playId}
+            baseOpacity={0.15}
+            enableBlur={false}
+            className="relative w-full font-sans text-[clamp(1.35rem,min(4.4vw,5.2vh),4rem)] font-semibold leading-[1.75] tracking-[-0.015em] text-cream"
+          >
+            Bringing branding, advertising, marketing, events and performance{" "}
+            <WelcomeHit>under one roof.</WelcomeHit> Because your customers don’t
+            experience your business <WelcomeHit>in departments.</WelcomeHit> Why
+            should your <WelcomeHit>marketing?</WelcomeHit>
+          </ScrollReveal>
+        </div>
+      </div>
+    </FitWelcome>
+  );
+
+  const layers = WELCOME_BG_LAYERS.map((layer) => (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      key={layer.src}
+      src={`${layer.src}?v=dusk`}
+      alt=""
+      aria-hidden
+      {...(useAtropos ? { "data-atropos-offset": layer.offset } : {})}
+      className="pointer-events-none absolute inset-0 h-full w-full max-w-none object-cover select-none"
+      style={
+        "dim" in layer
+          ? { filter: `brightness(${layer.dim}) contrast(1.15) saturate(1.05)` }
+          : undefined
+      }
+      draggable={false}
+    />
+  ));
+
   return (
     <section
       id="introduction"
       className="relative z-10 h-screen w-full overflow-hidden bg-navy"
     >
-        {/* Atropos is larger than the viewport so 3D tilt never exposes its
-            rectangle edges. Content is inset back to the visible frame.
-            Explicit % width/height (not inset) — inset % was collapsing height. */}
+      {useAtropos ? (
+        /* Oversized so 3D tilt never exposes rectangle edges. Content is
+           inset back to the visible frame. */
         <Atropos
           className="absolute left-[-45%] top-[-45%] h-[190%] w-[190%]"
           shadow={false}
@@ -184,66 +250,23 @@ function Introduction({ playId }: { playId: number }) {
           activeOffset={36}
           innerClassName="relative h-full w-full overflow-hidden"
         >
-          {WELCOME_BG_LAYERS.map((layer) => (
-            // Atropos root is already 190% of the viewport — layers just cover it.
-            // Avoid CSS translate here — Atropos owns transform on offset nodes.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={layer.src}
-              src={`${layer.src}?v=dusk`}
-              alt=""
-              aria-hidden
-              data-atropos-offset={layer.offset}
-              className="pointer-events-none absolute inset-0 h-full w-full max-w-none object-cover select-none"
-              style={
-                "dim" in layer
-                  ? { filter: `brightness(${layer.dim}) contrast(1.15) saturate(1.05)` }
-                  : undefined
-              }
-              draggable={false}
-            />
-          ))}
-
+          {layers}
           {/* 45/190 ≈ 23.7% — maps the oversized root back to the section frame. */}
           <div
             data-atropos-offset="4"
             className="absolute inset-[23.7%] z-10 flex flex-col px-6 py-[clamp(1rem,3.5vh,5rem)] sm:px-10 lg:px-16"
           >
-            <FitWelcome>
-              <div
-                className="mx-auto flex w-full max-w-[1500px] flex-col items-center text-center"
-                style={{ textShadow: WELCOME_TEXT_SHADOW }}
-              >
-                <h2 className="font-sans text-[clamp(2.25rem,min(9vw,11vh),6.5rem)] font-black leading-[0.95] tracking-[-0.04em] text-cream">
-                  Welcome to <RepelText text="ADVERSADO" radius={140} strength={22} />
-                </h2>
-                <p className="mt-[clamp(0.75rem,1.5vh,1.5rem)] font-serif text-[clamp(1.05rem,min(2.4vw,2.8vh),1.85rem)] font-light italic leading-[1.4] tracking-[0.02em] text-cream/85">
-                  Brand Behind the Brands.
-                </p>
-
-                <div className="relative mt-[clamp(1.5rem,4vh,5rem)] w-full">
-                  {/* Soft navy bloom only — darkens the art under type without a cream plate. */}
-                  <div
-                    aria-hidden
-                    className="pointer-events-none absolute left-1/2 top-1/2 h-[135%] w-[115%] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(ellipse_at_center,rgba(8,14,28,0.88)_0%,rgba(8,14,28,0.55)_45%,rgba(8,14,28,0.2)_68%,transparent_82%)]"
-                  />
-                  <ScrollReveal
-                    scrub={false}
-                    playId={playId}
-                    baseOpacity={0.15}
-                    enableBlur={false}
-                    className="relative w-full font-sans text-[clamp(1.35rem,min(4.4vw,5.2vh),4rem)] font-semibold leading-[1.75] tracking-[-0.015em] text-cream"
-                  >
-                    Bringing branding, advertising, marketing, events and performance{" "}
-                    <WelcomeHit>under one roof.</WelcomeHit> Because your customers don’t
-                    experience your business <WelcomeHit>in departments.</WelcomeHit> Why
-                    should your <WelcomeHit>marketing?</WelcomeHit>
-                  </ScrollReveal>
-                </div>
-              </div>
-            </FitWelcome>
+            {copy}
           </div>
         </Atropos>
+      ) : (
+        <div className="absolute inset-0">
+          {layers}
+          <div className="absolute inset-0 z-10 flex flex-col px-6 py-[clamp(1rem,3.5vh,5rem)] sm:px-10 lg:px-16">
+            {copy}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -288,9 +311,14 @@ function Verticals({
         const tilts = tiltRefs.current.filter(Boolean) as HTMLDivElement[];
         if (cards.length !== VERTICALS.length) return;
 
+        // Slightly tighter fan on small screens so edges stay in frame.
+        const narrow = window.innerWidth < 768;
+        const spreadX = narrow ? [16, 39, 61, 84] : CARD_SPREAD_X;
+        const spreadRot = narrow ? [-12, -6, 6, 12] : CARD_SPREAD_ROT;
+
         const spreadT = Math.min(1, progress / (1 / 3));
         cards.forEach((card, index) => {
-          const left = 50 + (CARD_SPREAD_X[index] - 50) * spreadT;
+          const left = 50 + (spreadX[index] - 50) * spreadT;
           card.style.left = `${left}%`;
           const tilt = tilts[index];
           if (!tilt) return;
@@ -305,7 +333,7 @@ function Verticals({
           if (progress < startOffset) {
             front.style.transform = "rotateY(0deg)";
             back.style.transform = "rotateY(180deg)";
-            gsap.set(tilt, { rotation: CARD_SPREAD_ROT[index] * spreadT });
+            gsap.set(tilt, { rotation: spreadRot[index] * spreadT });
             return;
           }
           if (progress > endOffset) {
@@ -317,7 +345,7 @@ function Verticals({
           const t = (progress - startOffset) / (1 / 3);
           front.style.transform = `rotateY(${-180 * t}deg)`;
           back.style.transform = `rotateY(${180 - 180 * t}deg)`;
-          gsap.set(tilt, { rotation: CARD_SPREAD_ROT[index] * (1 - t) });
+          gsap.set(tilt, { rotation: spreadRot[index] * (1 - t) });
         });
       };
 
@@ -420,22 +448,56 @@ function Verticals({
         }
       );
 
-      // Desktop, reduced motion: final fan, already flipped.
-      mm.add("(min-width: 768px) and (prefers-reduced-motion: reduce)", () => {
+      // Mobile: same pack scrub, self-pinned (Welcome rail stays stacked).
+      // Pin the section (not an inner stage) so pin-spacer sits outside the
+      // rail track cleanly after overflow is cleared on mobile wrappers.
+      mm.add("(max-width: 767px) and (prefers-reduced-motion: no-preference)", () => {
+        const section = sectionRef.current;
+        const cards = Array.from(
+          stage.querySelectorAll<HTMLDivElement>(".vertical-flip-card")
+        );
+        const tilts = cards
+          .map((card) => card.querySelector<HTMLDivElement>(":scope > div"))
+          .filter(Boolean) as HTMLDivElement[];
+        if (!section || cards.length !== VERTICALS.length || tilts.length !== VERTICALS.length) {
+          return;
+        }
+
+        // Keep refs in sync for applyCardProgress.
+        cards.forEach((card, i) => {
+          cardRefs.current[i] = card;
+          tiltRefs.current[i] = tilts[i];
+        });
+
+        applyCardProgress(0);
+
+        const scrollLen = () => window.innerHeight * 2.75;
+
+        ScrollTrigger.create({
+          trigger: section,
+          start: "top top",
+          end: () => `+=${scrollLen()}`,
+          pin: true,
+          // Lenis / transformed ancestors make position:fixed pins drift off-screen
+          // on mobile — transform pinning keeps the pack in view while scrubbing.
+          pinType: "transform",
+          pinSpacing: true,
+          scrub: 0.65,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+          onUpdate: (self) => applyCardProgress(self.progress),
+        });
+
+        ScrollTrigger.refresh();
+      });
+
+      // Reduced motion: final fan, already flipped (any width).
+      mm.add("(prefers-reduced-motion: reduce)", () => {
         const cards = cardRefs.current.filter(Boolean) as HTMLDivElement[];
         const tilts = tiltRefs.current.filter(Boolean) as HTMLDivElement[];
         cards.forEach((card, index) => {
           gsap.set(card, { left: `${CARD_SPREAD_X[index]}%` });
           if (tilts[index]) gsap.set(tilts[index], { rotation: 0 });
-          flipToBack(card);
-        });
-      });
-
-      // Mobile: quiet 2×2 grid, backs showing.
-      mm.add("(max-width: 767px)", () => {
-        const cards = cardRefs.current.filter(Boolean) as HTMLDivElement[];
-        cards.forEach((card) => {
-          gsap.set(card, { clearProps: "left,transform" });
           flipToBack(card);
         });
       });
@@ -448,15 +510,15 @@ function Verticals({
   return (
     <section
       ref={sectionRef}
-      className={`relative ${railDriven ? "h-full" : ""}`}
+      className={`relative ${railDriven ? "h-full md:h-full" : ""}`}
     >
       <div
         ref={stageRef}
         className={`relative flex w-full flex-col overflow-hidden px-6 py-16 sm:px-10 sm:py-0 lg:px-16 ${
-          railDriven ? "h-full min-h-0 sm:h-full" : "min-h-screen sm:h-screen"
+          railDriven ? "min-h-screen md:h-full md:min-h-0" : "min-h-screen sm:h-screen"
         }`}
       >
-        <div className="relative z-10 mx-auto w-full max-w-[1500px] text-center sm:pt-[clamp(1.5rem,4vh,3.25rem)]">
+        <div className="relative z-10 mx-auto w-full max-w-[1500px] text-center pt-2 sm:pt-[clamp(1.5rem,4vh,3.25rem)]">
           <p className="text-sm uppercase tracking-[0.35em] text-gold">The Four Verticals</p>
           <h2 className="mx-auto mt-5 max-w-[14ch] font-serif text-[clamp(2.25rem,5.2vw,4rem)] font-light leading-[1.12] tracking-[-0.01em] text-cream">
             Four verticals.{" "}
@@ -465,7 +527,7 @@ function Verticals({
         </div>
 
         <div
-          className="relative z-[1] mx-auto mt-12 grid w-full max-w-[720px] grid-cols-2 gap-4 sm:pointer-events-none sm:absolute sm:inset-0 sm:mt-0 sm:max-w-none sm:grid-cols-none sm:gap-0"
+          className="relative z-[1] mx-auto mt-8 h-[min(58vh,400px)] w-full max-w-[720px] sm:pointer-events-none sm:absolute sm:inset-0 sm:mt-0 sm:h-auto sm:max-w-none"
           aria-label="The four verticals"
         >
           {VERTICALS.map((v, i) => (
@@ -474,7 +536,7 @@ function Verticals({
               ref={(el) => {
                 cardRefs.current[i] = el;
               }}
-              className="vertical-flip-card relative aspect-[5/7] w-full [perspective:1000px] sm:absolute sm:top-[54%] sm:left-1/2 sm:aspect-auto sm:h-[min(56vh,470px)] sm:w-[min(20vw,268px)] sm:pointer-events-auto"
+              className="vertical-flip-card absolute top-[52%] left-1/2 aspect-[5/7] w-[min(40vw,158px)] [perspective:1000px] sm:top-[54%] sm:aspect-auto sm:h-[min(56vh,470px)] sm:w-[min(20vw,268px)] sm:pointer-events-auto"
               style={{ zIndex: i + 1 }}
             >
               <div
@@ -573,7 +635,7 @@ function Verticals({
           ))}
         </div>
 
-        <div className="relative z-10 mx-auto mt-12 w-full max-w-[1500px] text-center sm:absolute sm:inset-x-0 sm:bottom-[clamp(1.25rem,3vh,2.5rem)] sm:mt-0 sm:px-6 lg:px-16">
+        <div className="relative z-10 mx-auto mt-10 w-full max-w-[1500px] text-center sm:absolute sm:inset-x-0 sm:bottom-[clamp(1.25rem,3vh,2.5rem)] sm:mt-0 sm:px-6 lg:px-16">
           <Link
             ref={ctaRef}
             href="/services"

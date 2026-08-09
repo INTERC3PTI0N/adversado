@@ -90,7 +90,13 @@ export function WelcomeVerticalsRail({
         }
       );
 
-      mm.add("(max-width: 767px), (prefers-reduced-motion: reduce)", () => {
+      // Mobile: stacked Welcome → Verticals. Card scrub is owned by Verticals.
+      mm.add("(max-width: 767px)", () => {
+        gsap.set(track, { clearProps: "transform" });
+      });
+
+      // Reduced motion (any width): park the rail and ask cards for their end state.
+      mm.add("(prefers-reduced-motion: reduce)", () => {
         gsap.set(track, { clearProps: "transform" });
         cardDriverRef.current?.(1);
       });
@@ -102,15 +108,17 @@ export function WelcomeVerticalsRail({
 
   return (
     <div ref={shellRef} data-welcome-verticals-rail className="relative z-10">
-      <div className="h-auto w-full overflow-hidden md:h-screen">
+      {/* overflow hidden only on desktop — it breaks ScrollTrigger pin on mobile
+          and the Verticals pack scrub would run while the stage scrolls away. */}
+      <div className="h-auto w-full md:h-screen md:overflow-hidden">
         <div
           ref={trackRef}
           className="flex w-full flex-col will-change-transform md:h-full md:w-[200vw] md:flex-row"
         >
-          <div className="w-full shrink-0 overflow-hidden md:h-full md:w-screen">
+          <div className="w-full shrink-0 md:h-full md:w-screen md:overflow-hidden">
             {welcome}
           </div>
-          <div className="w-full shrink-0 overflow-hidden md:h-full md:w-screen">
+          <div className="w-full shrink-0 md:h-full md:w-screen md:overflow-hidden">
             {verticals}
           </div>
         </div>

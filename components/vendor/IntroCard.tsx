@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Atropos from "atropos/react";
 import "atropos/css";
 
@@ -40,17 +40,18 @@ const BODY: Run[][] = [
 export function IntroCard({ className }: { className?: string }) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const [headRef, headNear] = useNearViewport<HTMLHeadingElement>("0px");
+  const [useAtropos, setUseAtropos] = useState(false);
 
-  return (
-    <Atropos
-      className={className}
-      shadow={false}
-      highlight={false}
-      rotateTouch={false}
-      rotateXMax={9}
-      rotateYMax={9}
-      innerClassName="flex w-full flex-col items-center text-center text-cream"
-    >
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const sync = () => setUseAtropos(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  const inner = (
+    <>
       {/* Typed out once the section has actually been scrolled to, not on
           mount — `useNearViewport` latches the first time this heading nears
           the viewport and stays true, so it never retypes on scroll-back. */}
@@ -122,6 +123,28 @@ export function IntroCard({ className }: { className?: string }) {
           </p>
         ))}
       </div>
+    </>
+  );
+
+  if (!useAtropos) {
+    return (
+      <div className={`flex w-full flex-col items-center text-center text-cream ${className ?? ""}`}>
+        {inner}
+      </div>
+    );
+  }
+
+  return (
+    <Atropos
+      className={className}
+      shadow={false}
+      highlight={false}
+      rotateTouch={false}
+      rotateXMax={9}
+      rotateYMax={9}
+      innerClassName="flex w-full flex-col items-center text-center text-cream"
+    >
+      {inner}
     </Atropos>
   );
 }

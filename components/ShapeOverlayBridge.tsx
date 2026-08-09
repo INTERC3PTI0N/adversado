@@ -49,8 +49,10 @@ function buildPathD(points: number[], covering: boolean) {
 /**
  * Seamless Campaign ↔ Welcome handoff.
  *
+ * - Desktop only: SVG peel curtain over the seam.
+ * - Mobile / reduced-motion: no overlay — sections stack normally; Welcome
+ *   still gets its play cue when it enters.
  * - Sections stay flush (fixed overlay — zero layout height).
- * - Curtain sits OVER both while they trade the viewport.
  * - Down: original peel (fill below the wave). Up: flipped peel (fill above).
  * - Snap commits a full destination frame when done.
  */
@@ -81,83 +83,91 @@ export function ShapeOverlayBridge({
       if (!root || paths.length < 2 || !fromEl || !toEl) return;
 
       const mm = gsap.matchMedia();
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
-        const allPoints = paths.map(() =>
-          Array.from({ length: NUM_POINTS }, () => 100)
-        );
-        const delays = pointDelays(NUM_POINTS);
-        // true = original (scroll down), false = flipped (scroll up)
-        let covering = true;
 
-        const paint = () => {
-          paths.forEach((path, i) => {
-            path.setAttribute("d", buildPathD(allPoints[i], covering));
+      // Desktop motion only — the peel is heavy on small screens and fights
+      // touch scrolling. Mobile just cues Welcome when it arrives.
+      mm.add(
+        "(min-width: 768px) and (prefers-reduced-motion: no-preference)",
+        () => {
+          const allPoints = paths.map(() =>
+            Array.from({ length: NUM_POINTS }, () => 100)
+          );
+          const delays = pointDelays(NUM_POINTS);
+          // true = original (scroll down), false = flipped (scroll up)
+          let covering = true;
+
+          const paint = () => {
+            paths.forEach((path, i) => {
+              path.setAttribute("d", buildPathD(allPoints[i], covering));
+            });
+          };
+
+          allPoints.forEach((points) => {
+            for (let j = 0; j < NUM_POINTS; j++) points[j] = 100;
           });
-        };
+          paint();
+          gsap.set(root, { autoAlpha: 0 });
 
-        allPoints.forEach((points) => {
-          for (let j = 0; j < NUM_POINTS; j++) points[j] = 100;
-        });
-        paint();
+          const openTl = gsap.timeline({ paused: true, onUpdate: paint });
+          openTl.to({}, { duration: 0.3 });
+          paths.forEach((_, i) => {
+            const points = allPoints[i];
+            const pathDelay = DELAY_PER_PATH * i;
+            for (let j = 0; j < NUM_POINTS; j++) {
+              openTl.fromTo(
+                points,
+                { [j]: 100 },
+                { [j]: 0, duration: 1, ease: "power2.inOut" },
+                0.3 + delays[j] + pathDelay
+              );
+            }
+          });
+
+          ScrollTrigger.create({
+            trigger: toEl,
+            start: "top bottom",
+            end: "top top",
+            scrub: 0.85,
+            snap: SEAM_SNAP,
+            animation: openTl,
+            onUpdate: (self) => {
+              if (self.direction === 0) return;
+              const next = self.direction === 1;
+              if (next !== covering) {
+                covering = next;
+                paint();
+              }
+            },
+            onEnter: () => {
+              covering = true;
+              paint();
+              gsap.set(root, { autoAlpha: 1 });
+            },
+            onLeave: () => {
+              gsap.set(root, { autoAlpha: 0 });
+              onCompleteRef.current?.();
+            },
+            onEnterBack: () => {
+              covering = false;
+              paint();
+              gsap.set(root, { autoAlpha: 1 });
+              onCompleteRef.current?.();
+            },
+            onLeaveBack: () => gsap.set(root, { autoAlpha: 0 }),
+          });
+
+          ScrollTrigger.refresh();
+        }
+      );
+
+      mm.add("(max-width: 767px), (prefers-reduced-motion: reduce)", () => {
         gsap.set(root, { autoAlpha: 0 });
-
-        const openTl = gsap.timeline({ paused: true, onUpdate: paint });
-        openTl.to({}, { duration: 0.3 });
-        paths.forEach((_, i) => {
-          const points = allPoints[i];
-          const pathDelay = DELAY_PER_PATH * i;
-          for (let j = 0; j < NUM_POINTS; j++) {
-            openTl.fromTo(
-              points,
-              { [j]: 100 },
-              { [j]: 0, duration: 1, ease: "power2.inOut" },
-              0.3 + delays[j] + pathDelay
-            );
-          }
-        });
-
         ScrollTrigger.create({
           trigger: toEl,
-          start: "top bottom",
-          end: "top top",
-          scrub: 0.85,
-          snap: SEAM_SNAP,
-          animation: openTl,
-          onUpdate: (self) => {
-            if (self.direction === 0) return;
-            const next = self.direction === 1;
-            if (next !== covering) {
-              covering = next;
-              paint();
-            }
-          },
-          onEnter: () => {
-            covering = true;
-            paint();
-            gsap.set(root, { autoAlpha: 1 });
-          },
-          onLeave: () => {
-            gsap.set(root, { autoAlpha: 0 });
-            onCompleteRef.current?.();
-          },
-          onEnterBack: () => {
-            covering = false;
-            paint();
-            gsap.set(root, { autoAlpha: 1 });
-            onCompleteRef.current?.();
-          },
-          onLeaveBack: () => gsap.set(root, { autoAlpha: 0 }),
+          start: "top 85%",
+          once: true,
+          onEnter: () => onCompleteRef.current?.(),
         });
-
-        ScrollTrigger.refresh();
-      });
-
-      mm.add("(prefers-reduced-motion: reduce)", () => {
-        paths.forEach((path) => {
-          path.setAttribute("d", buildPathD(Array(NUM_POINTS).fill(0), true));
-        });
-        gsap.set(root, { autoAlpha: 0 });
-        onCompleteRef.current?.();
       });
 
       return () => mm.revert();
@@ -170,7 +180,7 @@ export function ShapeOverlayBridge({
       ref={rootRef}
       aria-hidden
       data-seam="campaign-welcome"
-      className="pointer-events-none fixed inset-0 z-40 overflow-hidden"
+      className="pointer-events-none fixed inset-0 z-40 hidden overflow-hidden md:block"
     >
       <svg
         className="absolute inset-0 h-full w-full"

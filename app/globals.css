@@ -75,12 +75,6 @@ body {
   transform: translate(-50%, -50%);
 }
 
-@media (max-width: 767px) {
-  .vertical-flip-card {
-    transform: none;
-  }
-}
-
 @keyframes vertical-card-float {
   0%,
   100% {
@@ -95,18 +89,9 @@ body {
   transform: translate(-50%, -50%);
 }
 
-@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+@media (prefers-reduced-motion: no-preference) {
   .vertical-card-float {
     animation: vertical-card-float 3s ease-in-out infinite;
-  }
-}
-
-@media (max-width: 767px) {
-  .vertical-card-float {
-    position: relative;
-    top: auto;
-    left: auto;
-    transform: none;
   }
 }
 

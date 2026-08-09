@@ -16,7 +16,7 @@ import { SlideBreaker } from "@/components/SlideBreaker";
 import { IntroCard } from "@/components/vendor/IntroCard";
 import TargetCursor from "@/components/vendor/TargetCursor";
 import "@/components/vendor/TargetCursor.css";
-import TubesCursor from "@/components/vendor/TubesCursor";
+import SplashCursor from "@/components/reactbits/SplashCursor";
 import LaserFlow from "@/components/reactbits/LaserFlow";
 import "@/components/reactbits/LaserFlow.css";
 
@@ -336,7 +336,6 @@ function Invitation({
   onVisibilityChange: (visible: boolean) => void;
 }) {
   const ref = useDepthReveal<HTMLElement>();
-  const magnetRef = useMagnetic<HTMLButtonElement>({ strength: 0.4, radius: 110 });
   const movesRef = useRef<HTMLParagraphElement>(null);
   const revealRef = useRef<HTMLDivElement>(null);
   const [laserRef, laserNear] = useNearViewport<HTMLDivElement>();
@@ -488,10 +487,17 @@ function Invitation({
         {/* The Invitation's own cursor. Fixed to the viewport, so it covers
             the whole page once mounted — it must therefore only be live while
             this section actually owns the viewport (`active`), or it would
-            stack on the tubes cursor everywhere else. `display: contents` on
-            the gate wrapper means the toggle adds no box, while `visibility`
-            (inherited) hides the whole fixed cursor with it. */}
-        <div className="contents" style={{ visibility: active ? "visible" : "hidden" }}>
+            stack on the splash cursor everywhere else.
+
+            Conditionally mounted rather than kept mounted and just visually
+            hidden: TargetCursor sets `document.body.style.cursor = "none"` on
+            mount and only restores it in its own unmount cleanup. Held
+            mounted-but-invisible (the previous `visibility` toggle), it set
+            that once on first entry to the Invitation and then never gave the
+            native cursor back for the rest of the page — the reader lost
+            their pointer everywhere, not just here. Unmounting on the way out
+            is what runs the cleanup that hands it back. */}
+        {active && (
           <TargetCursor
             targetSelector=".cursor-target"
             cursorColor={GOLD}
@@ -500,7 +506,7 @@ function Invitation({
             spinDuration={2}
             parallaxOn
           />
-        </div>
+        )}
 
         <p data-depth className="mb-8 text-sm uppercase tracking-[0.35em] text-gold">
           The Invitation
@@ -552,7 +558,6 @@ function Invitation({
         </p>
         <div data-depth className="mt-12">
           <button
-            ref={magnetRef}
             type="button"
             onClick={() => setContactOpen(true)}
             className="group cursor-target inline-flex min-h-11 items-center gap-3 bg-gold px-9 py-4 text-sm font-bold uppercase tracking-[0.2em] text-charcoal transition-colors duration-300 hover:bg-cream"
@@ -589,18 +594,17 @@ export function HomeSections() {
           back on is one line. */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 bg-black" />
       <CinematicScene />
-      {/* The site-wide cursor: threejs's tubes, tinted in brand navy + gold,
-          drawn between the starfield (z-2) and the copy (z-10) so it reads as
-          light behind the type, the way the component's own demo layers it.
-          `visibility` (not unmount) toggles it during the invitation so the
-          swap is instant. */}
-      {/* z-20: the Belief's Spline canvas lives inside the z-10 copy wrapper
-          below, so at z-5 the cursor was stacking *under* that canvas and
-          vanishing every time it crossed over the 3D scene. Raised above the
-          whole page instead — `pointer-events-none` + `mix-blend-screen`
-          means it still reads as light passing over the copy, not a layer
-          sitting on top of it. */}
-      <TubesCursor className="z-20" hidden={invitationActive} />
+      {/* The site-wide cursor: the same gold fluid trail the countdown page
+          runs (SplashCursor, reactbits) rather than the threejs tubes this
+          used to be — the request was to bring the landing page's cursor over
+          here. It renders itself `fixed`/`z-50`/`pointer-events-none` with no
+          prop to blank it, so it's unmounted for the Invitation instead of
+          hidden; TargetCursor takes over there. Unmounting also means a fresh
+          fluid sim on every re-entry rather than one asked to resume mid-decay,
+          which is the cheaper and simpler of the two anyway. */}
+      {!invitationActive && (
+        <SplashCursor RAINBOW_MODE={false} COLOR={GOLD} SPLAT_RADIUS={0.22} DENSITY_DISSIPATION={2.5} />
+      )}
       {/* Clipped sideways: the tilted vertical cards swing their corners a few
           px past the viewport at the extremes of the effect, which is enough
           to put a horizontal scrollbar on the whole page. */}

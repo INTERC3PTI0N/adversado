@@ -2,11 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { animate, useMotionValue } from "motion/react";
+import gsap from "gsap";
 import { Silk } from "@/components/Silk";
-import { BrandOrb } from "@/components/vendor/BrandOrb";
-import GalleryTunnel from "@/components/vendor/GalleryTunnel";
 import { Globe } from "@/components/ui/cobe-globe";
-import { generateBrandTiles } from "@/components/brandTiles";
 import { useConstrainedDevice } from "@/components/useConstrainedDevice";
 
 /** The one marker the preloader's globe carries — where Adversado is from. */
@@ -35,8 +33,15 @@ const WHITE = "#ffffff";
 // The silk field stands in for the flat navy. Its folds run from a lifted navy
 // down to a near-black navy so the field st  ill reads as brand navy overall,
 // rather than turning the opening into a different colour.
+/** One fixed id: the preloader mounts once, and a `useId` value would need
+ *  escaping before it could go in a url(#…) reference anyway. */
+const MASK_ID = "pl-knockout";
+
 const SILK_HIGH = "#2a4a80";
 const SILK_LOW = "#0b1524";
+/** Lit-act Silk — same shader as act one, brand gold folds. */
+const GOLD_SILK_HIGH = "#f0c84a";
+const GOLD_SILK_LOW = "#b88912";
 
 // All from public/logo.svg, viewBox 0 0 23680 4480.
 const LETTER_PATHS = [
@@ -118,33 +123,22 @@ const COUNT_STEP_MS = 650;
 const DARK_MS = 4050;
 /** Lights coming up over the wordmark's last frame. */
 const LIGHT_IN_MS = 400;
-/** Beat to read the line in, then the three ticks it promises. */
-const LIGHT_HOLD_MS = 420 + COUNT_STEP_MS * 3;
-/** The orb swallowing the stage: the words break apart and fly into it while
- * the marble rushes up to meet the reader. Still its own beat, just no longer
- * a long one. */
-const SUCK_MS = 1700;
-/** How long the Gallery Tunnel ride runs before handing off to the site.
- * Short — the tunnel's own raised speed below is what keeps it from feeling
- * slow, so a 2s window reads as a fast pass rather than a long one. */
-const TUNNEL_MS = 2000;
-/** The tunnel's own fade-in, so it eases over whatever's still on screen
- * from the suck rather than popping in as a hard cut. */
-const TUNNEL_FADE_MS = 500;
-/** The ride's final beat: the tunnel blows out past the reader rather than
- * cutting away. The hero starts its own approach the instant this begins, not
- * when it ends — so for most of this the reader is looking through the opening
- * tunnel at "So do most brands." already coming toward them from a long way
- * off, and the whole thing lands as one continuous zoom. */
-const TUNNEL_ZOOM_MS = 1500;
-/** Where the lens stops blurring and starts. Transparent through the middle so
- * the vanishing point stays sharp, opaque by the edge of frame so the blur is
- * at full strength there — the further from the axis of travel, the more
- * smeared, which is the whole read. */
-const LENS_MASK =
-  "radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 20%, rgba(0,0,0,0.35) 42%, rgba(0,0,0,0.85) 68%, rgba(0,0,0,1) 100%)";
+/** Beat to read the line in, then THREE → TWO → ONE. Sheet peels after ONE. */
+const LIGHT_HOLD_MS = 420 + COUNT_STEP_MS * 2 + 900;
 /** When the lit act is fully up, in ms and in seconds. */
 const LIGHT_ON_MS = DARK_MS + LIGHT_IN_MS;
+/** When the countdown first shows ONE. */
+const ONE_AT_MS = LIGHT_ON_MS + 420 + COUNT_STEP_MS * 2;
+
+/**
+ * ── The cutout unveil ──────────────────────────────────────────────────────
+ *
+ * After the dark wordmark act, a gold Silk sheet covers the page. Big
+ * Montserrat type punches holes through it (SVG mask — same "see through the
+ * glyphs" idea as React Bits Masked Heading, but the fill is the live hero
+ * underneath). After ONE, the sheet dollies open and "SO DO MOST BRANDS."
+ * takes the frame.
+ */
 
 const SENTENCE_WORDS = ["THIS", "HEADLINE", "WILL", "VANISH", "IN "];
 const TAGLINE_1: { text: string; color: string }[] = [
@@ -180,23 +174,18 @@ export function Preloader({
   const globeRef = useRef<HTMLDivElement>(null);
   const tagline1Ref = useRef<HTMLDivElement>(null);
   const lightRef = useRef<HTMLDivElement>(null);
-  const universeRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLHeadingElement>(null);
-  const wordRefs = useRef<(HTMLSpanElement | null)[]>([]);
-  const tunnelRef = useRef<HTMLDivElement>(null);
-  const lensRef = useRef<HTMLDivElement>(null);
+  const groundRef = useRef<HTMLDivElement>(null);
+  const copyRef = useRef<HTMLDivElement>(null);
+  /** The group of black <text> inside the mask — the holes themselves. The
+   *  dolly grows these, which is what opens the letterforms out until one of
+   *  them is wider than the frame. */
+  const maskGroupRef = useRef<SVGGElement>(null);
+  /** The Silk sheet the heading is cut out of, scaled a little against the
+   *  heading's a lot, which is the parallax between them. */
+  const sheetRef = useRef<HTMLDivElement>(null);
   const [count, setCount] = useState(3);
-  const [outro, setOutro] = useState<"none" | "tunnel">("none");
-  /** Once true the preloader is nothing but the tunnel opening out — its own
-   * stage is struck and its backdrop turned transparent, so the page arriving
-   * underneath is visible through it. */
+  /** Act one struck; root goes transparent so the hero shows through the type. */
   const [handoff, setHandoff] = useState(false);
-  // Generated once, client-side only, and reused for the whole life of the
-  // component — the tunnel unmounts and the reader is gone before a second
-  // preloader run would ever need a fresh set.
-  const [tunnelImages] = useState(() =>
-    typeof window === "undefined" ? [] : generateBrandTiles(12, 512).map((src) => ({ src }))
-  );
 
   const fade = useMotionValue(0);
   const intro = useMotionValue(0);
@@ -290,6 +279,11 @@ export function Preloader({
       applyEyes(1);
       applyDot();
       tagline1.style.opacity = "1";
+      // `onHandoff` as well as `onDone`, and in that order. Hero gates its
+      // entire render on the `active` prop the page latches from onHandoff —
+      // without it the preloader unmounts onto a permanently empty hero. The
+      // motion path always fired both; this one only ever fired onDone.
+      onHandoff?.();
       const t = setTimeout(() => onDone?.(), 400);
       return () => {
         clearTimeout(t);
@@ -299,6 +293,7 @@ export function Preloader({
 
     root.style.backgroundColor = NAVY;
     root.style.setProperty("--fg", GOLD);
+    light.style.opacity = "0";
     applyFade(0);
     applyIntro(0);
     applyHead(0);
@@ -309,12 +304,9 @@ export function Preloader({
     // The countdown runs on React state — one word changing once a second
     // doesn't need a motion value, and it reads better in the markup.
     const ticks = [
-      // Same 420ms read-in beat LIGHT_HOLD_MS is built from, so the last tick
-      // lands exactly as the suck starts rather than drifting off it.
       setTimeout(() => setCount(2), LIGHT_ON_MS + 420 + COUNT_STEP_MS),
-      setTimeout(() => setCount(1), LIGHT_ON_MS + 420 + COUNT_STEP_MS * 2),
+      setTimeout(() => setCount(1), ONE_AT_MS),
     ];
-
     const controls = animate([
       // ── Act one, in the dark ──────────────────────────────────────────
       // 0.25-0.55 — wordmark reveals outward from the centre.
@@ -350,143 +342,166 @@ export function Preloader({
     ]);
 
     let cancelled = false;
-    let suck: ReturnType<typeof animate> | null = null;
-    const wordControls: ReturnType<typeof animate>[] = [];
-    let tunnelFade: ReturnType<typeof animate> | null = null;
-    let lensFade: ReturnType<typeof animate> | null = null;
-    let tunnelZoom: ReturnType<typeof animate> | null = null;
-    let tunnelTimer: ReturnType<typeof setTimeout> | undefined;
+    let outro: gsap.core.Timeline | null = null;
 
-    // The outro: the event horizon rushes up to meet the reader while the
-    // headline breaks apart into its own words and is thrown into it, then a
-    // long tunnel push over black hands off to the dark site underneath —
-    // the constellations and Hero's own reveal pick the same rush up on the
-    // far side (adversado:reveal, dispatched by the page once this calls
-    // onDone). Run as its own animation off a plain setTimeout — chaining it
-    // onto `controls` would tie its start to whichever timeline segment
-    // happens to finish last, rather than to this specific moment.
+    // Act one is struck as the sheet comes up, and the backdrop goes
+    // transparent with it — that is what puts the live /home background
+    // behind the punched letterforms for the whole countdown.
+    //
+    // `onHandoff` is deliberately NOT called here, though the two used to
+    // fire together. It is what starts the hero's arrival zoom, and the hero
+    // takes 2.6s to land: started now, it would be sitting fully settled
+    // behind the type long before the camera ever moved, and the dolly would
+    // arrive at a section that had already finished arriving. It goes at the
+    // top of the outro instead, so "SO DO MOST BRANDS." is still flying in
+    // as the camera comes through the letters at it.
+    const handoffTimer = setTimeout(() => {
+      if (cancelled) return;
+      setHandoff(true);
+    }, LIGHT_ON_MS);
+
+    // After ONE — the dolly. The camera drives forward through the headline:
+    // the punched type scales up until a single letterform is wider than the
+    // viewport, so the hole it cuts becomes the whole frame, and the hero is
+    // on the other side of it already zooming into view. One continuous move
+    // between two sections rather than a fade between them.
     const outroTimer = setTimeout(() => {
-      // Each word is its own WarpText, so the thing that flies apart is the
-      // same warped glass the reader has been looking at the whole time —
-      // nothing is swapped in underneath it, and the first frame of the
-      // collapse is pixel-for-pixel the frame before it.
-      const words = wordRefs.current.filter((el): el is HTMLSpanElement => !!el);
-      words.forEach((el, i) => {
-        const settle = i * 0.09;
-        const dur = Math.max(0.5, SUCK_MS / 1000 - settle * 0.6);
-        const sideways = (i % 2 === 0 ? -1 : 1) * (1 + (i % 3));
-        // A word that carries an annotation flies as one unit with it: the
-        // rough-notation <svg> is injected as el's immediate next sibling, so
-        // the whole collapse is applied to the word and that svg together,
-        // keeping the marker glued to the word it was drawn on as both are
-        // thrown into the centre.
-        const annotated =
-          el.nextElementSibling instanceof SVGElement &&
-          el.nextElementSibling.getAttribute("class")?.includes("rough-annotation");
-        const targets = annotated ? [el, el.nextElementSibling] : [el];
-        const c = animate(0, 1, {
-          duration: dur,
-          delay: settle,
-          ease: [0.6, 0, 0.9, 0.35],
-          onUpdate: (v) => {
-            const transform = `translateZ(${-v * 2400}px) translateX(${v * sideways * 90}px) translateY(${v * (i - words.length / 2) * 40}px) rotateX(${v * 60}deg) rotateY(${sideways * v * 45}deg) scale(${1 - v * 0.85})`;
-            const opacity = String(1 - Math.max(0, v - 0.15) / 0.85);
-            (targets as HTMLElement[]).forEach((t) => {
-              t.style.transform = transform;
-              t.style.opacity = opacity;
-            });
-          },
-        });
-        wordControls.push(c);
-      });
+      if (cancelled) return;
+      onHandoff?.();
 
-      // The universe rushing up to meet the reader — a long, accelerating
-      // push rather than the old quick snap, so this whole beat reads as
-      // its own camera move instead of a jump cut.
-      suck = animate(0, 1, {
-        duration: SUCK_MS / 1000,
-        ease: [0.5, 0, 0.85, 0.4],
-        onUpdate: (v) => {
-          const universe = universeRef.current;
-          if (universe) universe.style.transform = `scale(${1 + v * v * 5.5})`;
+      outro = gsap.timeline({
+        onComplete: () => {
+          if (!cancelled) onDone?.();
         },
       });
 
-      suck.then(() => {
-        if (cancelled) return;
-        setOutro("tunnel");
-        // Mounted at opacity 0 in the markup below; faded in here rather
-        // than popping straight to full brightness, so the tunnel eases in
-        // over whatever the suck left on screen instead of cutting to it.
-        requestAnimationFrame(() => {
-          if (cancelled || !tunnelRef.current) return;
-          tunnelFade = animate(
-            tunnelRef.current,
-            { opacity: [0, 1] },
-            { duration: TUNNEL_FADE_MS / 1000, ease: "easeOut" }
-          );
-          // The lens comes up just behind the tunnel rather than with it — a
-          // beat to see where they are, then the frame closes in around them.
-          if (lensRef.current) {
-            lensFade = animate(
-              lensRef.current,
-              { opacity: [0, 1] },
-              { duration: 0.9, delay: 0.2, ease: "easeOut" }
-            );
-          }
-        });
-        // The tunnel is an infinite ride with no natural end, so its length
-        // is set here: hold the push, then hand off. `onDone` is what swaps
-        // this whole component out for the constellations with "So do most
-        // brands." revealing over them — but it fires only once the tunnel
-        // has finished its own final push, so that push reads as physically
-        // arriving at that section rather than a cut to a separate zoom.
-        tunnelTimer = setTimeout(() => {
-          if (cancelled || !tunnelRef.current) return;
-          // Everything behind the tunnel goes, so the tunnel is the only thing
-          // between the reader and the page — then the hero is told to start
-          // its approach, and the tunnel opens out over the top of it.
-          setHandoff(true);
-          onHandoff?.();
-          // The lens clears on the way out. Holding the vignette through the
-          // blow-out would darken the hero arriving underneath at exactly the
-          // moment it needs to be readable — the frame opening up is what says
-          // the reader is through the hole rather than still inside it.
-          if (lensRef.current) {
-            lensFade?.stop();
-            lensFade = animate(
-              lensRef.current,
-              { opacity: [1, 0] },
-              { duration: TUNNEL_ZOOM_MS / 1000 / 1.6, ease: "easeIn" }
-            );
-          }
-          tunnelZoom = animate(
-            tunnelRef.current,
-            { scale: [1, 7], opacity: [1, 0] },
-            { duration: TUNNEL_ZOOM_MS / 1000, ease: [0.5, 0, 0.75, 0.65] }
-          );
-          tunnelZoom.then(() => {
-            if (!cancelled) onDone?.();
-          });
-        }, TUNNEL_MS - TUNNEL_ZOOM_MS);
-      });
+      // The approach. `power2.in` because a dolly toward something covers
+      // ground slowly at first and then very fast — a linear ramp reads as a
+      // zoom effect applied to type, which is the thing to avoid.
+      // The origin has to be set through GSAP, not CSS: for SVG it computes
+      // its own matrix and overrides `transform-origin`/`transform-box`, and
+      // with its default (the bbox centre) the growth pushed the whole stack
+      // off to the top-left and left the middle of frame sitting on solid
+      // sheet. Percentages here are of the text block's bounding box.
+      //
+      // 41%/45% aims the camera at a stroke of the "N" in VANISH rather than
+      // the geometric centre of the block — that centre falls on the rule
+      // beside "IN", and dead centre of the VANISH line falls in the gap
+      // between "N" and "I". Either would drive a blank wall at the reader
+      // instead of an opening.
+      gsap.set(maskGroupRef.current, { transformOrigin: "41% 45%" });
+      outro.to(maskGroupRef.current, { scale: 26, duration: 1.5, ease: "power2.in" }, 0);
+      // The sheet is a wall the camera is flying at, so it grows too — just
+      // far less, which is the parallax that separates it from the type and
+      // stops the two reading as one flat image being scaled.
+      outro.to(sheetRef.current, { scale: 1.35, duration: 1.5, ease: "power2.in" }, 0);
+      // And it clears on the way past. Belt and braces with the punch: the
+      // hole does the work through the middle of the move, but whether the
+      // exact centre of frame lands inside a glyph or in the gap between two
+      // depends on the copy, and a wall left standing in the last frames
+      // would be a hard edge across the hero.
+      outro.to(lightRef.current, { opacity: 0, duration: 0.55, ease: "power2.inOut" }, 0.95);
+
     }, LIGHT_ON_MS + LIGHT_HOLD_MS);
 
     return () => {
       cancelled = true;
       ticks.forEach(clearTimeout);
+      clearTimeout(handoffTimer);
       clearTimeout(outroTimer);
-      clearTimeout(tunnelTimer);
       controls.stop();
-      suck?.stop();
-      tunnelFade?.stop();
-      lensFade?.stop();
-      tunnelZoom?.stop();
-      wordControls.forEach((c) => c.stop());
+      outro?.kill();
       unsubs.forEach((u) => u());
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Big Montserrat cutout. White type + destination-out punches the starry
+  // sheet so the hero ("SO DO MOST BRANDS.") shows through the glyphs.
+  // The knockout.
+  //
+  // The headline is not drawn — it is *cut out of* the Silk sheet, and what
+  // shows in the letterforms is the live /home background sitting under the
+  // whole preloader. React Bits' MaskedHeading is the reference for the look;
+  // its own technique (an SVG clipPath of measured words clipping an <img> or
+  // <video> the component owns) can't be used literally, because the thing
+  // that has to show through here is a live WebGL scene beneath the page, not
+  // media this component holds. Same read, live source.
+  //
+  // An SVG <mask> rather than `mix-blend-mode: destination-out`, which is what
+  // this was written with first: `destination-out` is a canvas compositing
+  // operator and is NOT a legal CSS mix-blend-mode value. The declaration was
+  // dropped, the computed style stayed `normal`, and the "knockout" rendered
+  // as plain white type sitting on the Silk. `CSS.supports` confirms it —
+  // mix-blend-mode: destination-out is false, mask: url(#id) is true.
+  //
+  // White paints the sheet, black punches it, so the rect is white and the
+  // type is black. `maskUnits`/`maskContentUnits` are both userSpaceOnUse so
+  // percentages resolve against the masked element's own box, which keeps the
+  // whole thing responsive without measuring anything in JS.
+  const punch = (
+    // Sized to the viewport, not `h-0 w-0`. The mask's own percentages
+    // resolve against *this* svg's viewport, so a zero-sized host collapses
+    // the white rect to nothing, the mask comes out empty, and Chromium
+    // hides the entire masked element — the Silk vanished completely on the
+    // first attempt for exactly that reason. It paints nothing itself; only
+    // the <defs> matter.
+    <svg
+      aria-hidden
+      className="pointer-events-none absolute inset-0 h-full w-full"
+      focusable="false"
+    >
+      <defs>
+        <mask id={MASK_ID} maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse">
+          <rect x="0" y="0" width="100%" height="100%" fill="#fff" />
+          <g
+            ref={maskGroupRef}
+            fill="#000"
+            textAnchor="middle"
+            dominantBaseline="middle"
+            className="font-sans font-black uppercase"
+          >
+            <text
+              x="50%"
+              y="32%"
+              style={{ fontSize: "clamp(0.95rem,2.2vw,1.5rem)", letterSpacing: "0.45em" }}
+            >
+              {SENTENCE_WORDS[0]} {SENTENCE_WORDS[1]} {SENTENCE_WORDS[2]}
+            </text>
+
+            <text
+              x="50%"
+              y="45%"
+              style={{ fontSize: "clamp(4.5rem,16vw,13rem)", letterSpacing: "-0.045em" }}
+            >
+              {SENTENCE_WORDS[3]}
+            </text>
+
+            {/* The rules either side of "IN". Rects rather than <line> so
+                they knock out at a dependable thickness at any width. */}
+            <rect x="34%" y="calc(56% - 1px)" width="9%" height="2" />
+            <text
+              x="50%"
+              y="56%"
+              style={{ fontSize: "clamp(0.7rem,1.4vw,1rem)", letterSpacing: "0.5em" }}
+            >
+              IN
+            </text>
+            <rect x="57%" y="calc(56% - 1px)" width="9%" height="2" />
+
+            <text
+              x="50%"
+              y="64%"
+              style={{ fontSize: "clamp(2.4rem,7vw,5.5rem)", letterSpacing: "0.22em" }}
+            >
+              {COUNT_WORDS[count]}
+            </text>
+          </g>
+        </mask>
+      </defs>
+    </svg>
+  );
+
 
   return (
     <div
@@ -632,221 +647,54 @@ export function Preloader({
         </div>
       </div>
 
-      {/* Act two, over the top of everything: the lit room, raised once the
-          wordmark has taken its bow. Mounted from the first frame at zero
-          opacity rather than swapped in, so the lights come up on a stage
-          that is already standing and nothing has to load mid-sequence. */}
-      <div
-        ref={lightRef}
-        className="absolute inset-0 z-40 flex items-center justify-center overflow-hidden px-6"
-        style={{ opacity: 0 }}
-      >
-        {/* The brand orb, in its own layer so the outro can zoom it
-            independently of the text above it. Its tilt follows the pointer
-            on hover rather than needing a drag. */}
-        <div ref={universeRef} className="absolute inset-0">
-          {constrained ? (
-            // The orb, painted. BrandOrb is a real three.js scene with a
-            // bloom pass and a constellation field, and on a phone that's
-            // three more WebGL demands than the budget in
-            // useConstrainedDevice allows — this is the same read (a solid
-            // core, a gold rim, falling off into the navy ground) without a
-            // context.
-            <div
-              aria-hidden
-              className="absolute inset-0"
-              style={{
-                background: [
-                  "radial-gradient(30vmin 30vmin at 50% 50%, rgba(255,241,206,0.95), rgba(230,179,37,0.85) 40%, rgba(230,179,37,0.15) 68%, rgba(230,179,37,0) 78%)",
-                  "radial-gradient(90vmin 90vmin at 50% 50%, rgba(31,53,94,0.55), #02030a 72%)",
-                ].join(","),
-              }}
-            />
-          ) : (
-            <BrandOrb rotationSpeed={0.3} />
-          )}
-        </div>
-
-        {/* Readability scrim, between the marble and the type.
-
-            The headline sits dead centre, which is exactly where the orb is
-            brightest — gold type on a lit yellow sphere had almost no
-            contrast left. A band of the page's own near-black navy, widest
-            across the middle and falling off to nothing well before the
-            edges, buys the type its contrast back without boxing it in or
-            hiding the orb.
-
-            A sibling of the orb layer rather than a child, deliberately: the
-            outro scales `universeRef` to rush the marble at the reader, and
-            nested in there this would be scaled with it — the scrim would
-            balloon over the whole frame just as the words are flying away. */}
-        <div
-          aria-hidden
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse 62% 30% at 50% 50%, rgba(2,3,10,0.88) 0%, rgba(2,3,10,0.72) 45%, rgba(2,3,10,0.28) 72%, rgba(2,3,10,0) 90%)",
-          }}
-        />
-
-        {/* The headline, restyled around the glass marble behind it.
-
-            It used to be six React Bits WarpText canvases — one warped-glass
-            lens per word — with rough-notation marker scribbles over two of
-            them. Both were wrong once the orb became a polished marble: the
-            hand-drawn wobble fought the glass, the warped lettering competed
-            with the one thing in frame that is supposed to look refractive,
-            and six WebGL contexts sat in front of a scene that needs the
-            budget. This is plain type instead, stacked and staged so the
-            sentence builds: a quiet tracked-out first line, the promise set
-            huge in gold, and the count carrying the weight underneath.
-
-            Still one span per flying unit, so the suck below is unchanged. */}
-        <h1
-          ref={contentRef}
-          aria-label="THIS HEADLINE WILL VANISH IN"
-          className="relative flex w-full max-w-[1600px] flex-col items-center justify-center gap-[0.18em] text-center"
-          style={{
-            perspective: 1800,
-            transformStyle: "preserve-3d",
-            // Last of the separation, on top of the scrim. A tight dark halo
-            // rather than a drop shadow — the orb behind is in motion, so the
-            // type needs to hold its edge against whatever passes under it,
-            // and an offset shadow would only ever cover one side.
-            textShadow: "0 0 18px rgba(2,3,10,0.95), 0 0 42px rgba(2,3,10,0.8)",
-          }}
-        >
-          {/* Line one, quiet: small, tracked wide open, cream at reduced
-              weight. It sets up the sentence without competing with it. */}
-          <span
-            ref={(el) => {
-              wordRefs.current[0] = el;
-            }}
-            className="block font-sans text-[clamp(0.7rem,1.5vw,1.05rem)] font-medium uppercase tracking-[0.55em] text-cream/60"
-          >
-            {SENTENCE_WORDS[0]} {SENTENCE_WORDS[1]} {SENTENCE_WORDS[2]}
-          </span>
-
-          {/* Line two, the promise: as large as the line will take, black
-              weight, tight tracking, in gold. `-0.04em` because at this size
-              default tracking reads loose and the word stops being one shape. */}
-          <span
-            ref={(el) => {
-              wordRefs.current[1] = el;
-            }}
-            className="block font-sans text-[clamp(3rem,11vw,9rem)] font-black uppercase leading-[0.88] tracking-[-0.04em] text-gold"
-          >
-            {SENTENCE_WORDS[3]}
-          </span>
-
-          {/* Line three: the preposition hairline-ruled on both sides, so the
-              count below reads as the thing being counted to rather than a
-              fourth line of copy. */}
-          <span
-            ref={(el) => {
-              wordRefs.current[2] = el;
-            }}
-            className="flex items-center justify-center gap-4 font-sans text-[clamp(0.65rem,1.3vw,0.9rem)] font-semibold uppercase tracking-[0.5em] text-cream/45"
-          >
-            <span aria-hidden className="h-px w-[clamp(2rem,7vw,5.5rem)] bg-cream/25" />
-            IN
-            <span aria-hidden className="h-px w-[clamp(2rem,7vw,5.5rem)] bg-cream/25" />
-          </span>
-          {/* The count: cream, the one word on the stack that isn't gold or
-              muted. `tabular-nums` is no use on spelled-out words, so the
-              reflow on each tick is stopped by giving the line a fixed min
-              width sized for THREE, the longest it will ever hold. */}
-          <span
-            ref={(el) => {
-              wordRefs.current[3] = el;
-            }}
-            className="block min-w-[6ch] font-sans text-[clamp(1.6rem,4.6vw,3.6rem)] font-bold uppercase leading-none tracking-[0.14em] text-cream"
-          >
-            {COUNT_WORDS[count]}
-          </span>
-        </h1>
-      </div>
       </>
       )}
 
-      {/* The Gallery Tunnel, vendored verbatim and mounted only for the beat
-          between the hole swallowing the stage and the site underneath. The
-          component runs forever by design, so the timing lives out here: a
-          timer in the effect above unmounts it and calls `onDone`, which is
-          what puts "So do most brands." on the constellations.
-          Mounted at opacity 0 — the effect above fades it in over
-          TUNNEL_FADE_MS once it's actually painted, so this is a rush into
-          the ride rather than a pop. Its walls are the procedurally drawn
-          placeholder brand plates from brandTiles.ts rather than the vendored
-          default photo set, and it's pushed hard on speed — a long ride only
-          reads as cinematic if it's covering real distance the whole time,
-          not just running longer at the same pace. */}
-      {outro === "tunnel" && (
-        <div ref={tunnelRef} className="fixed inset-0 z-[70]" style={{ opacity: 0 }}>
-          <GalleryTunnel
-            label={false}
-            images={tunnelImages}
-            colors={["#e6b325", "#2b6cff", "#5a3c8c", "#f9f7f2", "#1f355e"]}
-            background="#020308"
-            lineColor="#e6b325"
-            lineOpacity={28}
-            speed={420}
-            boost={560}
-            fade={85}
-          />
+      {/* ── Act two ────────────────────────────────────────────────────────
+          Same Silk shader as act one, retinted to brand gold, with the
+          headline punched clean through it. What shows in the letterforms is
+          the live /home background. Act one's navy Silk/cat stays as-is. */}
+      <div ref={lightRef} className="absolute inset-0 z-40 overflow-hidden">
+        <div ref={groundRef} className="absolute inset-0" style={{ isolation: "isolate" }}>
+          {/* Sibling of the punch, not its parent — the dolly scales sheet and
+              type differently; nesting them would kill the parallax and the
+              cutout stacking context. */}
+          <div
+            ref={sheetRef}
+            className="absolute inset-0"
+            style={{ mask: `url(#${MASK_ID})`, WebkitMask: `url(#${MASK_ID})` }}
+          >
+            {constrained ? (
+              // Silk is a full-screen fragment shader and act one is still
+              // holding one of its own — phones get a painted gold fold.
+              <div
+                aria-hidden
+                className="absolute inset-0"
+                style={{
+                  background: `linear-gradient(155deg, ${GOLD_SILK_HIGH} 0%, ${GOLD_SILK_LOW} 55%, #8a6a12 100%)`,
+                }}
+              />
+            ) : (
+              <Silk
+                primaryColor={GOLD_SILK_HIGH}
+                secondaryColor={GOLD_SILK_LOW}
+                speed={0.8}
+                interactive={0.5}
+                intensity={0.35}
+                className="h-full w-full"
+              />
+            )}
+          </div>
 
+          {punch}
+
+          {/* The sentence still has to exist for a screen reader — the visible
+              version of it is a hole in the sheet. */}
+          <h1 ref={copyRef} className="sr-only">
+            {SENTENCE_WORDS.join(" ")} {COUNT_WORDS[count]}
+          </h1>
         </div>
-      )}
-
-      {/* The camera, over the ride rather than inside it. The tunnel renders a
-          clean sharp grid in every direction; what makes it read as being
-          pulled through something instead of flown down a corridor is what sits
-          between the reader and it.
-
-          This has to be a sibling of the tunnel, not a child: `backdrop-filter`
-          samples what is painted beneath it within the nearest backdrop root,
-          and the tunnel's own animated opacity makes that div a backdrop root —
-          nested inside, the blur would sample an empty backdrop and show
-          nothing at all.
-
-          Three passes, all masked to leave the middle alone, because the eye
-          needs one sharp point to fix on or the whole frame just reads as out
-          of focus:
-            · periphery blur, ramping up toward the edges
-            · a gravitational smear of gold and blue around that same ring
-            · a vignette closing the corners down to black */}
-      {outro === "tunnel" && (
-        <div
-          ref={lensRef}
-          aria-hidden
-          className="pointer-events-none fixed inset-0 z-[71]"
-          style={{ opacity: 0 }}
-        >
-          <div
-            className="absolute inset-0"
-            style={{
-              backdropFilter: "blur(20px) saturate(1.25)",
-              WebkitBackdropFilter: "blur(20px) saturate(1.25)",
-              maskImage: LENS_MASK,
-              WebkitMaskImage: LENS_MASK,
-            }}
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 24%, rgba(230,179,37,0.20) 50%, rgba(43,108,255,0.26) 74%, rgba(0,0,0,0) 97%)",
-            }}
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 26%, rgba(2,3,8,0.45) 60%, rgba(2,3,8,0.96) 100%)",
-            }}
-          />
-        </div>
-      )}
+      </div>
     </div>
   );
 }

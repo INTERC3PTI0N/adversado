@@ -7,39 +7,25 @@ import { useEffect, useState } from "react";
  * to the bottom of the viewport — down there it read as page furniture and got
  * lost on a short screen, where the whole point is that it answers "WHY?" by
  * pointing at what's below. Appears a beat after the question has finished
- * typing, and retires itself the moment the visitor actually scrolls, since a
- * hint that outlives its purpose is just clutter.
+ * typing, and stays once it's up so scrolling back to the hero still finds it.
  *
  * Its space is held from mount and only its opacity changes, so arriving
  * doesn't shove the hero's centred block upward.
  */
 export function ScrollHint({ delay = 6900 }: { delay?: number }) {
   const [visible, setVisible] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), delay);
     return () => clearTimeout(t);
   }, [delay]);
 
-  useEffect(() => {
-    // Only armed once the cue is actually up. Otherwise any scroll during the
-    // intro — including the ones the preloader's own scroll lock produces as
-    // it releases — retires the hint before it has ever been seen.
-    if (!visible) return;
-    const onScroll = () => {
-      if (window.scrollY > 40) setDismissed(true);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [visible]);
-
   return (
     <div
       aria-hidden
       className="pointer-events-none flex flex-col items-center gap-4"
       style={{
-        opacity: visible && !dismissed ? 1 : 0,
+        opacity: visible ? 1 : 0,
         transition: "opacity 700ms ease",
       }}
     >

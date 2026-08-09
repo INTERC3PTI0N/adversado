@@ -19,6 +19,8 @@ export function Typewriter({
   speed = 26,
   commaPause = 260,
   stopPause = 480,
+  /** Keep the caret blinking after the line has finished typing. */
+  persistCaret = false,
   className,
 }: {
   text: string;
@@ -26,6 +28,7 @@ export function Typewriter({
   speed?: number;
   commaPause?: number;
   stopPause?: number;
+  persistCaret?: boolean;
   className?: string;
 }) {
   const [shown, setShown] = useState(0);
@@ -67,7 +70,7 @@ export function Typewriter({
         <span className="invisible">{text}</span>
         <span className="absolute inset-0">
           {text.slice(0, shown)}
-          {!done && <span className="caret text-gold">|</span>}
+          {(!done || persistCaret) && <span className="caret text-gold">|</span>}
         </span>
       </span>
     </>

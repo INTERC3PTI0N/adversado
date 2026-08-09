@@ -19,46 +19,62 @@ gsap.registerPlugin(ScrollTrigger);
  * sharpens up from a blur, so the swap reads as one shape resolving into
  * the other rather than a hard cut.
  *
- * Both source files are the gold mark, which disappears entirely over the
- * cream and gold sections. Rather than ship two more SVGs, sections that
- * need it are tagged `data-nav-light` and the mark is knocked to solid
- * black while one is under it — the brand book's "Logo Pure Black"
- * variation, which is exactly the approved treatment for light grounds.
+ * Both source files are the gold mark. Light grounds use `data-nav-light`
+ * (Logo Pure Black via `brightness(0)`). The gold Welcome section uses
+ * `data-nav-navy` and swaps in navy assets so the O's white dot stays white —
+ * a full-image filter would crush that dot along with the letters.
  */
 export function StickyLogo() {
   const [hovered, setHovered] = useState(false);
   const [onLight, setOnLight] = useState(false);
+  const [onNavy, setOnNavy] = useState(false);
   // The countdown holding page carries the wordmark as its own headline.
   const hidden = usePathname() === "/";
 
   useEffect(() => {
-    const sections = document.querySelectorAll("[data-nav-light]");
-    if (!sections.length) return;
+    const lightSections = document.querySelectorAll("[data-nav-light]");
+    const navySections = document.querySelectorAll("[data-nav-navy]");
+    if (!lightSections.length && !navySections.length) return;
 
-    const triggers: ScrollTrigger[] = [];
-    sections.forEach((el) => {
-      triggers.push(
+    const lightTriggers: ScrollTrigger[] = [];
+    const navyTriggers: ScrollTrigger[] = [];
+
+    const band = {
+      start: "top 40px",
+      end: "bottom 72px",
+    } as const;
+
+    lightSections.forEach((el) => {
+      lightTriggers.push(
         ScrollTrigger.create({
           trigger: el,
-          // The band the logo actually occupies, not the viewport top, so the
-          // swap happens as the section passes behind the mark itself.
-          start: "top 40px",
-          end: "bottom 72px",
-          // Recomputed across every trigger rather than trusting this one's
-          // own state: on a boundary between two light sections the leaving
-          // trigger can fire after the entering one and would otherwise
-          // clear the flag that its neighbour just set.
-          onToggle: () => setOnLight(triggers.some((t) => t.isActive)),
+          ...band,
+          onToggle: () => setOnLight(lightTriggers.some((t) => t.isActive)),
         })
       );
     });
 
-    return () => triggers.forEach((t) => t.kill());
+    navySections.forEach((el) => {
+      navyTriggers.push(
+        ScrollTrigger.create({
+          trigger: el,
+          ...band,
+          onToggle: () => setOnNavy(navyTriggers.some((t) => t.isActive)),
+        })
+      );
+    });
+
+    return () => {
+      lightTriggers.forEach((t) => t.kill());
+      navyTriggers.forEach((t) => t.kill());
+    };
   }, []);
 
   if (hidden) return null;
 
   const swap = "opacity 0.5s ease, filter 0.5s ease, transform 0.5s ease";
+  const nocatSrc = onNavy ? "/logo_nocat_navy.svg" : "/logo_nocat.svg";
+  const catSrc = onNavy ? "/logo_navy.svg" : "/logo.svg";
 
   return (
     <Link
@@ -74,7 +90,10 @@ export function StickyLogo() {
       className="fixed top-[1.125rem] left-6 z-40 flex h-11 w-40 items-center"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{ filter: onLight ? "brightness(0)" : "none", transition: "filter 0.4s ease" }}
+      style={{
+        filter: onLight && !onNavy ? "brightness(0)" : "none",
+        transition: "filter 0.4s ease",
+      }}
     >
       <span
         className="absolute inset-0"
@@ -85,7 +104,7 @@ export function StickyLogo() {
           transition: swap,
         }}
       >
-        <Image src="/logo_nocat.svg" alt="Adversado" fill priority className="object-contain object-left" />
+        <Image key={nocatSrc} src={nocatSrc} alt="Adversado" fill priority className="object-contain object-left" />
       </span>
       <span
         className="absolute inset-0"
@@ -96,7 +115,7 @@ export function StickyLogo() {
           transition: swap,
         }}
       >
-        <Image src="/logo.svg" alt="Adversado" fill priority className="object-contain object-left" />
+        <Image key={catSrc} src={catSrc} alt="Adversado" fill priority className="object-contain object-left" />
       </span>
     </Link>
   );

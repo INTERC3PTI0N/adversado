@@ -79,7 +79,14 @@ export default function CountdownPage() {
 
       {/* Fluid trail. Fixed and above the page, so it's mounted outside the
           content stack and painted last. */}
-      <SplashCursor RAINBOW_MODE={false} COLOR={GOLD} SPLAT_RADIUS={0.22} DENSITY_DISSIPATION={2.5} />
+      <SplashCursor
+        RAINBOW_MODE={false}
+        COLOR={GOLD}
+        SPLAT_RADIUS={0.14}
+        SPLAT_FORCE={3200}
+        DENSITY_DISSIPATION={3.8}
+        VELOCITY_DISSIPATION={2.6}
+      />
 
       {/* Transparent to the pointer as a whole so the background shader keeps
           receiving mousemove; only the mesh tiles opt back in. */}

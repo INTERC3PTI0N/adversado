@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { DrawSVGPlugin } from "gsap/DrawSVGPlugin";
 import { useGSAP } from "@gsap/react";
+import { COMMIT_SNAP } from "@/components/Hero";
 
 gsap.registerPlugin(ScrollTrigger, DrawSVGPlugin, useGSAP);
 
@@ -12,12 +13,12 @@ gsap.registerPlugin(ScrollTrigger, DrawSVGPlugin, useGSAP);
  * The Belief → Introduction handoff, lifted from the reference route
  * transition (svg-page-transition-master/TransitionWrapper.jsx): a squiggle
  * draws itself in, thickens until its stroke floods the screen, then thins
- * back out. That original plays it once on a route change, `leave` then
- * `enter`, either side of the URL swap. There's no swap here — both sections
- * are already stacked in one scrolling document — so the whole draw/thicken/
- * thin arc is scrubbed to the scroll position crossing the seam instead.
- * `trigger` is the boundary itself, not either section, so the sweep is
- * centred on the seam rather than tied to one side of it.
+ * back out.
+ *
+ * Scrubbed across the exact scroll that carries Introduction from just below
+ * the fold to fully on (`top bottom` → `top top`). When the wipe finishes,
+ * Introduction owns the viewport and the campaign section is gone — and the
+ * same range snaps the other way when scrolling back up.
  */
 export function SectionWipe({ trigger }: { trigger: string }) {
   const pathRef = useRef<SVGPathElement>(null);
@@ -27,6 +28,20 @@ export function SectionWipe({ trigger }: { trigger: string }) {
     mm.add("(prefers-reduced-motion: no-preference)", () => {
       gsap.set(pathRef.current, { drawSVG: "0%", strokeWidth: 2 });
 
+      // Near-instant commit so the seam does not rest half-wiped with both
+      // sections sharing the frame after the stroke has thinned.
+      const SEAM_SNAP = {
+        ...COMMIT_SNAP,
+        duration: { min: 0.04, max: 0.1 },
+        ease: "power3.out",
+        snapTo: (value: number, self?: { direction: number }) => {
+          if (value <= 0.001 || value >= 0.999) return value;
+          const goingBack = self && self.direction === -1;
+          if (goingBack) return value < 0.97 ? 0 : 1;
+          return value > 0.02 ? 1 : 0;
+        },
+      } as const;
+
       gsap
         .timeline({
           scrollTrigger: {
@@ -34,20 +49,19 @@ export function SectionWipe({ trigger }: { trigger: string }) {
             // when the trigger is created/refreshed — a ref instead would
             // have raced Introduction's own mount, since this effect and the
             // one that populates the ref aren't ordered against each other.
-            // That race is exactly what produced a `start`/`end` of -591/-182:
-            // ScrollTrigger measured against a still-null trigger.
             trigger,
-            start: "top 65%",
-            end: "top 20%",
+            start: "top bottom",
+            end: "top top",
             scrub: true,
+            snap: SEAM_SNAP,
           },
         })
-        // Draws in, thin.
-        .to(pathRef.current, { drawSVG: "100%", strokeWidth: 2, ease: "none", duration: 1 }, 0)
-        // Floods the screen — the stroke is the wipe.
-        .to(pathRef.current, { strokeWidth: 900, ease: "power1.in", duration: 1 }, 1)
-        // Thins back out of the way, leaving Introduction already underneath.
-        .to(pathRef.current, { strokeWidth: 2, ease: "power1.out", duration: 1 }, 2)
+        // Draws in while the next section is rising under the flood.
+        .to(pathRef.current, { drawSVG: "100%", strokeWidth: 2, ease: "none", duration: 0.35 }, 0)
+        // Floods the screen — peak cover mid-seam, campaign fully obscured.
+        .to(pathRef.current, { strokeWidth: 900, ease: "power1.in", duration: 0.3 }, 0.35)
+        // Thins out only as Introduction finishes locking to the viewport top.
+        .to(pathRef.current, { strokeWidth: 2, ease: "power1.out", duration: 0.35 }, 0.65)
         .set(pathRef.current, { drawSVG: "0%" });
     });
     return () => mm.revert();

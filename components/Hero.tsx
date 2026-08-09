@@ -68,44 +68,39 @@ const TYPE_SPEED_MS = 200;
 const TYPE_RUN_MS = SUBHEADING.length * TYPE_SPEED_MS;
 const SCROLL_HINT_DELAY_MS = TYPE_DELAY_MS + TYPE_RUN_MS + 400;
 
-/** The hand-off zoom. The hero doesn't scroll away — it is pinned for one
- *  viewport of scroll and flown *through*, and the Belief picks the same
- *  camera move up on the other side (BeliefSection.tsx). Scrubbed, so the
- *  scrollbar is the camera position and dragging back runs it in reverse for
- *  free. `+=100%` of pin is what puts the Belief's top exactly at the bottom
- *  of the viewport as the pin lets go, so the two halves meet with no gap. */
+/** The hand-off zoom. The hero doesn't scroll away — it is pinned for a
+ *  short scrub and flown *through*, and the Belief picks the same camera
+ *  move up on the other side (BeliefSection.tsx). Scrubbed, so the scrollbar
+ *  is the camera position and dragging back runs it in reverse for free. */
 const FLY_THROUGH_SCALE = 6.5;
 
 /**
  * Auto-complete for a scrubbed section transition.
  *
- * Nearest-end snapping (`snapTo: [0, 1]`) would drag the reader *backwards*
- * out of a move they had just started, any time they stopped before halfway.
- * Committing to the direction of travel instead means a nudge of the wheel
- * finishes the zoom and a nudge the other way rewinds it — the camera is never
- * left parked between two sections, which is the whole point of snapping it.
+ * Commits to the direction of travel so a small nudge finishes the zoom and a
+ * nudge the other way rewinds it — the camera is never left parked mid-move.
  *
- * `delay` is short because the trigger fires when scrolling stops, and the
- * gap between "I stopped" and "the page moved on its own" is what reads as lag.
- * `inertia: false` for the same reason: velocity projection would let a hard
- * flick overshoot past the snap point and skip the move entirely.
+ * Forward commits once progress clears a low threshold (~6%) so the reader
+ * does not have to grind deep into the pin before the snap takes over.
+ * Backward commits the same way from the far end.
  *
- * The `value` guard is load-bearing, not defensive. Resting exactly at an end
- * is the normal state — it is where the page sits the whole time the preloader
- * is up — and a rule that only ever answers "0 or 1" answers "1" there too.
- * ScrollTrigger settling once on its own during the intro was enough to fire
- * it: the page scrolled a full viewport behind the preloader and handed the
- * reader a hero they had already flown past. Returning the value unchanged at
- * either end makes the snap a no-op until there is a half-finished move to
- * finish, which is also exactly the "after a slight scroll" behaviour.
+ * `delay` stays near zero: with smooth scrolling, a longer delay waits for
+ * inertia to die and feels like the snap needs "more scrolling" first.
+ * `inertia: false` so velocity projection cannot skip the move entirely.
+ *
+ * The end guards are load-bearing: resting exactly at 0 or 1 is the normal
+ * idle state (including under the preloader), and a rule that only ever
+ * answers "0 or 1" would fire "1" there and skip the hero.
  */
 export const COMMIT_SNAP = {
   snapTo: (value: number, self?: { direction: number }) => {
     if (value <= 0.001 || value >= 0.999) return value;
-    return self && self.direction === -1 ? 0 : 1;
+    const goingBack = self && self.direction === -1;
+    if (goingBack) return value < 0.94 ? 0 : 1;
+    return value > 0.06 ? 1 : 0;
   },
-  duration: { min: 0.3, max: 0.7 },
-  delay: 0.04,
+  duration: { min: 0.2, max: 0.45 },
+  delay: 0,
   inertia: false,
   ease: "power2.inOut",
 } as const;
@@ -203,7 +198,9 @@ export function Hero({ active = true }: { active?: boolean }) {
           scrollTrigger: {
             trigger: sectionRef.current,
             start: "top top",
-            end: "+=100%",
+            // Tight pin: one short wheel nudge + snap should clear the hero
+            // and land on Belief without a long scrub runway.
+            end: "+=22%",
             pin: true,
             scrub: true,
             snap: COMMIT_SNAP,
@@ -212,10 +209,13 @@ export function Hero({ active = true }: { active?: boolean }) {
         // Scale runs linear across the whole pin — that is the camera, and a
         // camera that eases is a camera that stutters against the scrollbar.
         tl.to(zoomRef.current, { scale: FLY_THROUGH_SCALE, ease: "none", duration: 1 }, 0)
-          // The fade is held back and then dropped quickly, so the copy stays
-          // readable well into the approach instead of dissolving the moment
-          // the wheel moves, and is fully gone before the pin releases.
-          .to(zoomRef.current, { opacity: 0, filter: "blur(16px)", ease: "power2.in", duration: 0.75 }, 0.25);
+          // Drop the copy immediately so Belief is the visible subject for
+          // most of this short pin, not empty stars after a late fade.
+          .to(
+            zoomRef.current,
+            { opacity: 0, filter: "blur(16px)", ease: "power2.in", duration: 0.45 },
+            0
+          );
       });
       return () => mm.revert();
     },

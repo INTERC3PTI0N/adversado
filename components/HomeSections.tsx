@@ -13,7 +13,10 @@ import { Magnify } from "@/components/Magnify";
 import { Silk } from "@/components/Silk";
 import { SectionWipe } from "@/components/SectionWipe";
 import { SlideBreaker } from "@/components/SlideBreaker";
-import { IntroCard } from "@/components/vendor/IntroCard";
+import { ScrollReveal } from "@/components/ScrollReveal";
+import { RepelText } from "@/components/Interactions";
+import Atropos from "atropos/react";
+import "atropos/css";
 import TargetCursor from "@/components/vendor/TargetCursor";
 import "@/components/vendor/TargetCursor.css";
 import SplashCursor from "@/components/reactbits/SplashCursor";
@@ -43,8 +46,8 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
  *
  * Every section still carries its own interaction, chosen to suit what it is
  * saying rather than repeating one effect six times:
- *   Belief       — the monolith, craned down as you scroll past it
- *   Introduction — navy wash that tracks the cursor across the whole block
+ *   Belief       — fly-through into the belief, then the navy memory stamp
+ *   Introduction — gold inverse of that stamp: welcome argument + wordmark
  *   Verticals    — accordion of shader panels, magnetic CTA under them
  *   Six Ds       — hovering one step dims the rest
  *   Invitation   — gold wash and a magnetic CTA that leans toward the pointer
@@ -83,20 +86,143 @@ const SIX_DS = [
 ];
 
 /* ── The Introduction ───────────────────────────────────────────────────── */
-/* No card any more — the wordmark, tagline and argument sit directly on the
- * page's own starfield, like every other section. The body copy still runs
- * through React Bits' VariableProximity, thickening each letter as the cursor
- * passes, and key phrases are still marked. */
+/* Same full-bleed statement frame as the campaign / memory section, with the
+ * colours inverted: gold field, navy type, navy hits. Welcome copy lands in
+ * the same quiet/loud split. */
 
-function Introduction() {
-  const ref = useDepthReveal<HTMLElement>();
+function WelcomeHit({ children }: { children: React.ReactNode }) {
+  return <span className="font-bold text-navy">{children}</span>;
+}
+
+/** Scales its child down to fit the section height on short/wide viewports
+ *  so the welcome stack never clips top or bottom. Width-bound too. */
+function FitWelcome({ children }: { children: React.ReactNode }) {
+  const box = useRef<HTMLDivElement>(null);
+  const inner = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const boxEl = box.current;
+    const innerEl = inner.current;
+    if (!boxEl || !innerEl) return;
+
+    const measure = () => {
+      const availH = boxEl.clientHeight;
+      const availW = boxEl.clientWidth;
+      // `transform: scale` does not change layout size, so offset* is the
+      // natural content box every time.
+      const needH = innerEl.offsetHeight;
+      const needW = innerEl.offsetWidth;
+      if (!needH || !needW) return;
+      // Slight inset so Atropos tilt does not kiss the clip edge.
+      setScale(Math.min(1, (availH * 0.94) / needH, (availW * 0.96) / needW));
+    };
+
+    const ro = new ResizeObserver(measure);
+    ro.observe(boxEl);
+    ro.observe(innerEl);
+    measure();
+    // Fonts settling can grow the stack after the first paint.
+    document.fonts?.ready.then(measure);
+    return () => ro.disconnect();
+  }, []);
 
   return (
-    // `id`, not a ref: SectionWipe (HomeSections.tsx) needs this element as a
-    // ScrollTrigger target, and a selector string resolved lazily by GSAP
-    // sidesteps having to coordinate two components' ref timing.
-    <section id="introduction" ref={ref} className="px-6 py-28 sm:py-40">
-      <IntroCard className="mx-auto w-full max-w-[130rem]" />
+    <div ref={box} className="flex min-h-0 w-full flex-1 items-center justify-center">
+      <div
+        ref={inner}
+        className="w-full origin-center will-change-transform"
+        style={{ transform: `scale(${scale})` }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function Introduction() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const [playId, setPlayId] = useState(0);
+
+  useGSAP(
+    () => {
+      const mm = gsap.matchMedia();
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        const SECTION_SNAP = {
+          snapTo: (value: number, self?: { direction: number }) => {
+            if (value <= 0.001 || value >= 0.999) return value;
+            const goingBack = self && self.direction === -1;
+            if (goingBack) return value < 0.97 ? 0 : 1;
+            return value > 0.02 ? 1 : 0;
+          },
+          duration: { min: 0.04, max: 0.1 },
+          delay: 0,
+          inertia: false,
+          ease: "power3.out",
+        } as const;
+
+        ScrollTrigger.create({
+          trigger: sectionRef.current,
+          start: "top bottom",
+          end: "top top",
+          snap: SECTION_SNAP,
+        });
+        ScrollTrigger.create({
+          trigger: sectionRef.current,
+          start: "top top",
+          end: "+=100%",
+          pin: true,
+          snap: SECTION_SNAP,
+          onEnter: () => setPlayId((n) => n + 1),
+          onEnterBack: () => setPlayId((n) => n + 1),
+        });
+      });
+      mm.add("(prefers-reduced-motion: reduce)", () => {
+        setPlayId((n) => n + 1);
+      });
+      return () => mm.revert();
+    },
+    { scope: sectionRef, dependencies: [] }
+  );
+
+  return (
+    // `id` kept for SectionWipe — GSAP resolves the selector lazily.
+    // `data-nav-navy`: sticky wordmark swaps to navy letters + white O-dot.
+    <section
+      id="introduction"
+      ref={sectionRef}
+      data-nav-navy
+      className="relative z-10 flex h-screen w-full flex-col overflow-hidden bg-gold px-6 py-[clamp(1rem,3.5vh,5rem)] sm:px-10 lg:px-16"
+    >
+      <FitWelcome>
+        <Atropos
+          className="mx-auto w-full max-w-[1500px]"
+          shadow={false}
+          highlight={false}
+          rotateTouch={false}
+          rotateXMax={9}
+          rotateYMax={9}
+          innerClassName="flex w-full flex-col items-center text-center"
+        >
+          <h2 className="font-sans text-[clamp(2.25rem,min(9vw,11vh),6.5rem)] font-black leading-[0.95] tracking-[-0.04em] text-navy">
+            Welcome to <RepelText text="ADVERSADO" radius={140} strength={22} />
+          </h2>
+          <p className="mt-[clamp(0.75rem,1.5vh,1.5rem)] font-serif text-[clamp(1.05rem,min(2.4vw,2.8vh),1.85rem)] font-light italic leading-[1.4] tracking-[0.02em] text-navy/70">
+            Brand Behind the Brands.
+          </p>
+
+          <ScrollReveal
+            scrub={false}
+            playId={playId}
+            className="mt-[clamp(1.5rem,4vh,5rem)] w-full font-sans text-[clamp(1.35rem,min(4.4vw,5.2vh),4rem)] font-light leading-[1.75] tracking-[-0.015em] text-navy/70"
+          >
+            Bringing branding, advertising, marketing, events and performance{" "}
+            <WelcomeHit>under one roof.</WelcomeHit> Because your customers don’t
+            experience your business <WelcomeHit>in departments.</WelcomeHit> Why
+            should your <WelcomeHit>marketing?</WelcomeHit>
+          </ScrollReveal>
+        </Atropos>
+      </FitWelcome>
     </section>
   );
 }
@@ -603,7 +729,14 @@ export function HomeSections() {
           fluid sim on every re-entry rather than one asked to resume mid-decay,
           which is the cheaper and simpler of the two anyway. */}
       {!invitationActive && (
-        <SplashCursor RAINBOW_MODE={false} COLOR={GOLD} SPLAT_RADIUS={0.22} DENSITY_DISSIPATION={2.5} />
+        <SplashCursor
+          RAINBOW_MODE={false}
+          COLOR={GOLD}
+          SPLAT_RADIUS={0.14}
+          SPLAT_FORCE={3200}
+          DENSITY_DISSIPATION={3.8}
+          VELOCITY_DISSIPATION={2.6}
+        />
       )}
       {/* Clipped sideways: the tilted vertical cards swing their corners a few
           px past the viewport at the extremes of the effect, which is enough

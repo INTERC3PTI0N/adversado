@@ -20,9 +20,9 @@ gsap.registerPlugin(ScrollTrigger);
  * the other rather than a hard cut.
  *
  * Both source files are the gold mark. Light grounds use `data-nav-light`
- * (Logo Pure Black via `brightness(0)`). The gold Welcome section uses
- * `data-nav-navy` and swaps in navy assets so the O's white dot stays white —
- * a full-image filter would crush that dot along with the letters.
+ * (Logo Pure Black via `brightness(0)`). Sections with `data-nav-navy` swap
+ * in navy assets so the O's white dot stays white — a full-image filter
+ * would crush that dot along with the letters.
  */
 export function StickyLogo() {
   const [hovered, setHovered] = useState(false);

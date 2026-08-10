@@ -155,141 +155,12 @@ body {
   line-height: 1;
 }
 
-/* Belief → Campaign morph: soft mask wipe driven by --belief-wipe
-   (100 = fully hidden, 0 = open with soft top, -30 = solid fill). */
-.belief-campaign-morph {
-  --belief-wipe: 100;
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    transparent 0%,
-    transparent calc(var(--belief-wipe) * 1%),
-    #000 calc(var(--belief-wipe) * 1% + 28%),
-    #000 100%
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0%,
-    transparent calc(var(--belief-wipe) * 1%),
-    #000 calc(var(--belief-wipe) * 1% + 28%),
-    #000 100%
-  );
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .belief-campaign-morph {
-    transform-origin: 50% 100%;
-  }
-
-  .belief-campaign-copy {
-    opacity: 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .belief-campaign-morph {
-    --belief-wipe: -30;
-    -webkit-mask-image: none;
-    mask-image: none;
-    transform: none !important;
-  }
-
-  .belief-campaign-copy {
-    opacity: 1;
-  }
-}
-
 .playing-card-rank {
   font-family: var(--font-merriweather), Georgia, "Times New Roman", serif;
   font-size: clamp(1.15rem, 2.4vw, 1.55rem);
   font-weight: 700;
   color: var(--color-navy);
   letter-spacing: -0.02em;
-}
-
-/* Invitation limb — finished planetary object: dark body + gold atmospheric rim
-   spanning a continuous curved horizon across the lower frame. */
-.invitation-limb {
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-.invitation-limb__body,
-.invitation-limb__rim,
-.invitation-limb__haze {
-  position: absolute;
-  /* Bottom-weighted: continuous rim from lower-left → apex → lower-right. */
-  left: 46%;
-  top: 128%;
-  width: min(155vmax, 2300px);
-  height: min(155vmax, 2300px);
-  border-radius: 50%;
-  translate: -50% -50%;
-}
-
-/* Opaque planet disk — completes the object so the rim is an edge, not a float. */
-.invitation-limb__body {
-  background: radial-gradient(
-    circle closest-side,
-    #060a14 0%,
-    #0a1020 58%,
-    #0c1426 62.5%,
-    transparent 63.2%
-  );
-  opacity: 0.92;
-}
-
-.invitation-limb__haze,
-.invitation-limb__rim {
-  mix-blend-mode: screen;
-}
-
-/* Soft atmospheric wash beyond the limb (gold into navy — never red). */
-.invitation-limb__haze {
-  background: radial-gradient(
-    circle closest-side,
-    transparent 61%,
-    color-mix(in srgb, var(--color-gold) 40%, transparent) 64.5%,
-    color-mix(in srgb, var(--color-navy) 55%, transparent) 73%,
-    color-mix(in srgb, var(--color-navy) 22%, transparent) 84%,
-    transparent 94%
-  );
-  opacity: 0.95;
-  animation: invitation-limb-breathe 9s ease-in-out infinite;
-}
-
-/* Hot cream→gold edge, then gold falloff into navy. */
-.invitation-limb__rim {
-  background: radial-gradient(
-    circle closest-side,
-    transparent 62.85%,
-    color-mix(in srgb, var(--color-cream) 95%, transparent) 63.35%,
-    var(--color-gold) 63.95%,
-    color-mix(in srgb, var(--color-gold) 90%, transparent) 65.1%,
-    color-mix(in srgb, var(--color-gold) 45%, transparent) 68%,
-    color-mix(in srgb, var(--color-navy) 48%, transparent) 74%,
-    transparent 84%
-  );
-}
-
-@keyframes invitation-limb-breathe {
-  0%,
-  100% {
-    opacity: 0.78;
-    scale: 1;
-  }
-  50% {
-    opacity: 1;
-    scale: 1.008;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .invitation-limb__haze {
-    animation: none;
-    opacity: 0.9;
-  }
 }
 
 /* Invitation CTA panel — lit by the same pointer that drives the tilt. */
@@ -456,4 +327,46 @@ dialog::backdrop {
   color: transparent;
   -webkit-text-stroke: 2px #fff;
   text-stroke: 2px #fff;
+}
+
+/* Preloader vanish-act orb — archive float + outer glow. Paint lives in SVG. */
+.pl-orb {
+  box-shadow:
+    0 0 40px rgba(230, 179, 37, 0.45),
+    0 0 100px rgba(230, 179, 37, 0.35),
+    0 0 180px rgba(122, 154, 212, 0.4),
+    0 0 280px rgba(230, 179, 37, 0.2);
+}
+
+.pl-orb-float {
+  animation: pl-orb-float 9s ease-in-out infinite;
+}
+
+@keyframes pl-orb-float {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-14px) scale(1.012);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-orb-float {
+    animation: none;
+  }
+}
+
+/* Welcome IntroCard — Atropos defaults force height:100% / overflow:hidden,
+   which collapses a content-sized stack. Size to the copy, keep overflow so
+   the marked-phrase pads and parallax offsets aren't clipped. */
+.atropos-welcome,
+.atropos-welcome .atropos-scale,
+.atropos-welcome .atropos-rotate,
+.atropos-welcome .atropos-inner {
+  height: auto;
+}
+.atropos-welcome .atropos-inner {
+  overflow: visible;
 }

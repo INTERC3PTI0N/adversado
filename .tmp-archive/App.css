@@ -1,0 +1,400 @@
+/* ===== ENGAGED clone \u2014 navy + gold theme ===== */
+
+:root {
+  --bg: #0a1226;
+  --navy: #1f355e;
+  --navy-2: #16294c;
+  --navy-3: #0d1b34;
+  --gold: #e6b325;
+  --gold-soft: #f2d27a;
+  --cream: #f5f1e6;
+  --text-muted: #aeb8d0;
+}
+
+.App {
+  background: var(--bg);
+  color: var(--cream);
+  overflow-x: clip;
+}
+
+/* ---------- Navbar ---------- */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 34px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  font-family: "Poppins", sans-serif;
+  font-weight: 600;
+  letter-spacing: 6px;
+  font-size: 22px;
+  color: var(--cream);
+  text-indent: 6px;
+}
+.brand-a { color: var(--cream); margin: 0 -1px; transform: translateY(1px); }
+.nav-right { display: flex; align-items: center; gap: 12px; }
+
+.pill {
+  border: none;
+  cursor: pointer;
+  border-radius: 999px;
+  font-family: "Poppins", sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 1px;
+  padding: 11px 20px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+.pill:hover { transform: translateY(-2px); }
+.pill-light { background: var(--cream); color: #12102a; display: inline-flex; align-items: center; gap: 10px; }
+.pill-cyan { background: var(--gold); color: #2a1e05; box-shadow: 0 0 22px rgba(230, 179, 37, 0.35); }
+.pill-cyan:hover { box-shadow: 0 0 30px rgba(230, 179, 37, 0.6); }
+.pill-outline { background: transparent; border: 1px solid rgba(245, 241, 230, 0.4); color: var(--cream); }
+.lang-btn { border-radius: 999px; padding: 11px 15px; }
+
+/* ---------- Menu overlay ---------- */
+.menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: radial-gradient(circle at 50% 40%, #1f355e 0%, #070d1c 80%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+.menu-overlay.open { opacity: 1; visibility: visible; }
+.menu-close { position: absolute; top: 26px; right: 34px; background: transparent; border: none; color: var(--cream); cursor: pointer; }
+.menu-list { display: flex; flex-direction: column; gap: 8px; text-align: center; }
+.menu-list a {
+  font-family: "Poppins", sans-serif;
+  font-weight: 600;
+  font-size: clamp(34px, 6vw, 64px);
+  color: var(--cream);
+  text-decoration: none;
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.5s ease, transform 0.5s ease, color 0.25s ease;
+}
+.menu-overlay.open .menu-list a { opacity: 1; transform: translateY(0); }
+.menu-list a:hover { color: var(--gold); font-style: italic; }
+
+/* ---------- Scroll track / sticky stage ---------- */
+.scroll-track { position: relative; height: 300vh; }
+.sticky-stage { position: sticky; top: 0; height: 100vh; overflow: hidden; }
+
+/* ---------- Hero ---------- */
+.hero {
+  position: relative;
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+/* persistent starry backdrop behind everything */
+.stage-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    radial-gradient(120% 90% at 18% 28%, #24406e 0%, transparent 55%),
+    radial-gradient(120% 90% at 85% 78%, #14294c 0%, transparent 55%),
+    linear-gradient(160deg, #0c1730 0%, #070d1c 100%);
+}
+
+/* Starfield (mouse parallax) */
+.starfield {
+  position: absolute; inset: 0; z-index: 1;
+  transform: translate3d(calc(var(--mx, 0) * 18px), calc(var(--my, 0) * 18px), 0);
+}
+.star { position: absolute; border-radius: 50%; background: rgba(245, 241, 230, 0.85); animation: twinkle 4s ease-in-out infinite; }
+.star-cyan { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
+@keyframes twinkle { 0%, 100% { opacity: 0.15; } 50% { opacity: 1; } }
+
+/* ---------- Orb portal ---------- */
+.orb-parallax {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 500px;
+  height: 500px;
+  margin-left: -250px;
+  margin-top: -250px;
+  z-index: 5;
+  transform: translate3d(calc(var(--mx, 0) * 46px), calc(var(--my, 0) * 46px), 0);
+}
+.orb-wrap { position: absolute; inset: 0; will-change: transform; }
+.orb {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  animation: orbFloat 9s ease-in-out infinite;
+  background:
+    radial-gradient(circle at 30% 24%, #fbeec4 0%, #e6b325 16%, transparent 44%),
+    radial-gradient(circle at 74% 80%, #3a5fa0 0%, #1f355e 30%, transparent 58%),
+    radial-gradient(circle at 50% 50%, #4b6fae 0%, #2c4c86 42%, #1c3560 70%, #101f3c 100%);
+  box-shadow:
+    inset 0 0 80px rgba(255, 255, 255, 0.22),
+    inset -30px -30px 90px rgba(10, 18, 38, 0.65),
+    0 0 120px rgba(230, 179, 37, 0.35),
+    0 0 220px rgba(31, 53, 94, 0.45);
+}
+@keyframes orbFloat {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-14px) scale(1.012); }
+}
+
+/* animated iridescent aurora */
+.orb-aurora {
+  position: absolute;
+  inset: -25%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(230, 179, 37, 0.0),
+    rgba(230, 179, 37, 0.5),
+    rgba(75, 111, 174, 0.25),
+    rgba(251, 238, 196, 0.5),
+    rgba(31, 53, 94, 0.2),
+    rgba(230, 179, 37, 0.0)
+  );
+  filter: blur(42px);
+  animation: swirlSpin 16s linear infinite;
+}
+.orb-aurora-2 {
+  inset: -10%;
+  filter: blur(30px);
+  mix-blend-mode: screen;
+  animation: swirlSpinRev 26s linear infinite;
+  opacity: 0.7;
+}
+@keyframes swirlSpin { to { transform: rotate(360deg); } }
+@keyframes swirlSpinRev { to { transform: rotate(-360deg); } }
+
+/* ---------- Dive layers ---------- */
+.hero-layer { position: absolute; inset: 0; z-index: 6; will-change: opacity; }
+.s2-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  transform-origin: center center;
+  will-change: transform, opacity;
+}
+
+/* feathery galaxy orb-portal (SVG turbulence). The galaxy always sits INSIDE
+   the orb circle; the central feathery hole opens to reveal the section. */
+.vortex {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  transform-origin: center center;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 70px rgba(255, 255, 255, 0.14),
+    inset -26px -26px 90px rgba(8, 14, 30, 0.6),
+    0 0 90px rgba(230, 179, 37, 0.3),
+    0 0 200px rgba(31, 53, 94, 0.4);
+  will-change: transform, opacity;
+}
+.vortex-svg { width: 100%; height: 100%; display: block; }
+
+/* bright light field that appears during the dive so the dark spiral pops */
+.dive-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 150vmax;
+  height: 150vmax;
+  border-radius: 50%;
+  z-index: 4;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  transform-origin: center center;
+  background: radial-gradient(
+    circle,
+    rgba(231, 236, 251, 0.55) 0%,
+    rgba(160, 178, 224, 0.5) 26%,
+    rgba(90, 122, 190, 0.4) 48%,
+    rgba(44, 70, 120, 0.25) 66%,
+    transparent 84%
+  );
+  will-change: transform, opacity;
+}
+
+.orb-gloss {
+  position: absolute;
+  top: 6%; left: 14%;
+  width: 62%; height: 40%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 30%, rgba(255,255,255,0.55), transparent 65%);
+  filter: blur(6px);
+  transform: translate(calc(var(--mx, 0) * 26px), calc(var(--my, 0) * 26px));
+}
+
+/* wormhole dark core (grows during dive) */
+.orb-core {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 55%; height: 55%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #06101f 0%, #0a1730 45%, rgba(20,34,66,0.2) 78%, transparent 100%);
+  filter: blur(12px);
+  will-change: transform, opacity;
+}
+
+/* ---------- Hero content ---------- */
+.hero-content {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  width: 100%;
+  will-change: opacity, transform;
+}
+.hero-title {
+  font-family: "Poppins", sans-serif;
+  font-weight: 500;
+  font-size: clamp(48px, 8.5vw, 128px);
+  line-height: 0.98;
+  margin: 0;
+  color: var(--cream);
+  text-shadow: 0 2px 40px rgba(7, 13, 28, 0.55);
+}
+.hero-title .line { display: block; }
+.hero-title em { font-family: "Playfair Display", serif; font-style: italic; font-weight: 500; }
+.hero-actions { display: flex; gap: 16px; justify-content: center; margin-top: 40px; }
+
+.action-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  border: none;
+  cursor: pointer;
+  border-radius: 999px;
+  font-family: "Poppins", sans-serif;
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: 1.2px;
+  padding: 9px 9px 9px 24px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.action-pill:hover { transform: translateY(-2px); }
+.action-light { background: var(--cream); color: #14233f; }
+.action-grad { background: linear-gradient(90deg, #16294c 0%, #6b5a1e 60%, #e6b325 130%); color: var(--cream); }
+.action-dark { background: #0d1b34; color: var(--cream); border: 1px solid rgba(120, 140, 190, 0.35); }
+.icon-circle { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; }
+.icon-purple { background: #c7d1ec; color: #1f355e; }
+.icon-cyan { background: var(--gold); color: #2a1e05; }
+
+/* ---------- Vision text ---------- */
+.hero-vision {
+  position: absolute;
+  left: 40px;
+  bottom: 90px;
+  max-width: 380px;
+  z-index: 5;
+  font-family: "Inter", sans-serif;
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+.hero-vision strong { color: var(--cream); font-style: italic; font-weight: 700; }
+.vision-link { color: var(--gold); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---------- Trusted by ---------- */
+.trusted { position: absolute; right: 40px; bottom: 60px; z-index: 5; text-align: center; }
+.trusted-label { display: block; font-family: "Poppins", sans-serif; font-size: 11px; letter-spacing: 2px; color: var(--text-muted); margin-bottom: 12px; }
+.trusted-card {
+  width: 210px; height: 128px;
+  border: 1px solid rgba(150, 165, 210, 0.22);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(20, 34, 62, 0.35);
+  backdrop-filter: blur(4px);
+  overflow: hidden;
+}
+.trusted-brand { font-family: "Poppins", sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 2px; color: rgba(205, 214, 235, 0.65); animation: brandFade 2.2s ease-in-out; }
+@keyframes brandFade { 0% { opacity: 0; transform: translateY(8px); } 20%, 80% { opacity: 1; transform: translateY(0); } 100% { opacity: 0.85; } }
+
+/* ---------- Scroll hint ---------- */
+.scroll-hint { position: absolute; bottom: 26px; left: 50%; transform: translateX(-50%); z-index: 5; display: flex; align-items: center; gap: 10px; font-family: "Poppins", sans-serif; font-size: 11px; letter-spacing: 2px; color: var(--cream); }
+.scroll-dot { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--gold); border-right-color: transparent; animation: spin 1.6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- Section 2 portal reveal ---------- */
+.portal { position: absolute; inset: 0; z-index: 10; overflow: hidden; will-change: clip-path; }
+.portal-inner { position: absolute; inset: 0; transform-origin: center center; will-change: transform; }
+.portal-inner .section2 { height: 100vh; min-height: 100vh; }
+.portal-ring {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  z-index: 11;
+  pointer-events: none;
+  box-shadow:
+    0 0 60px 8px rgba(230, 179, 37, 0.5),
+    0 0 120px 24px rgba(75, 111, 174, 0.4),
+    inset 0 0 60px 6px rgba(251, 238, 196, 0.35);
+  transition: opacity 0.3s ease;
+  will-change: width, height;
+}
+
+/* ---------- Section 2 ---------- */
+.section2 {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 100% at 10% 60%, #1f355e 0%, transparent 55%),
+    linear-gradient(180deg, #0a1226 0%, #0c1832 100%);
+}
+.bubbles { position: absolute; inset: 0; z-index: 1; transform: translate3d(calc(var(--mx, 0) * 24px), calc(var(--my, 0) * 24px), 0); }
+.bubble {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(60, 90, 150, 0.55), rgba(10, 18, 38, 0.15) 70%);
+  box-shadow: inset -10px -10px 30px rgba(0,0,0,0.4);
+  animation: floatY ease-in-out infinite;
+}
+@keyframes floatY { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-32px); } }
+.section2-inner { position: relative; z-index: 2; width: 100%; max-width: 1220px; margin: 0 auto; padding: 0 60px; }
+.section2-title { font-family: "Poppins", sans-serif; font-weight: 500; font-size: clamp(38px, 5.6vw, 78px); line-height: 1.06; margin: 0; color: var(--cream); max-width: 900px; }
+.section2-title em { font-family: "Playfair Display", serif; font-style: italic; }
+.grad-purple { background: linear-gradient(90deg, #9fb0d6, #cfd8ef); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.grad-cyan { background: linear-gradient(90deg, #e6b325, #f2d27a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.section2-detail { margin-top: 40px; margin-left: auto; width: 100%; max-width: 520px; }
+.section2-detail p { font-family: "Inter", sans-serif; font-size: 17px; line-height: 1.6; color: var(--text-muted); margin: 0 0 26px; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+  .navbar { padding: 16px 18px; }
+  .brand { font-size: 17px; letter-spacing: 4px; }
+  .pill-cyan { padding: 10px 14px; font-size: 11px; }
+  .orb-parallax { width: 380px; height: 380px; margin-left: -190px; margin-top: -190px; }
+  .hero-actions { flex-direction: column; align-items: center; }
+  .hero-vision { position: static; margin: 30px auto 0; text-align: center; max-width: 90%; }
+  .trusted, .scroll-hint { display: none; }
+  .section2-inner { padding: 100px 22px; }
+  .section2-detail { padding-left: 0; }
+}

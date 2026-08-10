@@ -6,6 +6,7 @@ import gsap from "gsap";
 import { Silk } from "@/components/Silk";
 import { Globe } from "@/components/ui/cobe-globe";
 import { useConstrainedDevice } from "@/components/useConstrainedDevice";
+import { VortexOrb } from "@/components/VortexOrb";
 
 /** The one marker the preloader's globe carries — where Adversado is from. */
 const KOCHI_MARKER = [{ id: "kochi", location: [9.9312, 76.2673] as [number, number], label: "Kochi, Kerala" }];
@@ -31,17 +32,10 @@ const GOLD = "#e6b325";
 const WHITE = "#ffffff";
 
 // The silk field stands in for the flat navy. Its folds run from a lifted navy
-// down to a near-black navy so the field st  ill reads as brand navy overall,
+// down to a near-black navy so the field still reads as brand navy overall,
 // rather than turning the opening into a different colour.
-/** One fixed id: the preloader mounts once, and a `useId` value would need
- *  escaping before it could go in a url(#…) reference anyway. */
-const MASK_ID = "pl-knockout";
-
 const SILK_HIGH = "#2a4a80";
 const SILK_LOW = "#0b1524";
-/** Lit-act Silk — same shader as act one, brand gold folds. */
-const GOLD_SILK_HIGH = "#f0c84a";
-const GOLD_SILK_LOW = "#b88912";
 
 // All from public/logo.svg, viewBox 0 0 23680 4480.
 const LETTER_PATHS = [
@@ -123,7 +117,7 @@ const COUNT_STEP_MS = 650;
 const DARK_MS = 4050;
 /** Lights coming up over the wordmark's last frame. */
 const LIGHT_IN_MS = 400;
-/** Beat to read the line in, then THREE → TWO → ONE. Sheet peels after ONE. */
+/** Beat to read the line in, then THREE → TWO → ONE. Orb dive after ONE. */
 const LIGHT_HOLD_MS = 420 + COUNT_STEP_MS * 2 + 900;
 /** When the lit act is fully up, in ms and in seconds. */
 const LIGHT_ON_MS = DARK_MS + LIGHT_IN_MS;
@@ -131,16 +125,13 @@ const LIGHT_ON_MS = DARK_MS + LIGHT_IN_MS;
 const ONE_AT_MS = LIGHT_ON_MS + 420 + COUNT_STEP_MS * 2;
 
 /**
- * ── The cutout unveil ──────────────────────────────────────────────────────
+ * ── The orb unveil ─────────────────────────────────────────────────────────
  *
- * After the dark wordmark act, a gold Silk sheet covers the page. Big
- * Montserrat type punches holes through it (SVG mask — same "see through the
- * glyphs" idea as React Bits Masked Heading, but the fill is the live hero
- * underneath). After ONE, the sheet dollies open and "SO DO MOST BRANDS."
- * takes the frame.
+ * After the dark wordmark act: darkened star field, archive SVG Vortex orb
+ * (navy+gold pearl), and Montserrat + Merriweather headline over it. After
+ * ONE, dive into the orb so the hero arrives through the opening.
  */
 
-const SENTENCE_WORDS = ["THIS", "HEADLINE", "WILL", "VANISH", "IN "];
 const TAGLINE_1: { text: string; color: string }[] = [
   { text: "The", color: GOLD },
   { text: "Brand", color: WHITE },
@@ -174,15 +165,15 @@ export function Preloader({
   const globeRef = useRef<HTMLDivElement>(null);
   const tagline1Ref = useRef<HTMLDivElement>(null);
   const lightRef = useRef<HTMLDivElement>(null);
-  const groundRef = useRef<HTMLDivElement>(null);
   const copyRef = useRef<HTMLDivElement>(null);
-  /** The group of black <text> inside the mask — the holes themselves. The
-   *  dolly grows these, which is what opens the letterforms out until one of
-   *  them is wider than the frame. */
-  const maskGroupRef = useRef<SVGGElement>(null);
-  /** The Silk sheet the heading is cut out of, scaled a little against the
-   *  heading's a lot, which is the parallax between them. */
-  const sheetRef = useRef<HTMLDivElement>(null);
+  /** Dive progress 0→1 — VortexOrb scale / hole / swirl (archive formulas). */
+  const diveProxy = useRef({ progress: 0 });
+  const [dive, setDive] = useState({
+    scale: 1,
+    rotate: 0,
+    holeScale: 0,
+    opacity: 1,
+  });
   const [count, setCount] = useState(3);
   /** Act one struck; root goes transparent so the hero shows through the type. */
   const [handoff, setHandoff] = useState(false);
@@ -344,27 +335,16 @@ export function Preloader({
     let cancelled = false;
     let outro: gsap.core.Timeline | null = null;
 
-    // Act one is struck as the sheet comes up, and the backdrop goes
-    // transparent with it — that is what puts the live /home background
-    // behind the punched letterforms for the whole countdown.
-    //
-    // `onHandoff` is deliberately NOT called here, though the two used to
-    // fire together. It is what starts the hero's arrival zoom, and the hero
-    // takes 2.6s to land: started now, it would be sitting fully settled
-    // behind the type long before the camera ever moved, and the dolly would
-    // arrive at a section that had already finished arriving. It goes at the
-    // top of the outro instead, so "SO DO MOST BRANDS." is still flying in
-    // as the camera comes through the letters at it.
+    // Stars (CinematicScene) need to show through the punched headline for the
+    // whole countdown — strike act one's silk and clear the navy at light-up.
+    // Hero zoom still waits for the dive (`onHandoff` below).
     const handoffTimer = setTimeout(() => {
       if (cancelled) return;
       setHandoff(true);
     }, LIGHT_ON_MS);
 
-    // After ONE — the dolly. The camera drives forward through the headline:
-    // the punched type scales up until a single letterform is wider than the
-    // viewport, so the hole it cuts becomes the whole frame, and the hero is
-    // on the other side of it already zooming into view. One continuous move
-    // between two sections rather than a fade between them.
+    // After ONE — dive into the orb. Scale + feathery hole + swirl match the
+    // archive App.js portal; the star field (and arriving hero) wait underneath.
     const outroTimer = setTimeout(() => {
       if (cancelled) return;
       onHandoff?.();
@@ -375,33 +355,30 @@ export function Preloader({
         },
       });
 
-      // The approach. `power2.in` because a dolly toward something covers
-      // ground slowly at first and then very fast — a linear ramp reads as a
-      // zoom effect applied to type, which is the thing to avoid.
-      // The origin has to be set through GSAP, not CSS: for SVG it computes
-      // its own matrix and overrides `transform-origin`/`transform-box`, and
-      // with its default (the bbox centre) the growth pushed the whole stack
-      // off to the top-left and left the middle of frame sitting on solid
-      // sheet. Percentages here are of the text block's bounding box.
-      //
-      // 41%/45% aims the camera at a stroke of the "N" in VANISH rather than
-      // the geometric centre of the block — that centre falls on the rule
-      // beside "IN", and dead centre of the VANISH line falls in the gap
-      // between "N" and "I". Either would drive a blank wall at the reader
-      // instead of an opening.
-      gsap.set(maskGroupRef.current, { transformOrigin: "41% 45%" });
-      outro.to(maskGroupRef.current, { scale: 26, duration: 1.5, ease: "power2.in" }, 0);
-      // The sheet is a wall the camera is flying at, so it grows too — just
-      // far less, which is the parallax that separates it from the type and
-      // stops the two reading as one flat image being scaled.
-      outro.to(sheetRef.current, { scale: 1.35, duration: 1.5, ease: "power2.in" }, 0);
-      // And it clears on the way past. Belt and braces with the punch: the
-      // hole does the work through the middle of the move, but whether the
-      // exact centre of frame lands inside a glyph or in the gap between two
-      // depends on the copy, and a wall left standing in the last frames
-      // would be a hard edge across the hero.
-      outro.to(lightRef.current, { opacity: 0, duration: 0.55, ease: "power2.inOut" }, 0.95);
+      const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+      const applyDive = (p: number) => {
+        setDive({
+          scale: 1 + p * 4.6,
+          holeScale: p * 2.6,
+          rotate: p * 260,
+          opacity: 1 - clamp01((p - 0.86) / 0.12),
+        });
+      };
 
+      diveProxy.current.progress = 0;
+      applyDive(0);
+      outro.to(
+        diveProxy.current,
+        {
+          progress: 1,
+          duration: 1.5,
+          ease: "power2.in",
+          onUpdate: () => applyDive(diveProxy.current.progress),
+        },
+        0
+      );
+      outro.to(copyRef.current, { opacity: 0, duration: 0.4, ease: "power2.in" }, 0);
+      outro.to(lightRef.current, { opacity: 0, duration: 0.55, ease: "power2.inOut" }, 0.95);
     }, LIGHT_ON_MS + LIGHT_HOLD_MS);
 
     return () => {
@@ -415,93 +392,6 @@ export function Preloader({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Big Montserrat cutout. White type + destination-out punches the starry
-  // sheet so the hero ("SO DO MOST BRANDS.") shows through the glyphs.
-  // The knockout.
-  //
-  // The headline is not drawn — it is *cut out of* the Silk sheet, and what
-  // shows in the letterforms is the live /home background sitting under the
-  // whole preloader. React Bits' MaskedHeading is the reference for the look;
-  // its own technique (an SVG clipPath of measured words clipping an <img> or
-  // <video> the component owns) can't be used literally, because the thing
-  // that has to show through here is a live WebGL scene beneath the page, not
-  // media this component holds. Same read, live source.
-  //
-  // An SVG <mask> rather than `mix-blend-mode: destination-out`, which is what
-  // this was written with first: `destination-out` is a canvas compositing
-  // operator and is NOT a legal CSS mix-blend-mode value. The declaration was
-  // dropped, the computed style stayed `normal`, and the "knockout" rendered
-  // as plain white type sitting on the Silk. `CSS.supports` confirms it —
-  // mix-blend-mode: destination-out is false, mask: url(#id) is true.
-  //
-  // White paints the sheet, black punches it, so the rect is white and the
-  // type is black. `maskUnits`/`maskContentUnits` are both userSpaceOnUse so
-  // percentages resolve against the masked element's own box, which keeps the
-  // whole thing responsive without measuring anything in JS.
-  const punch = (
-    // Sized to the viewport, not `h-0 w-0`. The mask's own percentages
-    // resolve against *this* svg's viewport, so a zero-sized host collapses
-    // the white rect to nothing, the mask comes out empty, and Chromium
-    // hides the entire masked element — the Silk vanished completely on the
-    // first attempt for exactly that reason. It paints nothing itself; only
-    // the <defs> matter.
-    <svg
-      aria-hidden
-      className="pointer-events-none absolute inset-0 h-full w-full"
-      focusable="false"
-    >
-      <defs>
-        <mask id={MASK_ID} maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse">
-          <rect x="0" y="0" width="100%" height="100%" fill="#fff" />
-          <g
-            ref={maskGroupRef}
-            fill="#000"
-            textAnchor="middle"
-            dominantBaseline="middle"
-            className="font-sans font-black uppercase"
-          >
-            <text
-              x="50%"
-              y="32%"
-              style={{ fontSize: "clamp(0.95rem,2.2vw,1.5rem)", letterSpacing: "0.45em" }}
-            >
-              {SENTENCE_WORDS[0]} {SENTENCE_WORDS[1]} {SENTENCE_WORDS[2]}
-            </text>
-
-            <text
-              x="50%"
-              y="45%"
-              style={{ fontSize: "clamp(4.5rem,16vw,13rem)", letterSpacing: "-0.045em" }}
-            >
-              {SENTENCE_WORDS[3]}
-            </text>
-
-            {/* The rules either side of "IN". Rects rather than <line> so
-                they knock out at a dependable thickness at any width. */}
-            <rect x="34%" y="calc(56% - 1px)" width="9%" height="2" />
-            <text
-              x="50%"
-              y="56%"
-              style={{ fontSize: "clamp(0.7rem,1.4vw,1rem)", letterSpacing: "0.5em" }}
-            >
-              IN
-            </text>
-            <rect x="57%" y="calc(56% - 1px)" width="9%" height="2" />
-
-            <text
-              x="50%"
-              y="64%"
-              style={{ fontSize: "clamp(2.4rem,7vw,5.5rem)", letterSpacing: "0.22em" }}
-            >
-              {COUNT_WORDS[count]}
-            </text>
-          </g>
-        </mask>
-      </defs>
-    </svg>
-  );
-
 
   return (
     <div
@@ -651,49 +541,52 @@ export function Preloader({
       )}
 
       {/* ── Act two ────────────────────────────────────────────────────────
-          Same Silk shader as act one, retinted to brand gold, with the
-          headline punched clean through it. What shows in the letterforms is
-          the live /home background. Act one's navy Silk/cat stays as-is. */}
-      <div ref={lightRef} className="absolute inset-0 z-40 overflow-hidden">
-        <div ref={groundRef} className="absolute inset-0" style={{ isolation: "isolate" }}>
-          {/* Sibling of the punch, not its parent — the dolly scales sheet and
-              type differently; nesting them would kill the parallax and the
-              cutout stacking context. */}
-          <div
-            ref={sheetRef}
-            className="absolute inset-0"
-            style={{ mask: `url(#${MASK_ID})`, WebkitMask: `url(#${MASK_ID})` }}
-          >
-            {constrained ? (
-              // Silk is a full-screen fragment shader and act one is still
-              // holding one of its own — phones get a painted gold fold.
-              <div
-                aria-hidden
-                className="absolute inset-0"
-                style={{
-                  background: `linear-gradient(155deg, ${GOLD_SILK_HIGH} 0%, ${GOLD_SILK_LOW} 55%, #8a6a12 100%)`,
-                }}
-              />
-            ) : (
-              <Silk
-                primaryColor={GOLD_SILK_HIGH}
-                secondaryColor={GOLD_SILK_LOW}
-                speed={0.8}
-                interactive={0.5}
-                intensity={0.35}
-                className="h-full w-full"
-              />
-            )}
-          </div>
+          Darkened star field + archive SVG VortexOrb with Montserrat /
+          Merriweather headline. Dive opens the feathery portal after ONE. */}
+      <div
+        ref={lightRef}
+        className="absolute inset-0 z-40 overflow-hidden"
+        style={{ opacity: 0 }}
+      >
+        {/* Darken the cinematic field so the orb reads like Engaged's night stage. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.35)_0%,rgba(0,0,0,0.72)_48%,rgba(0,0,0,0.92)_100%)]"
+        />
 
-          {punch}
-
-          {/* The sentence still has to exist for a screen reader — the visible
-              version of it is a hole in the sheet. */}
-          <h1 ref={copyRef} className="sr-only">
-            {SENTENCE_WORDS.join(" ")} {COUNT_WORDS[count]}
-          </h1>
+        <div className="absolute left-1/2 top-1/2 h-[min(42vmin,380px)] w-[min(42vmin,380px)] -translate-x-1/2 -translate-y-1/2">
+          <VortexOrb
+            className="h-full w-full"
+            scale={dive.scale}
+            rotate={dive.rotate}
+            holeScale={dive.holeScale}
+            opacity={dive.opacity}
+          />
         </div>
+
+        {/* Hero-scale+ Montserrat headline — free to spill past the orb.
+            Merriweather is reserved for the countdown count word only. */}
+        <div
+          ref={copyRef}
+          className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center px-3 text-center text-cream sm:px-4"
+        >
+          <p className="max-w-[14ch] font-sans text-[clamp(3.5rem,12vw,9.5rem)] font-semibold leading-[0.98] tracking-[-0.03em]">
+            This headline will
+          </p>
+          <p className="mt-[0.02em] max-w-[10ch] font-sans text-[clamp(4.75rem,16vw,13rem)] font-semibold leading-[0.88] tracking-[-0.035em]">
+            vanish.
+          </p>
+          <p className="mt-[clamp(1.1rem,3vh,2rem)] font-sans text-[clamp(0.85rem,1.8vw,1.15rem)] font-medium uppercase tracking-[0.38em] text-cream/65">
+            in{" "}
+            <span className="ml-1 font-serif text-[clamp(1.75rem,4.5vw,3.25rem)] font-light italic normal-case tracking-tight text-cream">
+              {COUNT_WORDS[count].toLowerCase()}
+            </span>
+          </p>
+        </div>
+
+        <h1 className="sr-only">
+          This headline will vanish in {COUNT_WORDS[count].toLowerCase()}
+        </h1>
       </div>
     </div>
   );

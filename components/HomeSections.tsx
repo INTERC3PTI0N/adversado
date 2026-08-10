@@ -11,13 +11,9 @@ import { BeliefSection } from "@/components/BeliefSection";
 import { useMagnetic } from "@/components/Interactions";
 import { InvitationContactForm } from "@/components/InvitationContactForm";
 import { Magnify } from "@/components/Magnify";
-import { ShapeOverlayBridge } from "@/components/ShapeOverlayBridge";
 import { SlideBreaker } from "@/components/SlideBreaker";
-import { ScrollReveal } from "@/components/ScrollReveal";
-import { RepelText } from "@/components/Interactions";
 import { WelcomeVerticalsRail } from "@/components/WelcomeVerticalsRail";
-import Atropos from "atropos/react";
-import "atropos/css";
+import { IntroCard } from "@/components/vendor/IntroCard";
 import SplashCursor from "@/components/reactbits/SplashCursor";
 
 /** Brand gold, for the props that take a colour rather than a class. */
@@ -38,11 +34,11 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
  *
  * Every section still carries its own interaction, chosen to suit what it is
  * saying rather than repeating one effect six times:
- *   Belief       — fly-through into the belief, then the navy memory stamp
- *   Introduction — gold inverse of that stamp: welcome argument + wordmark
+ *   Belief       — fly-through into the belief
+ *   Introduction — welcome argument + wordmark
  *   Verticals    — pinned pack-44 flip cards, magnetic CTA under them
  *   Six Ds       — hovering one step dims the rest
- *   Invitation   — constellation field + gold limb; 3D audit form tracks the cursor
+ *   Invitation   — constellation field; 3D audit form tracks the cursor
  */
 
 const VERTICALS = [
@@ -90,34 +86,6 @@ const SIX_DS = [
 ];
 
 /* ── The Introduction ───────────────────────────────────────────────────── */
-/* Full-bleed dusk landscape from `background-1.svg` (split + brand-recolored
- * under `/images/welcome-bg/`). Cream type sits on the art — no cream plate —
- * with a soft shadow so navy/gold hills stay visible and copy stays legible. */
-
-const WELCOME_BG_LAYERS = [
-  { src: "/images/welcome-bg/00-sky.svg", offset: -6 },
-  { src: "/images/welcome-bg/01-hill-far.svg", offset: -4.5, dim: 0.42 },
-  { src: "/images/welcome-bg/02-hill-mid.svg", offset: -3.5, dim: 0.48 },
-  { src: "/images/welcome-bg/03-hill-near.svg", offset: -2.5, dim: 0.52 },
-  { src: "/images/welcome-bg/04-detail-dark.svg", offset: -2 },
-  { src: "/images/welcome-bg/05-hill-right.svg", offset: -1.5, dim: 0.55 },
-  { src: "/images/welcome-bg/06-accent-red.svg", offset: -1, dim: 0.55 },
-  { src: "/images/welcome-bg/07-layer-c1.svg", offset: -0.5 },
-  { src: "/images/welcome-bg/08-foreground.svg", offset: 0.5 },
-  { src: "/images/welcome-bg/09-layer-c2.svg", offset: 1 },
-  { src: "/images/welcome-bg/10-layer-c3.svg", offset: 1.5 },
-  { src: "/images/welcome-bg/11-layer-c4.svg", offset: 2 },
-  { src: "/images/welcome-bg/12-layer-c5.svg", offset: 2.5 },
-  { src: "/images/welcome-bg/13-detail-path.svg", offset: 3 },
-] as const;
-
-/** Soft dark halo — keeps cream type crisp over busy gold/navy silhouette. */
-const WELCOME_TEXT_SHADOW =
-  "0 0 1px rgba(8,14,28,0.9), 0 2px 4px rgba(8,14,28,0.85), 0 8px 32px rgba(8,14,28,0.75), 0 0 64px rgba(8,14,28,0.55)";
-
-function WelcomeHit({ children }: { children: React.ReactNode }) {
-  return <span className="font-bold text-gold">{children}</span>;
-}
 
 /** Scales its child down to fit the section height on short/wide viewports
  *  so the welcome stack never clips top or bottom. Width-bound too. */
@@ -139,7 +107,6 @@ function FitWelcome({ children }: { children: React.ReactNode }) {
       const needH = innerEl.offsetHeight;
       const needW = innerEl.offsetWidth;
       if (!needH || !needW) return;
-      // Slight inset so Atropos tilt does not kiss the clip edge.
       setScale(Math.min(1, (availH * 0.94) / needH, (availW * 0.96) / needW));
     };
 
@@ -165,108 +132,15 @@ function FitWelcome({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Introduction({ playId }: { playId: number }) {
-  // Atropos tilt is desktop-only — on touch it costs layout (190% stage) and
-  // fights scrolling without adding anything the layers don't already give.
-  const [useAtropos, setUseAtropos] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(min-width: 768px)");
-    const sync = () => setUseAtropos(mq.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  }, []);
-
-  const copy = (
-    <FitWelcome>
-      <div
-        className="mx-auto flex w-full max-w-[1500px] flex-col items-center text-center"
-        style={{ textShadow: WELCOME_TEXT_SHADOW }}
-      >
-        <h2 className="font-sans text-[clamp(2.25rem,min(9vw,11vh),6.5rem)] font-black leading-[0.95] tracking-[-0.04em] text-cream">
-          Welcome to <RepelText text="ADVERSADO" radius={140} strength={22} />
-        </h2>
-        <p className="mt-[clamp(0.75rem,1.5vh,1.5rem)] font-serif text-[clamp(1.05rem,min(2.4vw,2.8vh),1.85rem)] font-light italic leading-[1.4] tracking-[0.02em] text-cream/85">
-          Brand Behind the Brands.
-        </p>
-
-        <div className="relative mt-[clamp(1.5rem,4vh,5rem)] w-full">
-          {/* Soft navy bloom only — darkens the art under type without a cream plate. */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute left-1/2 top-1/2 h-[135%] w-[115%] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(ellipse_at_center,rgba(8,14,28,0.88)_0%,rgba(8,14,28,0.55)_45%,rgba(8,14,28,0.2)_68%,transparent_82%)]"
-          />
-          <ScrollReveal
-            scrub={false}
-            playId={playId}
-            baseOpacity={0.15}
-            enableBlur={false}
-            className="relative w-full font-sans text-[clamp(1.35rem,min(4.4vw,5.2vh),4rem)] font-semibold leading-[1.75] tracking-[-0.015em] text-cream"
-          >
-            Bringing branding, advertising, marketing, events and performance{" "}
-            <WelcomeHit>under one roof.</WelcomeHit> Because your customers don’t
-            experience your business <WelcomeHit>in departments.</WelcomeHit> Why
-            should your <WelcomeHit>marketing?</WelcomeHit>
-          </ScrollReveal>
-        </div>
-      </div>
-    </FitWelcome>
-  );
-
-  const layers = WELCOME_BG_LAYERS.map((layer) => (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      key={layer.src}
-      src={`${layer.src}?v=dusk`}
-      alt=""
-      aria-hidden
-      {...(useAtropos ? { "data-atropos-offset": layer.offset } : {})}
-      className="pointer-events-none absolute inset-0 h-full w-full max-w-none object-cover select-none"
-      style={
-        "dim" in layer
-          ? { filter: `brightness(${layer.dim}) contrast(1.15) saturate(1.05)` }
-          : undefined
-      }
-      draggable={false}
-    />
-  ));
-
+function Introduction() {
   return (
     <section
       id="introduction"
-      className="relative z-10 h-screen w-full overflow-hidden bg-navy"
+      className="relative z-10 flex h-screen w-full max-w-none flex-col px-5 py-[clamp(1rem,3.5vh,4rem)] sm:px-8 lg:px-12"
     >
-      {useAtropos ? (
-        /* Oversized so 3D tilt never exposes rectangle edges. Content is
-           inset back to the visible frame. */
-        <Atropos
-          className="absolute left-[-45%] top-[-45%] h-[190%] w-[190%]"
-          shadow={false}
-          highlight={false}
-          rotateTouch={false}
-          rotateXMax={9}
-          rotateYMax={9}
-          activeOffset={36}
-          innerClassName="relative h-full w-full overflow-hidden"
-        >
-          {layers}
-          {/* 45/190 ≈ 23.7% — maps the oversized root back to the section frame. */}
-          <div
-            data-atropos-offset="4"
-            className="absolute inset-[23.7%] z-10 flex flex-col px-6 py-[clamp(1rem,3.5vh,5rem)] sm:px-10 lg:px-16"
-          >
-            {copy}
-          </div>
-        </Atropos>
-      ) : (
-        <div className="absolute inset-0">
-          {layers}
-          <div className="absolute inset-0 z-10 flex flex-col px-6 py-[clamp(1rem,3.5vh,5rem)] sm:px-10 lg:px-16">
-            {copy}
-          </div>
-        </div>
-      )}
+      <FitWelcome>
+        <IntroCard className="w-full" />
+      </FitWelcome>
     </section>
   );
 }
@@ -732,33 +606,13 @@ function SixDs() {
 }
 
 /* ── The Invitation ─────────────────────────────────────────────────────── */
-/* Last section: live constellation field + a brand-gold planetary limb.
- * No raster plate — the glow is CSS so the stars stay in the shot. */
 
 /** The three moves, each its own line of the rhythm. */
 const MOVES = ["Launching.", "Repositioning.", "Expanding."];
 
-function Invitation({
-  onVisibilityChange,
-}: {
-  /** SplashCursor yields while this section is in view. */
-  onVisibilityChange: (visible: boolean) => void;
-}) {
+function Invitation() {
   const ref = useDepthReveal<HTMLElement>();
   const movesRef = useRef<HTMLParagraphElement>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) onVisibilityChange(entry.isIntersecting);
-      },
-      { threshold: 0 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [onVisibilityChange, ref]);
 
   useGSAP(
     () => {
@@ -782,13 +636,6 @@ function Invitation({
       ref={ref}
       className="relative min-h-screen overflow-hidden"
     >
-      {/* Planetary limb — body + rim so the horizon reads as a finished object. */}
-      <div className="invitation-limb" aria-hidden>
-        <div className="invitation-limb__body" />
-        <div className="invitation-limb__haze" />
-        <div className="invitation-limb__rim" />
-      </div>
-
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1500px] items-center px-6 py-20 sm:px-10 sm:py-24 lg:px-16">
         <div className="grid w-full items-center gap-12 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-16 xl:gap-20">
           <div
@@ -843,27 +690,7 @@ function Invitation({
 }
 
 export function HomeSections() {
-  // SplashCursor is a full-viewport WebGL fluid — only worth the context while
-  // the hero is on screen. Dropped while Invitation owns the viewport.
-  const [invitationActive, setInvitationActive] = useState(false);
-  const [heroInView, setHeroInView] = useState(true);
-  const [welcomePlayId, setWelcomePlayId] = useState(0);
   const verticalsCardDriverRef = useRef<((progress: number) => void) | null>(null);
-
-  useEffect(() => {
-    const el = document.getElementById("hero");
-    if (!el) return;
-    if (typeof IntersectionObserver === "undefined") return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        setHeroInView(entries.some((e) => e.isIntersecting));
-      },
-      // Drop as soon as the hero leaves; no margin — that was the whole point.
-      { rootMargin: "0px", threshold: 0 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
 
   return (
     <>
@@ -875,43 +702,31 @@ export function HomeSections() {
           constellations over it (sky + stars only). */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 bg-black" />
       <CinematicScene />
-      {/* Gold fluid trail — mounted only while `#hero` intersects, so Belief
-          and below don't pay for a second always-on WebGL context. Unmounting
-          (vs hiding) tears the sim down; re-entry builds a fresh one. */}
-      {heroInView && !invitationActive && (
-        <SplashCursor
-          RAINBOW_MODE={false}
-          COLOR={GOLD}
-          SPLAT_RADIUS={0.14}
-          SPLAT_FORCE={3200}
-          DENSITY_DISSIPATION={3.8}
-          VELOCITY_DISSIPATION={2.6}
-        />
-      )}
+      {/* Gold fluid trail — stays for the whole page scroll. */}
+      <SplashCursor
+        RAINBOW_MODE={false}
+        COLOR={GOLD}
+        SPLAT_RADIUS={0.14}
+        SPLAT_FORCE={3200}
+        DENSITY_DISSIPATION={3.8}
+        VELOCITY_DISSIPATION={2.6}
+      />
       {/* Clipped sideways: the tilted vertical cards swing their corners a few
           px past the viewport at the extremes of the effect, which is enough
           to put a horizontal scrollbar on the whole page. */}
-      {/* Campaign ("The campaign ends…") → Welcome seam wipe. Lives between
-          those two sections only — not on Welcome’s pin or elsewhere. */}
       <div className="relative z-10 overflow-x-hidden">
         <BeliefSection />
-        {/* Fixed overlay over the Campaign↔Welcome seam — no spacer between them. */}
-        <ShapeOverlayBridge
-          from="#campaign"
-          to="#introduction"
-          onComplete={() => setWelcomePlayId((n) => n + 1)}
-        />
         {/* Welcome → Verticals: vertical scroll drives a horizontal slide. */}
         <WelcomeVerticalsRail
           cardDriverRef={verticalsCardDriverRef}
-          welcome={<Introduction playId={welcomePlayId} />}
+          welcome={<Introduction />}
           verticals={
             <Verticals railDriven cardDriverRef={verticalsCardDriverRef} />
           }
         />
         <SlideBreaker />
         <SixDs />
-        <Invitation onVisibilityChange={setInvitationActive} />
+        <Invitation />
       </div>
     </>
   );

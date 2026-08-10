@@ -1,49 +1,44 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Atropos from "atropos/react";
 import "atropos/css";
 
-import { useNearViewport } from "@/components/Interactions";
-import { Typewriter } from "@/components/Typewriter";
 import ShinyText from "@/components/reactbits/ShinyText";
 import VariableProximity from "@/components/reactbits/VariableProximity";
 
-/* The Introduction. No card, no shader face any more — just the wordmark,
- * tagline and argument sitting directly on the page's own starfield, the way
- * every other section on the site does. What's left from the card version:
- *
- *   React Bits' ShinyText carries a slow shine across the tagline.
- *   React Bits' VariableProximity runs the body copy, thickening each letter
- *     as the cursor nears it — it reads the pointer off `window`, so it needs
- *     no hover target and works exactly the same with nothing behind it.
- */
+/* The Introduction. Wordmark + tagline + argument on the page starfield.
+ * Atropos tilts the whole stack on desktop. VariableProximity thickens
+ * each letter as the cursor nears. Marked phrases carry the argument. */
 
 const GOLD = "#e6b325";
 const CREAM = "#f9f7f2";
 
-/* The body copy: three sentences, each its own line, each cut into runs so the
- * phrases that carry the argument can be marked or otherwise set apart.
- * VariableProximity takes a plain string, so a highlight can't live inside one
- * — instead each run is its own instance and the marked ones are wrapped. Runs
- * within a sentence sit inline and share that sentence's container, so the
- * proximity maths measures against the actual line rather than the whole
- * paragraph. */
-type Run = { text: string; mark?: boolean; emphasis?: boolean };
+type Run = { text: string; mark?: boolean };
+
+/* Three sentences, three lines — one marked phrase per line. */
 const BODY: Run[][] = [
-  [{ text: "Bringing branding, advertising, marketing, events and performance " }, { text: "under one roof.", mark: true }],
-  [{ text: "Because your customers don’t experience your business " }],
-  [{ text: "in departments.", mark: true }],
-  [{ text: "Why should your " }, { text: "marketing", emphasis: true }, { text: " ?" }],
+  [
+    { text: "Bringing branding, advertising, marketing, events, and performance " },
+    { text: "under one roof.", mark: true },
+  ],
+  [
+    { text: "Because your customers don't experience your business " },
+    { text: "in departments.", mark: true },
+  ],
+  [
+    { text: "Why should your " },
+    { text: "marketing work that way?", mark: true },
+  ],
 ];
 
 export function IntroCard({ className }: { className?: string }) {
   const bodyRef = useRef<HTMLDivElement>(null);
-  const [headRef, headNear] = useNearViewport<HTMLHeadingElement>("0px");
   const [useAtropos, setUseAtropos] = useState(false);
 
   useEffect(() => {
-    const mq = window.matchMedia("(min-width: 768px)");
+    const mq = window.matchMedia("(min-width: 768px) and (prefers-reduced-motion: no-preference)");
     const sync = () => setUseAtropos(mq.matches);
     sync();
     mq.addEventListener("change", sync);
@@ -52,48 +47,46 @@ export function IntroCard({ className }: { className?: string }) {
 
   const inner = (
     <>
-      {/* Typed out once the section has actually been scrolled to, not on
-          mount — `useNearViewport` latches the first time this heading nears
-          the viewport and stays true, so it never retypes on scroll-back. */}
-      <h2
-        ref={headRef}
-        className="font-sans text-[clamp(2.2rem,6vw,5rem)] font-black uppercase leading-[1.1] tracking-tight text-gold"
-      >
-        {headNear && <Typewriter text="Welcome to Adversado" speed={38} />}
+      <h2 className="flex w-full flex-wrap items-center justify-center gap-x-[0.32em] gap-y-3 font-sans text-[clamp(2rem,min(7vw,8.5vh),5.5rem)] font-black uppercase leading-[1.05] tracking-tight text-cream">
+        <span className="shrink-0">Welcome to</span>
+        <span
+          className="relative inline-flex h-[0.82em] w-[clamp(10rem,32vw,24rem)] shrink-0 items-center"
+          data-atropos-offset="6"
+        >
+          <Image
+            src="/logo.svg"
+            alt="Adversado"
+            width={2368}
+            height={448}
+            className="h-full w-full object-contain object-left"
+            priority
+            draggable={false}
+          />
+        </span>
       </h2>
 
-      {/* The three blocks were on a flat `gap-6` and read as one stack with no
-          air in it. Spacing is proportional now — the tagline sits close under
-          the wordmark it belongs to, and the argument gets a real break before
-          it starts. */}
-      <p className="mt-6 shrink-0 font-serif text-[clamp(1.05rem,1.9vw,1.7rem)] font-normal italic uppercase tracking-[0.18em] sm:mt-8">
+      <p
+        className="mt-5 shrink-0 font-serif text-[clamp(1.05rem,1.9vw,1.7rem)] font-normal italic uppercase tracking-[0.18em] sm:mt-7"
+        data-atropos-offset="3"
+      >
         <ShinyText text="Brand Behind the Brands" color={GOLD} shineColor={CREAM} speed={4} spread={100} />
       </p>
 
-      {/* The card's real content, still. Big enough to be the section rather
-          than a caption under one, and set in the brand's own Montserrat —
-          which next/font already serves as a variable face, so the proximity
-          interaction rides its `wght` axis and needs no extra font loaded.
-          One sentence per line, with line spacing matched to the Belief
-          section's `leading-[2.5]` read — the reference for what this site
-          considers readable body copy. Full width, same as the rest of the
-          page's sections. */}
       <div
         ref={bodyRef}
-        className="mt-14 flex w-full flex-col gap-y-3 font-sans text-[clamp(1.6rem,3.6vw,3.4rem)] leading-[2.15] tracking-[-0.02em] sm:mt-20 sm:gap-y-5"
+        className="mt-12 flex w-full max-w-none flex-col gap-y-4 font-sans text-[clamp(1.35rem,min(3.4vw,4.2vh),3.15rem)] font-medium leading-[1.55] tracking-[-0.02em] text-cream/88 sm:mt-16 sm:gap-y-5 sm:leading-[1.65]"
+        data-atropos-offset="2"
       >
         {BODY.map((sentence, si) => (
-          <p key={si}>
-            {sentence.map(({ text, mark, emphasis }, i) => {
+          <p key={si} className="w-full text-balance">
+            {sentence.map(({ text, mark }, i) => {
               const run = (
                 <VariableProximity
                   label={text}
                   containerRef={bodyRef as React.RefObject<HTMLElement>}
-                  /* Light at rest so the thickening under the cursor is a real
-                     change rather than a nudge between two bolds. */
-                  fromFontVariationSettings="'wght' 350"
+                  fromFontVariationSettings="'wght' 400"
                   toFontVariationSettings="'wght' 900"
-                  radius={140}
+                  radius={150}
                   falloff="gaussian"
                   style={{ fontFamily: "var(--font-montserrat), sans-serif" }}
                 />
@@ -102,18 +95,8 @@ export function IntroCard({ className }: { className?: string }) {
                 return (
                   <span
                     key={i}
-                    /* `box-decoration-break: clone` so a marked phrase that
-                       wraps gets the bar and its rounding on both lines
-                       instead of one long band with square inner ends. */
-                    className="rounded-[0.3em] bg-gold/18 px-[0.16em] py-[0.02em] text-gold [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
+                    className="rounded-[0.3em] bg-gold/18 px-[0.18em] py-[0.04em] font-semibold text-gold [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
                   >
-                    {run}
-                  </span>
-                );
-              }
-              if (emphasis) {
-                return (
-                  <span key={i} className="italic text-gold underline decoration-2 underline-offset-[0.14em]">
                     {run}
                   </span>
                 );
@@ -126,23 +109,22 @@ export function IntroCard({ className }: { className?: string }) {
     </>
   );
 
+  const shellClass = `flex w-full max-w-none flex-col items-center text-center text-cream ${className ?? ""}`;
+
   if (!useAtropos) {
-    return (
-      <div className={`flex w-full flex-col items-center text-center text-cream ${className ?? ""}`}>
-        {inner}
-      </div>
-    );
+    return <div className={shellClass}>{inner}</div>;
   }
 
   return (
     <Atropos
-      className={className}
+      className={`atropos-welcome w-full max-w-none ${className ?? ""}`}
       shadow={false}
       highlight={false}
       rotateTouch={false}
-      rotateXMax={9}
-      rotateYMax={9}
-      innerClassName="flex w-full flex-col items-center text-center text-cream"
+      rotateXMax={10}
+      rotateYMax={10}
+      activeOffset={28}
+      innerClassName="flex w-full max-w-none flex-col items-center text-center text-cream"
     >
       {inner}
     </Atropos>

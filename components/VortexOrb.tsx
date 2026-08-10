@@ -21,10 +21,12 @@ export function VortexOrb({
 }) {
   const uid = useId().replace(/:/g, "");
   const id = (name: string) => `${uid}-${name}`;
+  const rootRef = useRef<HTMLDivElement>(null);
   const [mx, setMx] = useState(0);
   const [my, setMy] = useState(0);
-  const aim = useRef({ x: 0, y: 0 });
-  const cur = useRef({ x: 0, y: 0 });
+  const [warp, setWarp] = useState(0);
+  const aim = useRef({ x: 0, y: 0, warp: 0 });
+  const cur = useRef({ x: 0, y: 0, warp: 0 });
 
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -34,8 +36,10 @@ export function VortexOrb({
     const tick = () => {
       cur.current.x += (aim.current.x - cur.current.x) * 0.08;
       cur.current.y += (aim.current.y - cur.current.y) * 0.08;
+      cur.current.warp += (aim.current.warp - cur.current.warp) * 0.1;
       setMx(cur.current.x);
       setMy(cur.current.y);
+      setWarp(cur.current.warp);
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -43,6 +47,17 @@ export function VortexOrb({
     const onMove = (e: PointerEvent) => {
       aim.current.x = e.clientX / window.innerWidth - 0.5;
       aim.current.y = e.clientY / window.innerHeight - 0.5;
+      const el = rootRef.current;
+      if (!el) {
+        aim.current.warp = 0;
+        return;
+      }
+      const r = el.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+      const reach = Math.max(r.width, r.height) * 0.72;
+      aim.current.warp = Math.max(0, 1 - dist / reach);
     };
     window.addEventListener("pointermove", onMove, { passive: true });
     return () => {
@@ -53,9 +68,12 @@ export function VortexOrb({
 
   const glossX = 380 + mx * 40;
   const glossY = 300 + my * 36;
+  // Soft liquid warp — only when the pointer is near the orb.
+  const warpScale = warp * 42;
 
   return (
     <div
+      ref={rootRef}
       aria-hidden
       className={className}
       style={{
@@ -105,45 +123,107 @@ export function VortexOrb({
                 <feGaussianBlur stdDeviation="4" />
               </filter>
 
-              {/* Soft brand pearl — no hot white specular in the upper-left. */}
-              <radialGradient id={id("orbDeep")} cx="42%" cy="38%" r="68%">
-                <stop offset="0%" stopColor="#f2d27a" />
-                <stop offset="28%" stopColor="#e6b325" />
-                <stop offset="55%" stopColor="#8a9fc8" />
-                <stop offset="78%" stopColor="#3a5488" />
-                <stop offset="100%" stopColor="#1a2a52" />
+              {/* Pointer-driven liquid warp across the whole sphere. */}
+              <filter
+                id={id("warp")}
+                x="-20%"
+                y="-20%"
+                width="140%"
+                height="140%"
+                colorInterpolationFilters="sRGB"
+              >
+                <feTurbulence
+                  type="fractalNoise"
+                  baseFrequency="0.018"
+                  numOctaves="3"
+                  seed="3"
+                  result="warpNoise"
+                >
+                  <animate
+                    attributeName="baseFrequency"
+                    dur="8s"
+                    values="0.014;0.022;0.014"
+                    repeatCount="indefinite"
+                  />
+                </feTurbulence>
+                <feDisplacementMap
+                  in="SourceGraphic"
+                  in2="warpNoise"
+                  scale={warpScale}
+                  xChannelSelector="R"
+                  yChannelSelector="G"
+                />
+              </filter>
+
+              {/* Nacre base — a bright pearl that stays luminous out to the
+                  edge (the Fresnel rim below defines the sphere, not a dark
+                  vignette), gold-warm above melting into periwinkle below. */}
+              <radialGradient id={id("orbDeep")} cx="38%" cy="32%" r="78%">
+                <stop offset="0%" stopColor="#faf1d4" />
+                <stop offset="22%" stopColor="#efd287" />
+                <stop offset="46%" stopColor="#d6def3" />
+                <stop offset="70%" stopColor="#a7bbe4" />
+                <stop offset="90%" stopColor="#7590c6" />
+                <stop offset="100%" stopColor="#5f7cb4" />
+              </radialGradient>
+              {/* Iridescent nacre patches — the faint oil-slick hue shifts a
+                  pearl carries: lavender, ice and a whisper of blush. */}
+              <radialGradient id={id("iridLav")} cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#c9c2ef" stopOpacity="0.4" />
+                <stop offset="100%" stopColor="#c9c2ef" stopOpacity="0" />
+              </radialGradient>
+              <radialGradient id={id("iridIce")} cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#cfe6f8" stopOpacity="0.42" />
+                <stop offset="100%" stopColor="#cfe6f8" stopOpacity="0" />
+              </radialGradient>
+              <radialGradient id={id("iridRose")} cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#ecc9d8" stopOpacity="0.22" />
+                <stop offset="100%" stopColor="#ecc9d8" stopOpacity="0" />
+              </radialGradient>
+              {/* Broad luster arc across the crown of the pearl. */}
+              <radialGradient id={id("sheen")} cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#fdf8ea" stopOpacity="0.3" />
+                <stop offset="60%" stopColor="#fdf8ea" stopOpacity="0.12" />
+                <stop offset="100%" stopColor="#fdf8ea" stopOpacity="0" />
               </radialGradient>
               <radialGradient id={id("goldHi")} cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#e6b325" stopOpacity="0.55" />
-                <stop offset="40%" stopColor="#c9a24a" stopOpacity="0.28" />
+                <stop offset="0%" stopColor="#f2d78e" stopOpacity="0.45" />
+                <stop offset="40%" stopColor="#e0bd58" stopOpacity="0.22" />
                 <stop offset="100%" stopColor="#e6b325" stopOpacity="0" />
               </radialGradient>
               <radialGradient id={id("blueLo")} cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#a8bde8" stopOpacity="0.55" />
-                <stop offset="50%" stopColor="#6b8fd4" stopOpacity="0.35" />
+                <stop offset="0%" stopColor="#bfd0f2" stopOpacity="0.6" />
+                <stop offset="50%" stopColor="#7d9dda" stopOpacity="0.38" />
                 <stop offset="100%" stopColor="#3a5a9e" stopOpacity="0" />
               </radialGradient>
               <radialGradient id={id("auroraGold")} cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#e6b325" stopOpacity="0.4" />
+                <stop offset="0%" stopColor="#e6b325" stopOpacity="0.42" />
                 <stop offset="100%" stopColor="#e6b325" stopOpacity="0" />
               </radialGradient>
               <radialGradient id={id("auroraLight")} cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#c9d6f0" stopOpacity="0.28" />
-                <stop offset="100%" stopColor="#c9d6f0" stopOpacity="0" />
+                <stop offset="0%" stopColor="#d7e1f5" stopOpacity="0.36" />
+                <stop offset="100%" stopColor="#d7e1f5" stopOpacity="0" />
               </radialGradient>
               <radialGradient id={id("gloss")} cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#f0d78a" stopOpacity="0.22" />
-                <stop offset="70%" stopColor="#f0d78a" stopOpacity="0" />
+                <stop offset="0%" stopColor="#f9ecce" stopOpacity="0.3" />
+                <stop offset="70%" stopColor="#f9ecce" stopOpacity="0" />
               </radialGradient>
+              {/* Fresnel rim-light — the pearl signature: the edge glows
+                  brighter than the surface just inside it, like backlit
+                  nacre. Stops tuned for the 1160-unit overshoot box, where
+                  the visible circle edge sits at ~86% of this radius. */}
               <radialGradient id={id("rim")} cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#1a2848" stopOpacity="0" />
-                <stop offset="68%" stopColor="#1a2848" stopOpacity="0" />
-                <stop offset="100%" stopColor="#0c1428" stopOpacity="0.35" />
+                <stop offset="0%" stopColor="#e9effd" stopOpacity="0" />
+                <stop offset="72%" stopColor="#e9effd" stopOpacity="0" />
+                <stop offset="81%" stopColor="#e9effd" stopOpacity="0.2" />
+                <stop offset="86%" stopColor="#f4f7ff" stopOpacity="0.5" />
+                <stop offset="93%" stopColor="#f4f7ff" stopOpacity="0.5" />
+                <stop offset="100%" stopColor="#e9effd" stopOpacity="0.35" />
               </radialGradient>
               <radialGradient id={id("cloudGrad")} cx="50%" cy="50%" r="50%">
                 <stop offset="0%" stopColor="#ffd24a" stopOpacity="0" />
-                <stop offset="34%" stopColor="#e6b325" stopOpacity="0.22" />
-                <stop offset="70%" stopColor="#8eb0ef" stopOpacity="0.16" />
+                <stop offset="34%" stopColor="#e6b325" stopOpacity="0.14" />
+                <stop offset="70%" stopColor="#8eb0ef" stopOpacity="0.12" />
                 <stop offset="100%" stopColor="#8eb0ef" stopOpacity="0" />
               </radialGradient>
               <radialGradient id={id("holeGrad")} cx="50%" cy="50%" r="50%">
@@ -174,16 +254,24 @@ export function VortexOrb({
               </mask>
             </defs>
 
-            <g mask={`url(#${id("punch")})`}>
+            {/* Paint overshoots the viewBox by 80 units on every side so the
+                pointer warp can displace the edge without eroding the rim —
+                the container's rounded clip still cuts the true circle. */}
+            <g mask={`url(#${id("punch")})`} filter={`url(#${id("warp")})`}>
               <rect
-                x="0"
-                y="0"
-                width="1000"
-                height="1000"
+                x="-80"
+                y="-80"
+                width="1160"
+                height="1160"
                 fill={`url(#${id("orbDeep")})`}
               />
               <circle cx="360" cy="340" r="420" fill={`url(#${id("goldHi")})`} />
               <circle cx="740" cy="760" r="540" fill={`url(#${id("blueLo")})`} />
+              {/* Static nacre hue patches under the moving auroras. */}
+              <circle cx="290" cy="730" r="310" fill={`url(#${id("iridLav")})`} />
+              <circle cx="820" cy="430" r="330" fill={`url(#${id("iridIce")})`} />
+              <circle cx="660" cy="210" r="250" fill={`url(#${id("iridRose")})`} />
+              <ellipse cx="500" cy="250" rx="430" ry="250" fill={`url(#${id("sheen")})`} />
               <g opacity="0.5">
                 <animateTransform
                   attributeName="transform"
@@ -233,7 +321,7 @@ export function VortexOrb({
                 ry="130"
                 fill={`url(#${id("gloss")})`}
               />
-              <rect x="0" y="0" width="1000" height="1000" fill={`url(#${id("rim")})`} />
+              <rect x="-80" y="-80" width="1160" height="1160" fill={`url(#${id("rim")})`} />
             </g>
           </svg>
         </div>

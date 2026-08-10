@@ -329,13 +329,14 @@ dialog::backdrop {
   text-stroke: 2px #fff;
 }
 
-/* Preloader vanish-act orb — archive float + outer glow. Paint lives in SVG. */
+/* Preloader vanish-act orb — archive float + outer glow. Paint lives in SVG.
+   Glow kept cool and quiet at Engaged scale; a warm ring at 92vmin read as
+   an eclipse rather than ambience. */
 .pl-orb {
   box-shadow:
-    0 0 40px rgba(230, 179, 37, 0.45),
-    0 0 100px rgba(230, 179, 37, 0.35),
-    0 0 180px rgba(122, 154, 212, 0.4),
-    0 0 280px rgba(230, 179, 37, 0.2);
+    0 0 60px rgba(160, 185, 235, 0.22),
+    0 0 140px rgba(122, 154, 212, 0.18),
+    0 0 260px rgba(230, 179, 37, 0.1);
 }
 
 .pl-orb-float {
@@ -349,6 +350,17 @@ dialog::backdrop {
   }
   50% {
     transform: translateY(-14px) scale(1.012);
+  }
+}
+
+@keyframes pl-count-in {
+  from {
+    opacity: 0.35;
+    transform: translateY(0.18em) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 

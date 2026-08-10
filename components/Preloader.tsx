@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { animate, useMotionValue } from "motion/react";
 import gsap from "gsap";
 import { Silk } from "@/components/Silk";
@@ -113,6 +113,36 @@ const COUNT_WORDS: Record<number, string> = { 3: "THREE", 2: "TWO", 1: "ONE" };
 // reads instantly, so the holds around it were dead air. A 650ms tick still
 // reads as a countdown; it just stops feeling like waiting.
 const COUNT_STEP_MS = 650;
+
+/**
+ * Engaged-style satellite orbs around the hero pearl. Depth drives how far
+ * each one drifts on mouse (and how soft it is) so the stage feels volumetric.
+ */
+const FIELD_ORBS: {
+  x: string;
+  y: string;
+  size: string;
+  blur: number;
+  depth: number;
+  opacity: number;
+  tone: "navy" | "gold" | "pearl";
+}[] = [
+  { x: "-6%", y: "8%", size: "34vmin", blur: 48, depth: 0.28, opacity: 0.55, tone: "navy" },
+  { x: "72%", y: "-4%", size: "26vmin", blur: 36, depth: 0.42, opacity: 0.5, tone: "navy" },
+  { x: "78%", y: "58%", size: "38vmin", blur: 56, depth: 0.22, opacity: 0.45, tone: "navy" },
+  { x: "-10%", y: "62%", size: "30vmin", blur: 44, depth: 0.35, opacity: 0.48, tone: "navy" },
+  { x: "18%", y: "74%", size: "16vmin", blur: 18, depth: 0.7, opacity: 0.55, tone: "pearl" },
+  { x: "84%", y: "28%", size: "14vmin", blur: 14, depth: 0.85, opacity: 0.6, tone: "gold" },
+  { x: "8%", y: "28%", size: "12vmin", blur: 12, depth: 0.9, opacity: 0.5, tone: "pearl" },
+  { x: "58%", y: "78%", size: "20vmin", blur: 28, depth: 0.5, opacity: 0.42, tone: "gold" },
+];
+
+const FIELD_TONE: Record<(typeof FIELD_ORBS)[number]["tone"], string> = {
+  navy: "radial-gradient(circle at 38% 32%, #8aa3d0 0%, #4a6698 40%, #243a68 76%, #121c38 100%)",
+  gold: "radial-gradient(circle at 40% 34%, #f2d78e 0%, #e6b325 38%, #8a9fc8 72%, #2a4068 100%)",
+  pearl:
+    "radial-gradient(circle at 38% 30%, #faf1d4 0%, #efd287 28%, #b9cbee 62%, #5f7cb4 100%)",
+};
 /** The wordmark act, from first frame to its own fade being finished. */
 const DARK_MS = 4050;
 /** Lights coming up over the wordmark's last frame. */
@@ -166,6 +196,8 @@ export function Preloader({
   const tagline1Ref = useRef<HTMLDivElement>(null);
   const lightRef = useRef<HTMLDivElement>(null);
   const copyRef = useRef<HTMLDivElement>(null);
+  const fieldRef = useRef<HTMLDivElement>(null);
+  const sceneUid = useId().replace(/:/g, "");
   /** Dive progress 0→1 — VortexOrb scale / hole / swirl (archive formulas). */
   const diveProxy = useRef({ progress: 0 });
   const [dive, setDive] = useState({
@@ -177,6 +209,11 @@ export function Preloader({
   const [count, setCount] = useState(3);
   /** Act one struck; root goes transparent so the hero shows through the type. */
   const [handoff, setHandoff] = useState(false);
+  /** Scene mouse — parallax the field orbs and drive the liquid warp filter. */
+  const [scene, setScene] = useState({ x: 0, y: 0, warp: 0 });
+  const sceneAim = useRef({ x: 0, y: 0, warp: 0 });
+  const sceneCur = useRef({ x: 0, y: 0, warp: 0 });
+  const scenePrev = useRef({ x: 0, y: 0 });
 
   const fade = useMotionValue(0);
   const intro = useMotionValue(0);
@@ -187,17 +224,35 @@ export function Preloader({
   const globeRise = useMotionValue(0);
 
   useEffect(() => {
-    const root = rootRef.current!;
-    const groupWrap = groupWrapRef.current!;
-    const introClip = introClipRef.current!;
-    const headClip = headClipRef.current!;
-    const pawClip = pawClipRef.current!;
-    const eyeUpper = eyeUpperRef.current!;
-    const eyeLower = eyeLowerRef.current!;
-    const dotGroup = dotGroupRef.current!;
-    const globe = globeRef.current!;
-    const tagline1 = tagline1Ref.current!;
-    const light = lightRef.current!;
+    const root = rootRef.current;
+    const groupWrap = groupWrapRef.current;
+    const introClip = introClipRef.current;
+    const headClip = headClipRef.current;
+    const pawClip = pawClipRef.current;
+    const eyeUpper = eyeUpperRef.current;
+    const eyeLower = eyeLowerRef.current;
+    const dotGroup = dotGroupRef.current;
+    const globe = globeRef.current;
+    const tagline1 = tagline1Ref.current;
+    const light = lightRef.current;
+    // Fast Refresh can remount this effect after act one has already been
+    // struck (handoff), at which point those refs are unmounted — bail out
+    // rather than crash on `.style` / `.setAttribute`.
+    if (
+      !root ||
+      !groupWrap ||
+      !introClip ||
+      !headClip ||
+      !pawClip ||
+      !eyeUpper ||
+      !eyeLower ||
+      !dotGroup ||
+      !globe ||
+      !tagline1 ||
+      !light
+    ) {
+      return;
+    }
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -356,9 +411,12 @@ export function Preloader({
       });
 
       const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+      // Tuned for the Engaged-scale orb (~92vmin): it already fills most of
+      // the frame, so a gentler zoom keeps its rim in view mid-dive — like
+      // the reference — while the hole does the actual opening.
       const applyDive = (p: number) => {
         setDive({
-          scale: 1 + p * 4.6,
+          scale: 1 + p * 2.6,
           holeScale: p * 2.6,
           rotate: p * 260,
           opacity: 1 - clamp01((p - 0.86) / 0.12),
@@ -392,6 +450,46 @@ export function Preloader({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Act-two stage: soft parallax + liquid warp that follows the pointer.
+  // Copy stays outside the filtered layer so the countdown stays crisp.
+  useEffect(() => {
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) return;
+
+    let raf = 0;
+    const tick = () => {
+      const a = sceneAim.current;
+      const c = sceneCur.current;
+      c.x += (a.x - c.x) * 0.08;
+      c.y += (a.y - c.y) * 0.08;
+      c.warp += (a.warp - c.warp) * 0.12;
+      // Warp decays when the pointer rests, so the stage settles.
+      a.warp *= 0.96;
+      setScene({ x: c.x, y: c.y, warp: c.warp });
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+
+    const onMove = (e: PointerEvent) => {
+      const nx = e.clientX / window.innerWidth - 0.5;
+      const ny = e.clientY / window.innerHeight - 0.5;
+      const dx = nx - scenePrev.current.x;
+      const dy = ny - scenePrev.current.y;
+      scenePrev.current = { x: nx, y: ny };
+      sceneAim.current.x = nx;
+      sceneAim.current.y = ny;
+      // Speed of the pointer feeds the warp — still movement, still stage.
+      sceneAim.current.warp = Math.min(1, sceneAim.current.warp + Math.hypot(dx, dy) * 8);
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("pointermove", onMove);
+    };
+  }, []);
+
+  const sceneWarpScale = 6 + scene.warp * 42;
 
   return (
     <div
@@ -541,8 +639,9 @@ export function Preloader({
       )}
 
       {/* ── Act two ────────────────────────────────────────────────────────
-          Darkened star field + archive SVG VortexOrb with Montserrat /
-          Merriweather headline. Dive opens the feathery portal after ONE. */}
+          The Engaged hero, in brand: night stage with out-of-focus spheres,
+          a viewport-filling luminous orb, and mixed roman-sans / italic-serif
+          type over it. Dive opens the feathery portal after ONE. */}
       <div
         ref={lightRef}
         className="absolute inset-0 z-40 overflow-hidden"
@@ -551,10 +650,93 @@ export function Preloader({
         {/* Darken the cinematic field so the orb reads like Engaged's night stage. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.35)_0%,rgba(0,0,0,0.72)_48%,rgba(0,0,0,0.92)_100%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(3,7,18,0.55)_0%,rgba(3,7,18,0.8)_52%,rgba(1,3,10,0.95)_100%)]"
         />
 
-        <div className="absolute left-1/2 top-1/2 h-[min(42vmin,380px)] w-[min(42vmin,380px)] -translate-x-1/2 -translate-y-1/2">
+        {/* Filter defs for the scene-wide liquid warp (applied only to the
+            orb field so the countdown type stays sharp). */}
+        <svg aria-hidden className="absolute h-0 w-0" focusable="false">
+          <defs>
+            <filter
+              id={`${sceneUid}-scene-warp`}
+              x="-25%"
+              y="-25%"
+              width="150%"
+              height="150%"
+              colorInterpolationFilters="sRGB"
+            >
+              <feTurbulence
+                type="fractalNoise"
+                baseFrequency="0.012"
+                numOctaves="2"
+                seed="5"
+                result="noise"
+              >
+                <animate
+                  attributeName="baseFrequency"
+                  dur="14s"
+                  values="0.01;0.016;0.01"
+                  repeatCount="indefinite"
+                />
+              </feTurbulence>
+              <feDisplacementMap
+                in="SourceGraphic"
+                in2="noise"
+                scale={sceneWarpScale}
+                xChannelSelector="R"
+                yChannelSelector="G"
+              />
+            </filter>
+          </defs>
+        </svg>
+
+        {/* Satellite orbs — parallax by depth, liquid-warped as a group.
+            The hero pearl stays outside this filter: CSS filters on an
+            ancestor flatten nested SVG and were wiping the VortexOrb. */}
+        <div
+          ref={fieldRef}
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            filter: `url(#${sceneUid}-scene-warp)`,
+            willChange: "filter",
+          }}
+        >
+          {FIELD_ORBS.map((orb, i) => (
+            <div
+              key={i}
+              className="absolute rounded-full"
+              style={{
+                left: orb.x,
+                top: orb.y,
+                width: orb.size,
+                height: orb.size,
+                opacity: orb.opacity,
+                background: FIELD_TONE[orb.tone],
+                filter: `blur(${orb.blur}px)`,
+                boxShadow:
+                  orb.tone === "navy"
+                    ? "0 0 40px rgba(80,110,170,0.25)"
+                    : "0 0 36px rgba(230,179,37,0.22)",
+                transform: `translate3d(${scene.x * 70 * orb.depth}px, ${scene.y * 70 * orb.depth}px, 0)`,
+                willChange: "transform",
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Hero orb — slight counter-parallax so it feels nearer than the field. */}
+        <div
+          className="absolute left-1/2 top-1/2 h-[min(78vmin,78vh)] w-[min(78vmin,78vh)]"
+          style={{
+            transform: `translate(calc(-50% + ${scene.x * 18}px), calc(-50% + ${scene.y * 18}px))`,
+            willChange: "transform",
+          }}
+        >
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -inset-[14%] rounded-full bg-[radial-gradient(circle,rgba(190,208,242,0.12)_0%,rgba(107,143,212,0.08)_50%,transparent_70%)] blur-3xl"
+          />
           <VortexOrb
             className="h-full w-full"
             scale={dive.scale}
@@ -564,25 +746,39 @@ export function Preloader({
           />
         </div>
 
-        {/* Hero-scale+ Montserrat headline — free to spill past the orb.
-            Merriweather is reserved for the countdown count word only. */}
+        {/* Navy ink on the pearl (white washed out against the nacre).
+            Montserrat carries the sentence; Merriweather italic lands the
+            emphasis; the countdown is the gold beat. */}
         <div
           ref={copyRef}
-          className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center px-3 text-center text-cream sm:px-4"
+          className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center px-5 text-center"
         >
-          <p className="max-w-[14ch] font-sans text-[clamp(3.5rem,12vw,9.5rem)] font-semibold leading-[0.98] tracking-[-0.03em]">
-            This headline will
-          </p>
-          <p className="mt-[0.02em] max-w-[10ch] font-sans text-[clamp(4.75rem,16vw,13rem)] font-semibold leading-[0.88] tracking-[-0.035em]">
-            vanish.
-          </p>
-          <p className="mt-[clamp(1.1rem,3vh,2rem)] font-sans text-[clamp(0.85rem,1.8vw,1.15rem)] font-medium uppercase tracking-[0.38em] text-cream/65">
-            in{" "}
-            <span className="ml-1 font-serif text-[clamp(1.75rem,4.5vw,3.25rem)] font-light italic normal-case tracking-tight text-cream">
-              {COUNT_WORDS[count].toLowerCase()}
+          <h2 className="max-w-[16ch] font-sans text-[clamp(1.85rem,4.8vw,4.25rem)] font-semibold leading-[1.12] tracking-[-0.025em] text-navy">
+            <span className="block">This headline will</span>
+            <span className="mt-[0.08em] block">
+              <em className="font-serif font-normal italic tracking-[-0.01em]">
+                vanish
+              </em>{" "}
+              in{" "}
+              <em
+                key={count}
+                className="inline-block border-b-[0.08em] border-gold pb-[0.02em] font-serif text-[1.08em] font-semibold italic tracking-[-0.01em] text-navy animate-[pl-count-in_0.45s_cubic-bezier(0.22,1,0.36,1)_both]"
+              >
+                {COUNT_WORDS[count].toLowerCase()}
+              </em>
+              .
             </span>
-          </p>
+          </h2>
         </div>
+
+        {/* Engaged's bottom-left aside, in brand voice. */}
+        <p className="pointer-events-none absolute bottom-[7%] left-[5%] z-10 hidden max-w-[320px] text-left font-sans text-[13px] leading-relaxed text-cream/65 sm:block">
+          We are{" "}
+          <em className="font-serif italic text-gold/90">
+            the brand behind the brands
+          </em>{" "}
+          — attention earned in memorable experiences, never bought.
+        </p>
 
         <h1 className="sr-only">
           This headline will vanish in {COUNT_WORDS[count].toLowerCase()}

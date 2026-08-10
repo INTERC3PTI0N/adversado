@@ -25,8 +25,7 @@ import SplashCursor from "@/components/reactbits/SplashCursor";
 
 const GOLD = "#e6b325";
 const NAVY = "#1f355e";
-const CREAM = "#f9f7f2";
-const SPLASH_COLORS = [GOLD, NAVY, CREAM];
+const SPLASH_COLORS = [GOLD, NAVY];
 
 const STORY_LAYERS = [
   {

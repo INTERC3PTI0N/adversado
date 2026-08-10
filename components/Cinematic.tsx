@@ -277,12 +277,12 @@ export function CinematicScene() {
  * sets `__pwSceneReady` for the preloader to wait on any more — the preloader
  * no longer gates its exit on it, so that flag would need rewiring too.
  *
- * The authored PeachWeb scene (website/references/3D scene), run by its own
+ * The authored PeachWeb scene (public/adv-orb), run by its own
  * runtime inside a same-origin iframe rather than re-created by hand: the
  * scene file carries camera keyframes, materials and video textures that its
  * 2.6MB bundle knows how to play and this page has no business re-implementing.
  *
- * The copy under public/pw-scene is the authored scene verbatim, keeping its
+ * The copy under public/adv-orb is the authored scene verbatim, keeping its
  * black background: the starfield is layered over this iframe rather than
  * behind it, so the scene never has to be made see-through.
  *
@@ -300,41 +300,65 @@ export function PeachScene() {
     const iframe = ref.current;
     if (!iframe) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      // Nothing will load, so nothing can report loaded — release the
-      // preloader immediately rather than leaving it on its timeout.
       (window as PwWindow).__pwSceneReady = true;
       return;
     }
 
     let raf = 0;
-    const sync = () => {
-      raf = requestAnimationFrame(sync);
+    let lastY = -1;
+
+    const applyScroll = () => {
       const win = iframe.contentWindow;
       const doc = iframe.contentDocument;
-      if (!win || !doc || !doc.documentElement) return;
-      // Ready = the runtime has a canvas up AND both GLBs have finished
-      // downloading (same-origin, so its resource timing is readable).
-      // The preloader holds its exit on this flag.
+      if (!win || !doc?.documentElement) return;
+
       if (!(window as PwWindow).__pwSceneReady && doc.querySelector("canvas")) {
         const glbs = win.performance
           .getEntriesByType("resource")
-          .filter((r) => r.name.endsWith(".glb") && (r as PerformanceResourceTiming).responseEnd > 0);
+          .filter(
+            (r) =>
+              r.name.endsWith(".glb") &&
+              (r as PerformanceResourceTiming).responseEnd > 0,
+          );
         if (glbs.length >= 2) (window as PwWindow).__pwSceneReady = true;
       }
+
       const max = document.documentElement.scrollHeight - window.innerHeight;
       const p = max > 0 ? window.scrollY / max : 0;
       const innerMax = doc.documentElement.scrollHeight - win.innerHeight;
-      if (innerMax > 0) win.scrollTo(0, p * innerMax);
+      if (innerMax <= 0) return;
+
+      const y = Math.round(p * innerMax);
+      if (y === lastY) return;
+      lastY = y;
+      win.scrollTo(0, y);
+      // PeachWeb listens to scroll on window/document; synthetic scroll helps
+      // when scrollTo doesn't fire listeners across the iframe boundary.
+      win.dispatchEvent(new Event("scroll"));
+      doc.dispatchEvent(new Event("scroll", { bubbles: true }));
+    };
+
+    const sync = () => {
+      raf = requestAnimationFrame(sync);
+      applyScroll();
     };
     sync();
+
+    // Lenis drives scroll via its own loop; also bind so we catch eased frames.
+    const onLenis = () => applyScroll();
+    const lenis = window.__lenis;
+    lenis?.on("scroll", onLenis);
 
     const forward = (e: PointerEvent) => {
       const doc = iframe.contentDocument;
       if (!doc) return;
-      // Both event names: the runtime is a black box and may listen to either.
       for (const type of ["pointermove", "mousemove"] as const) {
         doc.dispatchEvent(
-          new MouseEvent(type, { clientX: e.clientX, clientY: e.clientY, bubbles: true })
+          new MouseEvent(type, {
+            clientX: e.clientX,
+            clientY: e.clientY,
+            bubbles: true,
+          }),
         );
       }
     };
@@ -343,18 +367,19 @@ export function PeachScene() {
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("pointermove", forward);
+      lenis?.off("scroll", onLenis);
     };
   }, []);
 
   return (
     <iframe
       ref={ref}
-      src="/pw-scene/index.html"
+      src="/adv-orb/index.html"
       title=""
       aria-hidden
       tabIndex={-1}
       className="pointer-events-none fixed inset-0 z-[1] h-full w-full border-0"
-      style={{ background: "transparent", colorScheme: "normal" }}
+      style={{ background: "#06040a", colorScheme: "normal" }}
     />
   );
 }

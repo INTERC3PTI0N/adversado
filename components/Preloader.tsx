@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { animate, useMotionValue } from "motion/react";
 import gsap from "gsap";
 import { Silk } from "@/components/Silk";
@@ -115,33 +115,36 @@ const COUNT_WORDS: Record<number, string> = { 3: "THREE", 2: "TWO", 1: "ONE" };
 const COUNT_STEP_MS = 650;
 
 /**
- * Engaged-style satellite orbs around the hero pearl. Depth drives how far
- * each one drifts on mouse (and how soft it is) so the stage feels volumetric.
+ * Engaged-style satellite orbs around the hero pearl. Softness comes from the
+ * gradient falling to transparent — never `filter: blur()`, which is the
+ * dominant GPU cost of this stage on phones.
  */
 const FIELD_ORBS: {
   x: string;
   y: string;
   size: string;
-  blur: number;
   depth: number;
   opacity: number;
   tone: "navy" | "gold" | "pearl";
 }[] = [
-  { x: "-6%", y: "8%", size: "34vmin", blur: 48, depth: 0.28, opacity: 0.55, tone: "navy" },
-  { x: "72%", y: "-4%", size: "26vmin", blur: 36, depth: 0.42, opacity: 0.5, tone: "navy" },
-  { x: "78%", y: "58%", size: "38vmin", blur: 56, depth: 0.22, opacity: 0.45, tone: "navy" },
-  { x: "-10%", y: "62%", size: "30vmin", blur: 44, depth: 0.35, opacity: 0.48, tone: "navy" },
-  { x: "18%", y: "74%", size: "16vmin", blur: 18, depth: 0.7, opacity: 0.55, tone: "pearl" },
-  { x: "84%", y: "28%", size: "14vmin", blur: 14, depth: 0.85, opacity: 0.6, tone: "gold" },
-  { x: "8%", y: "28%", size: "12vmin", blur: 12, depth: 0.9, opacity: 0.5, tone: "pearl" },
-  { x: "58%", y: "78%", size: "20vmin", blur: 28, depth: 0.5, opacity: 0.42, tone: "gold" },
+  { x: "-6%", y: "8%", size: "34vmin", depth: 0.28, opacity: 0.55, tone: "navy" },
+  { x: "72%", y: "-4%", size: "26vmin", depth: 0.42, opacity: 0.5, tone: "navy" },
+  { x: "78%", y: "58%", size: "38vmin", depth: 0.22, opacity: 0.45, tone: "navy" },
+  { x: "-10%", y: "62%", size: "30vmin", depth: 0.35, opacity: 0.48, tone: "navy" },
+  { x: "18%", y: "74%", size: "16vmin", depth: 0.7, opacity: 0.55, tone: "pearl" },
+  { x: "84%", y: "28%", size: "14vmin", depth: 0.85, opacity: 0.6, tone: "gold" },
+  { x: "8%", y: "28%", size: "12vmin", depth: 0.9, opacity: 0.5, tone: "pearl" },
+  { x: "58%", y: "78%", size: "20vmin", depth: 0.5, opacity: 0.42, tone: "gold" },
 ];
 
+/** Subset for constrained devices — same look, half the layers. */
+const FIELD_ORBS_LITE = FIELD_ORBS.filter((_, i) => i % 2 === 0);
+
 const FIELD_TONE: Record<(typeof FIELD_ORBS)[number]["tone"], string> = {
-  navy: "radial-gradient(circle at 38% 32%, #8aa3d0 0%, #4a6698 40%, #243a68 76%, #121c38 100%)",
-  gold: "radial-gradient(circle at 40% 34%, #f2d78e 0%, #e6b325 38%, #8a9fc8 72%, #2a4068 100%)",
+  navy: "radial-gradient(circle at 38% 32%, #8aa3d0 0%, #4a6698 32%, #243a68 58%, transparent 72%)",
+  gold: "radial-gradient(circle at 40% 34%, #f2d78e 0%, #e6b325 30%, #8a9fc8 55%, transparent 70%)",
   pearl:
-    "radial-gradient(circle at 38% 30%, #faf1d4 0%, #efd287 28%, #b9cbee 62%, #5f7cb4 100%)",
+    "radial-gradient(circle at 38% 30%, #faf1d4 0%, #efd287 24%, #b9cbee 50%, transparent 68%)",
 };
 /** The wordmark act, from first frame to its own fade being finished. */
 const DARK_MS = 4050;
@@ -197,7 +200,8 @@ export function Preloader({
   const lightRef = useRef<HTMLDivElement>(null);
   const copyRef = useRef<HTMLDivElement>(null);
   const fieldRef = useRef<HTMLDivElement>(null);
-  const sceneUid = useId().replace(/:/g, "");
+  const heroWrapRef = useRef<HTMLDivElement>(null);
+  const fieldOrbRefs = useRef<(HTMLDivElement | null)[]>([]);
   /** Dive progress 0→1 — VortexOrb scale / hole / swirl (archive formulas). */
   const diveProxy = useRef({ progress: 0 });
   const [dive, setDive] = useState({
@@ -209,11 +213,9 @@ export function Preloader({
   const [count, setCount] = useState(3);
   /** Act one struck; root goes transparent so the hero shows through the type. */
   const [handoff, setHandoff] = useState(false);
-  /** Scene mouse — parallax the field orbs and drive the liquid warp filter. */
-  const [scene, setScene] = useState({ x: 0, y: 0, warp: 0 });
-  const sceneAim = useRef({ x: 0, y: 0, warp: 0 });
-  const sceneCur = useRef({ x: 0, y: 0, warp: 0 });
-  const scenePrev = useRef({ x: 0, y: 0 });
+  const sceneAim = useRef({ x: 0, y: 0 });
+  const sceneCur = useRef({ x: 0, y: 0 });
+  const fieldOrbs = constrained ? FIELD_ORBS_LITE : FIELD_ORBS;
 
   const fade = useMotionValue(0);
   const intro = useMotionValue(0);
@@ -451,9 +453,11 @@ export function Preloader({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Act-two stage: soft parallax + liquid warp that follows the pointer.
-  // Copy stays outside the filtered layer so the countdown stays crisp.
+  // Act-two stage: soft parallax written straight to the DOM — no React
+  // setState per frame (that was re-reconciling eight orbs at 60Hz).
+  // Skipped entirely on constrained devices: static field, zero pointer work.
   useEffect(() => {
+    if (constrained) return;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) return;
 
@@ -463,33 +467,32 @@ export function Preloader({
       const c = sceneCur.current;
       c.x += (a.x - c.x) * 0.08;
       c.y += (a.y - c.y) * 0.08;
-      c.warp += (a.warp - c.warp) * 0.12;
-      // Warp decays when the pointer rests, so the stage settles.
-      a.warp *= 0.96;
-      setScene({ x: c.x, y: c.y, warp: c.warp });
+      const orbs = fieldOrbRefs.current;
+      const list = FIELD_ORBS;
+      for (let i = 0; i < list.length; i++) {
+        const el = orbs[i];
+        if (!el) continue;
+        const d = list[i].depth;
+        el.style.transform = `translate3d(${c.x * 70 * d}px, ${c.y * 70 * d}px, 0)`;
+      }
+      const hero = heroWrapRef.current;
+      if (hero) {
+        hero.style.transform = `translate(calc(-50% + ${c.x * 18}px), calc(-50% + ${c.y * 18}px))`;
+      }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
 
     const onMove = (e: PointerEvent) => {
-      const nx = e.clientX / window.innerWidth - 0.5;
-      const ny = e.clientY / window.innerHeight - 0.5;
-      const dx = nx - scenePrev.current.x;
-      const dy = ny - scenePrev.current.y;
-      scenePrev.current = { x: nx, y: ny };
-      sceneAim.current.x = nx;
-      sceneAim.current.y = ny;
-      // Speed of the pointer feeds the warp — still movement, still stage.
-      sceneAim.current.warp = Math.min(1, sceneAim.current.warp + Math.hypot(dx, dy) * 8);
+      sceneAim.current.x = e.clientX / window.innerWidth - 0.5;
+      sceneAim.current.y = e.clientY / window.innerHeight - 0.5;
     };
     window.addEventListener("pointermove", onMove, { passive: true });
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("pointermove", onMove);
     };
-  }, []);
-
-  const sceneWarpScale = 6 + scene.warp * 42;
+  }, [constrained]);
 
   return (
     <div
@@ -653,58 +656,19 @@ export function Preloader({
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(3,7,18,0.55)_0%,rgba(3,7,18,0.8)_52%,rgba(1,3,10,0.95)_100%)]"
         />
 
-        {/* Filter defs for the scene-wide liquid warp (applied only to the
-            orb field so the countdown type stays sharp). */}
-        <svg aria-hidden className="absolute h-0 w-0" focusable="false">
-          <defs>
-            <filter
-              id={`${sceneUid}-scene-warp`}
-              x="-25%"
-              y="-25%"
-              width="150%"
-              height="150%"
-              colorInterpolationFilters="sRGB"
-            >
-              <feTurbulence
-                type="fractalNoise"
-                baseFrequency="0.012"
-                numOctaves="2"
-                seed="5"
-                result="noise"
-              >
-                <animate
-                  attributeName="baseFrequency"
-                  dur="14s"
-                  values="0.01;0.016;0.01"
-                  repeatCount="indefinite"
-                />
-              </feTurbulence>
-              <feDisplacementMap
-                in="SourceGraphic"
-                in2="noise"
-                scale={sceneWarpScale}
-                xChannelSelector="R"
-                yChannelSelector="G"
-              />
-            </filter>
-          </defs>
-        </svg>
-
-        {/* Satellite orbs — parallax by depth, liquid-warped as a group.
-            The hero pearl stays outside this filter: CSS filters on an
-            ancestor flatten nested SVG and were wiping the VortexOrb. */}
+        {/* Satellite orbs — soft via transparent gradients, no CSS blur and
+            no scene-wide SVG displacement (both were the lag on low-end). */}
         <div
           ref={fieldRef}
           aria-hidden
           className="pointer-events-none absolute inset-0"
-          style={{
-            filter: `url(#${sceneUid}-scene-warp)`,
-            willChange: "filter",
-          }}
         >
-          {FIELD_ORBS.map((orb, i) => (
+          {fieldOrbs.map((orb, i) => (
             <div
               key={i}
+              ref={(el) => {
+                fieldOrbRefs.current[i] = el;
+              }}
               className="absolute rounded-full"
               style={{
                 left: orb.x,
@@ -713,32 +677,26 @@ export function Preloader({
                 height: orb.size,
                 opacity: orb.opacity,
                 background: FIELD_TONE[orb.tone],
-                filter: `blur(${orb.blur}px)`,
-                boxShadow:
-                  orb.tone === "navy"
-                    ? "0 0 40px rgba(80,110,170,0.25)"
-                    : "0 0 36px rgba(230,179,37,0.22)",
-                transform: `translate3d(${scene.x * 70 * orb.depth}px, ${scene.y * 70 * orb.depth}px, 0)`,
-                willChange: "transform",
               }}
             />
           ))}
         </div>
 
-        {/* Hero orb — slight counter-parallax so it feels nearer than the field. */}
+        {/* Hero orb — parallax written from the scene raf (desktop only). */}
         <div
+          ref={heroWrapRef}
           className="absolute left-1/2 top-1/2 h-[min(78vmin,78vh)] w-[min(78vmin,78vh)]"
-          style={{
-            transform: `translate(calc(-50% + ${scene.x * 18}px), calc(-50% + ${scene.y * 18}px))`,
-            willChange: "transform",
-          }}
+          style={{ transform: "translate(-50%, -50%)" }}
         >
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -inset-[14%] rounded-full bg-[radial-gradient(circle,rgba(190,208,242,0.12)_0%,rgba(107,143,212,0.08)_50%,transparent_70%)] blur-3xl"
-          />
+          {!constrained && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -inset-[14%] rounded-full bg-[radial-gradient(circle,rgba(190,208,242,0.12)_0%,rgba(107,143,212,0.08)_50%,transparent_70%)]"
+            />
+          )}
           <VortexOrb
             className="h-full w-full"
+            lite={constrained}
             scale={dive.scale}
             rotate={dive.rotate}
             holeScale={dive.holeScale}

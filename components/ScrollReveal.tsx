@@ -1,199 +1,120 @@
-"use client";
+import React, { useEffect, useRef, useMemo, ReactNode, RefObject } from 'react';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-import { useRef, type RefObject } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
+gsap.registerPlugin(ScrollTrigger);
 
-gsap.registerPlugin(ScrollTrigger, useGSAP);
-
-/**
- * Scroll-scrubbed word reveal (react-bits ScrollReveal), rebuilt rather than
- * vendored. Two reasons the upstream file could not be dropped in as-is:
- *
- *   - It takes its text as a string (`typeof children === 'string'`) and
- *     silently renders nothing else, so the gold emphasis spans inside this
- *     paragraph would have been thrown away.
- *   - Its cleanup runs `ScrollTrigger.getAll().forEach(t => t.kill())`, which
- *     kills every trigger on the page — the cinematic dolly, the monolith
- *     crane, the Six Ds rail, every box reveal. Fine in a demo that owns the
- *     whole page; not fine here.
- *
- * So the words are split out of the live DOM instead: a TreeWalker wraps each
- * word in its own span wherever it sits, including inside `<Hit>`, which
- * keeps the markup and the highlight colours intact.
- *
- * Default is scrollbar-scrubbed. Pass `scrub={false}` with a bumping `playId`
- * to replay from a parent ScrollTrigger when a section re-enters — the finished
- * state is left alone between plays so a wipe cannot blank the copy.
- */
-export function ScrollReveal({
-  children,
-  className,
-  enableBlur = true,
-  baseOpacity = 0.1,
-  baseRotation = 0,
-  blurStrength = 6,
-  containerRef,
-  start = "top bottom",
-  end = "bottom bottom",
-  scrub = true,
-  /** When `scrub` is false: each bump replays from the start. `0` = idle. */
-  playId = 0,
-}: {
-  children: React.ReactNode;
-  className?: string;
+interface ScrollRevealProps {
+  children: ReactNode;
+  scrollContainerRef?: RefObject<HTMLElement>;
   enableBlur?: boolean;
   baseOpacity?: number;
   baseRotation?: number;
   blurStrength?: number;
-  /** When set, scrub progress is measured against this element instead of the paragraph. */
-  containerRef?: RefObject<HTMLElement | null>;
-  start?: string;
-  end?: string;
-  /** `false` plays from `playId` bumps instead of scrubbing the scrollbar. */
-  scrub?: boolean;
-  playId?: number;
-}) {
-  const ref = useRef<HTMLParagraphElement>(null);
-  const tlRef = useRef<gsap.core.Timeline | null>(null);
+  containerClassName?: string;
+  textClassName?: string;
+  rotationEnd?: string;
+  wordAnimationEnd?: string;
+}
 
-  useGSAP(
-    () => {
-      const el = ref.current;
-      if (!el) return;
-      const trigger = containerRef?.current ?? el;
+const ScrollReveal: React.FC<ScrollRevealProps> = ({
+  children,
+  scrollContainerRef,
+  enableBlur = true,
+  baseOpacity = 0.1,
+  baseRotation = 3,
+  blurStrength = 4,
+  containerClassName = '',
+  textClassName = '',
+  rotationEnd = 'bottom bottom',
+  wordAnimationEnd = 'bottom bottom'
+}) => {
+  const containerRef = useRef<HTMLHeadingElement>(null);
 
-      // Idempotent: a second pass would wrap the wrappers.
-      if (!el.querySelector("[data-word]")) {
-        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-        const texts: Text[] = [];
-        while (walker.nextNode()) texts.push(walker.currentNode as Text);
+  const splitText = useMemo(() => {
+    const text = typeof children === 'string' ? children : '';
+    return text.split(/(\s+)/).map((word, index) => {
+      if (word.match(/^\s+$/)) return word;
+      return (
+        <span className="inline-block word" key={index}>
+          {word}
+        </span>
+      );
+    });
+  }, [children]);
 
-        for (const node of texts) {
-          const parts = (node.textContent ?? "").split(/(\s+)/);
-          if (parts.length < 2 && !parts[0]?.trim()) continue;
-          const frag = document.createDocumentFragment();
-          for (const part of parts) {
-            if (!part) continue;
-            if (/^\s+$/.test(part)) {
-              frag.appendChild(document.createTextNode(part));
-              continue;
-            }
-            const span = document.createElement("span");
-            span.dataset.word = "";
-            // Needed for the blur and any transform to apply per word, and
-            // it keeps each word an unbreakable unit when the line wraps.
-            span.style.display = "inline-block";
-            span.textContent = part;
-            frag.appendChild(span);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const scroller = scrollContainerRef && scrollContainerRef.current ? scrollContainerRef.current : window;
+
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        el,
+        { transformOrigin: '0% 50%', rotate: baseRotation },
+        {
+          ease: 'none',
+          rotate: 0,
+          scrollTrigger: {
+            trigger: el,
+            scroller,
+            start: 'top bottom',
+            end: rotationEnd,
+            scrub: true
           }
-          node.parentNode?.replaceChild(frag, node);
         }
-      }
+      );
 
-      const mm = gsap.matchMedia();
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
-        const words = el.querySelectorAll("[data-word]");
+      const wordElements = el.querySelectorAll<HTMLElement>('.word');
 
-        if (!scrub) {
-          gsap.set(el, { transformOrigin: "0% 50%", rotate: baseRotation });
-          gsap.set(words, {
-            opacity: baseOpacity,
-            ...(enableBlur ? { filter: `blur(${blurStrength}px)` } : null),
-          });
-
-          const tl = gsap.timeline({ paused: true });
-          tl.to(el, { rotate: 0, duration: 0.55, ease: "power2.out" }, 0);
-          tl.to(
-            words,
-            {
-              opacity: 1,
-              filter: "blur(0px)",
-              duration: 0.45,
-              stagger: 0.035,
-              ease: "power2.out",
-            },
-            0.05
-          );
-          tlRef.current = tl;
-          if (playId > 0) tl.play(0);
-          return () => {
-            tl.kill();
-            tlRef.current = null;
-          };
-        }
-
-        gsap.fromTo(
-          el,
-          { transformOrigin: "0% 50%", rotate: baseRotation },
-          {
-            rotate: 0,
-            ease: "none",
-            scrollTrigger: { trigger, start, end, scrub: true },
+      gsap.fromTo(
+        wordElements,
+        { opacity: baseOpacity, willChange: 'opacity' },
+        {
+          ease: 'none',
+          opacity: 1,
+          stagger: 0.05,
+          scrollTrigger: {
+            trigger: el,
+            scroller,
+            start: 'top bottom-=20%',
+            end: wordAnimationEnd,
+            scrub: true
           }
-        );
+        }
+      );
 
+      if (enableBlur) {
         gsap.fromTo(
-          words,
-          { opacity: baseOpacity, willChange: "opacity" },
+          wordElements,
+          { filter: `blur(${blurStrength}px)` },
           {
-            opacity: 1,
-            ease: "none",
-            stagger: 1.5,
+            ease: 'none',
+            filter: 'blur(0px)',
+            stagger: 0.05,
             scrollTrigger: {
-              trigger,
-              start: start.includes("bottom") ? "top bottom-=20%" : start,
-              end,
-              scrub: true,
-            },
+              trigger: el,
+              scroller,
+              start: 'top bottom-=20%',
+              end: wordAnimationEnd,
+              scrub: true
+            }
           }
         );
+      }
+    }, el);
 
-        if (enableBlur) {
-          gsap.fromTo(
-            words,
-            { filter: `blur(${blurStrength}px)` },
-            {
-              filter: "blur(0px)",
-              ease: "none",
-              stagger: 0.05,
-              scrollTrigger: {
-                trigger,
-                start: start.includes("bottom") ? "top bottom-=20%" : start,
-                end,
-                scrub: true,
-              },
-            }
-          );
-        }
-      });
-      mm.add("(prefers-reduced-motion: reduce)", () => {
-        gsap.set(el, { clearProps: "transform" });
-        gsap.set(el.querySelectorAll("[data-word]"), {
-          clearProps: "opacity,filter",
-        });
-      });
-      return () => mm.revert();
-    },
-    { scope: ref, dependencies: [scrub, start, end] }
-  );
-
-  useGSAP(
-    () => {
-      if (scrub || playId <= 0) return;
-      const tl = tlRef.current;
-      if (!tl) return;
-      // Replay from the start on each enter. Never reverse/clear on leave —
-      // the finished line stays until the next playId bump.
-      tl.play(0);
-    },
-    { dependencies: [playId, scrub] }
-  );
+    return () => {
+      ctx.revert();
+    };
+  }, [scrollContainerRef, enableBlur, baseRotation, baseOpacity, rotationEnd, wordAnimationEnd, blurStrength]);
 
   return (
-    <p ref={ref} className={className}>
-      {children}
-    </p>
+    <h2 ref={containerRef} className={`my-5 ${containerClassName}`}>
+      <p className={`text-[clamp(1.6rem,4vw,3rem)] leading-[1.5] font-semibold ${textClassName}`}>{splitText}</p>
+    </h2>
   );
-}
+};
+
+export default ScrollReveal;

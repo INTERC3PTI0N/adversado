@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>3D Scene</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <!-- Served from /adv-orb/; root-absolute /cdn and /scene-state
+         are rewritten in next.config to this folder. Local boot files stay
+         relative so the webpack publicPath resolves under this path.
+
+         Spacers restore the authored scroll range so the scene's percentage
+         timeline can play when the parent page proxies scroll into this iframe. -->
+    <link rel="icon" href="favicon.ico" />
+    <link href="website-base.css" rel="stylesheet" />
+    <link href="styles.css" rel="stylesheet" />
+    <script>window._pwInitialPath = "/";</script>
+    <script defer="defer" fetchpriority="high" src="script.js"></script>
+    <meta name="pw:has-visual-script" content="false" />
+    <link rel="preload" href="/scene-state/6838aecb-a2a8-4a9f-9cc1-ca86d6a65573.json" as="fetch" crossorigin="anonymous" />
+    <link rel="preload" href="/cdn/files.peachworlds.com/website/f2fd58ae-c743-4b8e-bcf4-ba7901a92859/ring-group-final-v1.glb" as="fetch" crossorigin="anonymous" />
+    <link rel="preload" href="/cdn/files.peachworlds.com/website/1cba2114-cdff-4dff-b845-4c741604491a/singl-ring-final-v2.glb" as="fetch" crossorigin="anonymous" />
+    <link rel="preload" href="/cdn/files.peachworlds.com/website/619601a4-b365-4e63-ae80-4b5283c9cace/generated-image-february-05-2026-9-30am.jpg" as="image" crossorigin="anonymous" />
+    <link rel="preload" href="/cdn/files.peachworlds.com/website/259db9b9-4c6e-4a44-b725-88628c6867e0/generated-image-february-05-2026-9-30am.jpeg" as="image" crossorigin="anonymous" />
+    <link rel="preload" href="/cdn/files.peachworlds.com/static/hdri/outdoor/kloofendal_43d_clear_puresky_2k.hdr" as="image" crossorigin="anonymous" />
+    <link rel="preload" href="/cdn/files.peachworlds.com/website/a694f9d1-ea0f-4683-afb0-eb4de0073c09/glass-frosted-001-normal.jpg" as="image" crossorigin="anonymous" />
+    <link rel="preload" href="/cdn/files.peachworlds.com/website/5c6b445b-8c2b-46cb-a3f6-3f7ca722f086/plastic15-glossiness.jpg" as="image" crossorigin="anonymous" />
+    <link rel="preload" href="/cdn/files.peachworlds.com/static/hdri/indoor/small_empty_room_1_2k.hdr" as="image" crossorigin="anonymous" />
+    <link rel="preload" href="/cdn/files.peachworlds.com/website/f446ed91-991a-4abd-91ea-dc5fc62685d1/plastic15-normal-opengl.jpg" as="image" crossorigin="anonymous" />
+    <link rel="preload" href="/ui-state.json" as="fetch" crossorigin="anonymous" />
+    <style>
+      /* website-base.css locks html/body/#pwb-body-wrap to overflow:hidden and
+         max-height:100vh — that zeroes scrollHeight and kills the timeline.
+         These overrides restore a scrollable runway for the parent proxy. */
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body {
+        width: 100% !important;
+        min-height: 100% !important;
+        height: auto !important;
+        max-height: none !important;
+        background: #06040a !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        scrollbar-width: none;
+      }
+      html::-webkit-scrollbar,
+      body::-webkit-scrollbar { display: none; }
+      .pw-scene-style > canvas,
+      .pwb-scene > canvas { display: block; width: 100%; height: 100%; user-select: none; }
+      #pwb-body-wrap {
+        position: relative !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+        max-height: none !important;
+        height: auto !important;
+        overflow: visible !important;
+        opacity: 1;
+      }
+      #ip1j,
+      #ijsk {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 0;
+      }
+      .pwb-anchor { position: relative; height: 0; }
+      .pwb-spacer { width: 100%; pointer-events: none; }
+    </style>
+  </head>
+  <body id="i6mb">
+    <div id="pwb-body-wrap">
+      <div class="pwb-background pwb-flex-grid-wrap" id="ip1j">
+        <div class="pwb-scene" id="ijsk"></div>
+      </div>
+      <!-- Scroll runway for the scene timeline (percentage positional sequence).
+           Heights mirror the embedded pw-scene dump used elsewhere on the site. -->
+      <div class="pwb-anchor" id="i3owk"></div>
+      <div class="pwb-spacer" style="height:3185px"></div>
+      <div class="pwb-anchor" id="i3owk-2-3"></div>
+      <div class="pwb-spacer" style="height:3779px"></div>
+      <div class="pwb-anchor" id="i3owk-2-2-3"></div>
+      <div class="pwb-spacer" style="height:2998px"></div>
+      <div class="pwb-anchor" id="i3owk-2-2-2-3"></div>
+      <div class="pwb-spacer" style="height:2763px"></div>
+      <div class="pwb-anchor" id="i3owk-2-2-2"></div>
+      <div class="pwb-spacer" style="height:1290px"></div>
+      <div class="pwb-anchor" id="i3owk-2-2-2-2"></div>
+    </div>
+    <video id="video" crossorigin="anonymous" playsinline autoplay loop muted
+      src="/cdn/files.peachworlds.com/website/c646d712-e24e-429f-9bb8-70eaca9baef0/video-caustics.mp4"
+      preload="auto" style="display:none"></video>
+
+    <script type="text/javascript">
+      window._pwPreviewResourceUrls = [];
+      (function waterfallOptimizationScript(){
+        window._pwPreviewResourceUrls = window._pwPreviewResourceUrls || [];
+        if (!window._pwLoadFileRequestsCache) window._pwLoadFileRequestsCache = new Map;
+        if (!window._pwLoadFileResolveFnCache) window._pwLoadFileResolveFnCache = new Map;
+        window._pwSetFileCache = (fileUrl, blob) => {
+          if (!window._pwLoadFileResolveFnCache) throw new Error(`Variable "_pwLoadFileResolveFnCache" is undefined.`);
+          const blobUrl = (window.URL || window.webkitURL).createObjectURL(blob);
+          const resolveFn = window._pwLoadFileResolveFnCache.get(fileUrl);
+          if (!resolveFn) throw new Error(`Resolve function for file "${fileUrl}" not found.`);
+          resolveFn(blobUrl);
+        };
+        window._pwWaitForExplicitFileResolve = fileUrl => {
+          if (!window._pwLoadFileResolveFnCache) throw new Error(`Variable "_pwLoadFileResolveFnCache" is undefined.`);
+          if (!window._pwLoadFileRequestsCache) throw new Error(`Variable "_pwLoadFileRequestsCache" is undefined.`);
+          if (window._pwLoadFileResolveFnCache.has(fileUrl) && window._pwLoadFileRequestsCache.has(fileUrl)) return;
+          let resolveFn = void 0;
+          const explicitWaitPromise = new Promise(resolve => { resolveFn = resolve });
+          window._pwLoadFileResolveFnCache.set(fileUrl, resolveFn);
+          window._pwLoadFileRequestsCache.set(fileUrl, explicitWaitPromise);
+        };
+        window._pwLoadFileFromCacheHelper = async fileUrl => {
+          if (!fileUrl) return void 0;
+          try {
+            const response = await fetch(fileUrl);
+            if (!response.ok) return void 0;
+            const blob = await response.blob();
+            return (window.URL || window.webkitURL).createObjectURL(blob);
+          } catch (error) {
+            return void 0;
+          }
+        };
+        window._pwLoadFileFromCache = async fileUrl => {
+          if (!fileUrl) return void 0;
+          if (!window._pwLoadFileRequestsCache) throw new Error(`Variable "_pwLoadFileRequestsCache" is undefined.`);
+          let requestPromise = window._pwLoadFileRequestsCache.get(fileUrl);
+          if (!requestPromise) {
+            if (!window._pwLoadFileFromCacheHelper) throw new Error(`Function "_pwLoadFileFromCacheHelper" is undefined.`);
+            requestPromise = window._pwLoadFileFromCacheHelper(fileUrl);
+            window._pwLoadFileRequestsCache.set(fileUrl, requestPromise);
+          }
+          return await requestPromise;
+        };
+        for (const explicitResourceUrl of window._pwPreviewResourceUrls) window._pwWaitForExplicitFileResolve(explicitResourceUrl);
+      })();
+    </script>
+  </body>
+</html>

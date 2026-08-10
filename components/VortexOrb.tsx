@@ -1,34 +1,43 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef } from "react";
 
 /**
  * Archive orb portal: luminous navy+gold sphere with float, mouse parallax,
  * swirling aurora, and a feathery dive hole that opens onto the scene behind.
+ *
+ * `lite` drops the expensive SVG filters / animated auroras / pointer warp —
+ * paint stays, but the GPU work falls to something a phone can hold.
  */
 export function VortexOrb({
   scale = 1,
   rotate = 0,
   holeScale = 0,
   opacity = 1,
+  lite = false,
   className,
 }: {
   scale?: number;
   rotate?: number;
   holeScale?: number;
   opacity?: number;
+  lite?: boolean;
   className?: string;
 }) {
   const uid = useId().replace(/:/g, "");
   const id = (name: string) => `${uid}-${name}`;
   const rootRef = useRef<HTMLDivElement>(null);
-  const [mx, setMx] = useState(0);
-  const [my, setMy] = useState(0);
-  const [warp, setWarp] = useState(0);
+  const glossRef = useRef<SVGEllipseElement>(null);
+  const warpMapRef = useRef<SVGFEDisplacementMapElement>(null);
   const aim = useRef({ x: 0, y: 0, warp: 0 });
   const cur = useRef({ x: 0, y: 0, warp: 0 });
+  // Dive props applied via style on the root — kept in a ref so the pointer
+  // raf can rewrite transform without waiting on a React render.
+  const diveRef = useRef({ scale, opacity });
+  diveRef.current = { scale, opacity };
 
   useEffect(() => {
+    if (lite) return;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) return;
 
@@ -37,9 +46,21 @@ export function VortexOrb({
       cur.current.x += (aim.current.x - cur.current.x) * 0.08;
       cur.current.y += (aim.current.y - cur.current.y) * 0.08;
       cur.current.warp += (aim.current.warp - cur.current.warp) * 0.1;
-      setMx(cur.current.x);
-      setMy(cur.current.y);
-      setWarp(cur.current.warp);
+      const el = rootRef.current;
+      if (el) {
+        const { scale: s, opacity: o } = diveRef.current;
+        el.style.opacity = String(o);
+        el.style.transform = `translate3d(${cur.current.x * 36}px, ${cur.current.y * 36}px, 0) scale(${s})`;
+      }
+      const gloss = glossRef.current;
+      if (gloss) {
+        gloss.setAttribute("cx", String(380 + cur.current.x * 40));
+        gloss.setAttribute("cy", String(300 + cur.current.y * 36));
+      }
+      const warpMap = warpMapRef.current;
+      if (warpMap) {
+        warpMap.setAttribute("scale", String(cur.current.warp * 28));
+      }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -64,12 +85,7 @@ export function VortexOrb({
       cancelAnimationFrame(raf);
       window.removeEventListener("pointermove", onMove);
     };
-  }, []);
-
-  const glossX = 380 + mx * 40;
-  const glossY = 300 + my * 36;
-  // Soft liquid warp — only when the pointer is near the orb.
-  const warpScale = warp * 42;
+  }, [lite]);
 
   return (
     <div
@@ -78,12 +94,11 @@ export function VortexOrb({
       className={className}
       style={{
         opacity,
-        transform: `translate3d(${mx * 36}px, ${my * 36}px, 0) scale(${scale})`,
+        transform: `scale(${scale})`,
         transformOrigin: "center center",
-        willChange: "transform, opacity",
       }}
     >
-      <div className="pl-orb-float relative h-full w-full">
+      <div className={`relative h-full w-full ${lite ? "" : "pl-orb-float"}`}>
         <div className="pl-orb relative h-full w-full overflow-hidden rounded-full">
           <svg
             className="block h-full w-full"
@@ -91,73 +106,62 @@ export function VortexOrb({
             preserveAspectRatio="xMidYMid slice"
           >
             <defs>
-              <filter
-                id={id("wisp")}
-                x="-40%"
-                y="-40%"
-                width="180%"
-                height="180%"
-                colorInterpolationFilters="sRGB"
-              >
-                <feTurbulence
-                  type="fractalNoise"
-                  baseFrequency="0.02"
-                  numOctaves="5"
-                  seed="7"
-                  result="noise"
+              {/* Hole softener — lite uses a plain radial; full uses a cheap
+                  turbulence (2 octaves, no animate) so the dive still feathers. */}
+              {!lite && (
+                <filter
+                  id={id("wisp")}
+                  x="-30%"
+                  y="-30%"
+                  width="160%"
+                  height="160%"
+                  colorInterpolationFilters="sRGB"
                 >
-                  <animate
-                    attributeName="baseFrequency"
-                    dur="24s"
-                    values="0.018;0.026;0.017;0.018"
-                    repeatCount="indefinite"
+                  <feTurbulence
+                    type="fractalNoise"
+                    baseFrequency="0.02"
+                    numOctaves="2"
+                    seed="7"
+                    result="noise"
                   />
-                </feTurbulence>
-                <feDisplacementMap
-                  in="SourceGraphic"
-                  in2="noise"
-                  scale="120"
-                  xChannelSelector="R"
-                  yChannelSelector="G"
-                />
-                <feGaussianBlur stdDeviation="4" />
-              </filter>
+                  <feDisplacementMap
+                    in="SourceGraphic"
+                    in2="noise"
+                    scale="80"
+                    xChannelSelector="R"
+                    yChannelSelector="G"
+                  />
+                  <feGaussianBlur stdDeviation="3" />
+                </filter>
+              )}
 
-              {/* Pointer-driven liquid warp across the whole sphere. */}
-              <filter
-                id={id("warp")}
-                x="-20%"
-                y="-20%"
-                width="140%"
-                height="140%"
-                colorInterpolationFilters="sRGB"
-              >
-                <feTurbulence
-                  type="fractalNoise"
-                  baseFrequency="0.018"
-                  numOctaves="3"
-                  seed="3"
-                  result="warpNoise"
+              {!lite && (
+                <filter
+                  id={id("warp")}
+                  x="-15%"
+                  y="-15%"
+                  width="130%"
+                  height="130%"
+                  colorInterpolationFilters="sRGB"
                 >
-                  <animate
-                    attributeName="baseFrequency"
-                    dur="8s"
-                    values="0.014;0.022;0.014"
-                    repeatCount="indefinite"
+                  <feTurbulence
+                    type="fractalNoise"
+                    baseFrequency="0.016"
+                    numOctaves="2"
+                    seed="3"
+                    result="warpNoise"
                   />
-                </feTurbulence>
-                <feDisplacementMap
-                  in="SourceGraphic"
-                  in2="warpNoise"
-                  scale={warpScale}
-                  xChannelSelector="R"
-                  yChannelSelector="G"
-                />
-              </filter>
+                  <feDisplacementMap
+                    ref={warpMapRef}
+                    in="SourceGraphic"
+                    in2="warpNoise"
+                    scale="0"
+                    xChannelSelector="R"
+                    yChannelSelector="G"
+                  />
+                </filter>
+              )}
 
-              {/* Nacre base — a bright pearl that stays luminous out to the
-                  edge (the Fresnel rim below defines the sphere, not a dark
-                  vignette), gold-warm above melting into periwinkle below. */}
               <radialGradient id={id("orbDeep")} cx="38%" cy="32%" r="78%">
                 <stop offset="0%" stopColor="#faf1d4" />
                 <stop offset="22%" stopColor="#efd287" />
@@ -166,8 +170,6 @@ export function VortexOrb({
                 <stop offset="90%" stopColor="#7590c6" />
                 <stop offset="100%" stopColor="#5f7cb4" />
               </radialGradient>
-              {/* Iridescent nacre patches — the faint oil-slick hue shifts a
-                  pearl carries: lavender, ice and a whisper of blush. */}
               <radialGradient id={id("iridLav")} cx="50%" cy="50%" r="50%">
                 <stop offset="0%" stopColor="#c9c2ef" stopOpacity="0.4" />
                 <stop offset="100%" stopColor="#c9c2ef" stopOpacity="0" />
@@ -180,7 +182,6 @@ export function VortexOrb({
                 <stop offset="0%" stopColor="#ecc9d8" stopOpacity="0.22" />
                 <stop offset="100%" stopColor="#ecc9d8" stopOpacity="0" />
               </radialGradient>
-              {/* Broad luster arc across the crown of the pearl. */}
               <radialGradient id={id("sheen")} cx="50%" cy="50%" r="50%">
                 <stop offset="0%" stopColor="#fdf8ea" stopOpacity="0.3" />
                 <stop offset="60%" stopColor="#fdf8ea" stopOpacity="0.12" />
@@ -208,10 +209,6 @@ export function VortexOrb({
                 <stop offset="0%" stopColor="#f9ecce" stopOpacity="0.3" />
                 <stop offset="70%" stopColor="#f9ecce" stopOpacity="0" />
               </radialGradient>
-              {/* Fresnel rim-light — the pearl signature: the edge glows
-                  brighter than the surface just inside it, like backlit
-                  nacre. Stops tuned for the 1160-unit overshoot box, where
-                  the visible circle edge sits at ~86% of this radius. */}
               <radialGradient id={id("rim")} cx="50%" cy="50%" r="50%">
                 <stop offset="0%" stopColor="#e9effd" stopOpacity="0" />
                 <stop offset="72%" stopColor="#e9effd" stopOpacity="0" />
@@ -219,12 +216,6 @@ export function VortexOrb({
                 <stop offset="86%" stopColor="#f4f7ff" stopOpacity="0.5" />
                 <stop offset="93%" stopColor="#f4f7ff" stopOpacity="0.5" />
                 <stop offset="100%" stopColor="#e9effd" stopOpacity="0.35" />
-              </radialGradient>
-              <radialGradient id={id("cloudGrad")} cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#ffd24a" stopOpacity="0" />
-                <stop offset="34%" stopColor="#e6b325" stopOpacity="0.14" />
-                <stop offset="70%" stopColor="#8eb0ef" stopOpacity="0.12" />
-                <stop offset="100%" stopColor="#8eb0ef" stopOpacity="0" />
               </radialGradient>
               <radialGradient id={id("holeGrad")} cx="50%" cy="50%" r="50%">
                 <stop offset="0%" stopColor="#000" stopOpacity="1" />
@@ -236,7 +227,6 @@ export function VortexOrb({
                 id={id("punch")}
                 maskUnits="userSpaceOnUse"
                 maskContentUnits="userSpaceOnUse"
-                // SVG masks default to luminance; React's SVG typings omit maskType.
                 style={{ maskType: "luminance" }}
               >
                 <rect x="-200" y="-200" width="1400" height="1400" fill="#fff" />
@@ -248,16 +238,16 @@ export function VortexOrb({
                     cy="500"
                     r="420"
                     fill={`url(#${id("holeGrad")})`}
-                    filter={`url(#${id("wisp")})`}
+                    {...(!lite ? { filter: `url(#${id("wisp")})` } : null)}
                   />
                 </g>
               </mask>
             </defs>
 
-            {/* Paint overshoots the viewBox by 80 units on every side so the
-                pointer warp can displace the edge without eroding the rim —
-                the container's rounded clip still cuts the true circle. */}
-            <g mask={`url(#${id("punch")})`} filter={`url(#${id("warp")})`}>
+            <g
+              mask={`url(#${id("punch")})`}
+              {...(!lite ? { filter: `url(#${id("warp")})` } : null)}
+            >
               <rect
                 x="-80"
                 y="-80"
@@ -267,56 +257,19 @@ export function VortexOrb({
               />
               <circle cx="360" cy="340" r="420" fill={`url(#${id("goldHi")})`} />
               <circle cx="740" cy="760" r="540" fill={`url(#${id("blueLo")})`} />
-              {/* Static nacre hue patches under the moving auroras. */}
               <circle cx="290" cy="730" r="310" fill={`url(#${id("iridLav")})`} />
               <circle cx="820" cy="430" r="330" fill={`url(#${id("iridIce")})`} />
               <circle cx="660" cy="210" r="250" fill={`url(#${id("iridRose")})`} />
               <ellipse cx="500" cy="250" rx="430" ry="250" fill={`url(#${id("sheen")})`} />
-              <g opacity="0.5">
-                <animateTransform
-                  attributeName="transform"
-                  type="rotate"
-                  from="0 500 500"
-                  to="360 500 500"
-                  dur="16s"
-                  repeatCount="indefinite"
-                />
-                <circle
-                  cx="420"
-                  cy="380"
-                  r="200"
-                  fill={`url(#${id("auroraGold")})`}
-                />
-                <circle
-                  cx="650"
-                  cy="560"
-                  r="240"
-                  fill={`url(#${id("auroraLight")})`}
-                />
-              </g>
-              <g opacity="0.4">
-                <animateTransform
-                  attributeName="transform"
-                  type="rotate"
-                  from="360 500 500"
-                  to="0 500 500"
-                  dur="26s"
-                  repeatCount="indefinite"
-                />
-                <circle cx="560" cy="420" r="180" fill={`url(#${id("goldHi")})`} />
-              </g>
-              <g transform={`rotate(${rotate} 500 500)`}>
-                <circle
-                  cx="500"
-                  cy="500"
-                  r="460"
-                  fill={`url(#${id("cloudGrad")})`}
-                  filter={`url(#${id("wisp")})`}
-                />
-              </g>
+              {/* Static aurora patches — rotating SMIL was free CPU, expensive
+                  compositor work on low-end GPUs. */}
+              <circle cx="420" cy="380" r="200" fill={`url(#${id("auroraGold")})`} opacity="0.5" />
+              <circle cx="650" cy="560" r="240" fill={`url(#${id("auroraLight")})`} opacity="0.5" />
+              <circle cx="560" cy="420" r="180" fill={`url(#${id("goldHi")})`} opacity="0.35" />
               <ellipse
-                cx={glossX}
-                cy={glossY}
+                ref={glossRef}
+                cx="380"
+                cy="300"
                 rx="200"
                 ry="130"
                 fill={`url(#${id("gloss")})`}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Montserrat, Merriweather } from "next/font/google";
 import { StickyLogo } from "@/components/StickyLogo";
+import { SiteNav } from "@/components/SiteNav";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import "./globals.css";
 
@@ -39,6 +40,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <SmoothScroll />
         <StickyLogo />
+        <SiteNav />
         {children}
       </body>
     </html>

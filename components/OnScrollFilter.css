@@ -1,0 +1,241 @@
+.osf-wrap {
+  display: grid;
+  place-items: center;
+  grid-template-areas: "main";
+}
+
+.osf-wrap:not(:last-child) {
+  margin-bottom: 18vmax;
+}
+
+@media (min-width: 53em) {
+  .osf-wrap:not(:last-child) {
+    margin-bottom: 30vmax;
+  }
+}
+
+.osf-content {
+  grid-area: main;
+  display: grid;
+  place-items: center;
+  line-height: 1.2;
+  grid-template-areas: "content";
+  width: 100%;
+  padding: 0 1.5rem;
+}
+
+.osf-wrap > .osf-content:first-child {
+  height: 100svh;
+}
+
+.osf-content--layout {
+  grid-template-areas:
+    "title-up title-down"
+    "img img"
+    "text text";
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  padding-bottom: 4rem;
+}
+
+.osf-title-wrap {
+  display: flex;
+  gap: 0.35em;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.osf-title {
+  position: relative;
+  z-index: 20;
+  padding-top: 0.12em;
+  line-height: 0.85;
+  font-family: var(--font-montserrat), Montserrat, ui-sans-serif, system-ui,
+    sans-serif;
+  font-size: clamp(2.4rem, 12vw, 7.5rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: #e6b325;
+  text-indent: -0.04em;
+}
+
+.osf-title--up {
+  grid-area: title-up;
+  font-weight: 300;
+  font-style: italic;
+  font-family: var(--font-merriweather), Merriweather, Georgia, serif;
+  letter-spacing: -0.02em;
+  color: #f9f7f2;
+}
+
+.osf-title--down {
+  grid-area: title-down;
+}
+
+.osf-img {
+  grid-area: img;
+  display: block;
+  width: 100%;
+  max-width: 70%;
+  height: auto;
+}
+
+.osf-img--1 {
+  aspect-ratio: 896 / 1344;
+}
+.osf-img--2 {
+  aspect-ratio: 1000 / 450;
+}
+.osf-img--3 {
+  aspect-ratio: 1000 / 560;
+}
+.osf-img--4 {
+  aspect-ratio: 1400 / 560;
+}
+
+.osf-text {
+  grid-area: text;
+  margin: 0;
+  max-width: 36rem;
+  font-family: var(--font-montserrat), Montserrat, ui-sans-serif, system-ui,
+    sans-serif;
+  font-size: clamp(1rem, 1.5vw, 1.15rem);
+  font-weight: 300;
+  line-height: 1.7;
+  letter-spacing: 0.02em;
+  color: rgba(249, 247, 242, 0.7);
+}
+
+@media (min-width: 53em) {
+  .osf-img {
+    max-width: none;
+  }
+
+  .osf-img--1 {
+    width: min(42vw, 520px);
+    max-height: 85vh;
+  }
+
+  .osf-img--2 {
+    width: 60vw;
+  }
+
+  .osf-img--3 {
+    width: 32vw;
+    align-self: center;
+  }
+
+  .osf-img--4 {
+    width: 100%;
+    align-self: center;
+  }
+
+  .osf-content--layout-1 {
+    grid-template-areas:
+      "title-up img ..."
+      "text img title-down";
+    grid-template-columns: 30% auto 30%;
+    grid-template-rows: 1fr 1fr;
+    column-gap: 2vw;
+    max-width: 1400px;
+    margin-inline: auto;
+  }
+
+  .osf-content--layout-2 {
+    grid-template-areas:
+      "title-up ..."
+      "img img"
+      "text title-down";
+    grid-template-columns: auto auto;
+    justify-content: center;
+    row-gap: 3vh;
+  }
+
+  .osf-content--layout-3 {
+    grid-template-areas:
+      "title-up img title-down"
+      "text text text";
+    grid-template-columns: 20vw auto 20vw;
+    grid-template-rows: auto auto;
+    row-gap: 8vh;
+    column-gap: 2vw;
+    justify-content: center;
+    align-content: center;
+  }
+
+  .osf-content--layout-4 {
+    width: 100%;
+    max-width: 1200px;
+    margin-inline: auto;
+    grid-template-areas:
+      "title-up"
+      "img"
+      "title-down"
+      "text";
+    grid-template-columns: 1fr;
+    justify-content: center;
+    row-gap: 3vh;
+  }
+
+  .osf-content--layout-1 .osf-title--up,
+  .osf-content--layout-3 .osf-title--up {
+    justify-self: end;
+    align-self: start;
+  }
+
+  .osf-content--layout-2 .osf-title--up {
+    justify-self: start;
+  }
+
+  .osf-content--layout-3 .osf-title--up {
+    align-self: center;
+  }
+
+  .osf-content--layout-4 .osf-title--up,
+  .osf-content--layout-4 .osf-title--down {
+    justify-self: center;
+  }
+
+  .osf-content--layout-1 .osf-title--down,
+  .osf-content--layout-3 .osf-title--down {
+    justify-self: start;
+    align-self: end;
+  }
+
+  .osf-content--layout-2 .osf-title--down {
+    justify-self: end;
+    align-self: start;
+    margin-top: -0.1em;
+  }
+
+  .osf-content--layout-3 .osf-title--down {
+    align-self: center;
+  }
+
+  .osf-content--layout-1 .osf-text {
+    max-width: 16rem;
+    text-align: right;
+    justify-self: end;
+    align-self: end;
+  }
+
+  .osf-content--layout-2 .osf-text {
+    align-self: start;
+    justify-self: start;
+    max-width: 24rem;
+  }
+
+  .osf-content--layout-3 .osf-text {
+    max-width: 40rem;
+    justify-self: center;
+    text-align: center;
+  }
+
+  .osf-content--layout-4 .osf-text {
+    text-align: center;
+    max-width: 28rem;
+    justify-self: center;
+    margin-top: 1rem;
+  }
+}

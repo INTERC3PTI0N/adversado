@@ -392,7 +392,7 @@ function Verticals({
           railDriven ? "min-h-screen md:h-full md:min-h-0" : "min-h-screen sm:h-screen"
         }`}
       >
-        <div className="relative z-10 mx-auto w-full max-w-[1500px] text-center pt-2 sm:pt-[clamp(1.5rem,4vh,3.25rem)]">
+        <div className="relative z-10 mx-auto w-full max-w-[1500px] shrink-0 text-center pt-2 sm:pt-[clamp(1rem,3vh,2.5rem)]">
           <p className="text-sm uppercase tracking-[0.35em] text-gold">The Four Verticals</p>
           <h2 className="mx-auto mt-5 max-w-[14ch] font-serif text-[clamp(2.25rem,5.2vw,4rem)] font-light leading-[1.12] tracking-[-0.01em] text-cream">
             Four verticals.{" "}
@@ -401,7 +401,7 @@ function Verticals({
         </div>
 
         <div
-          className="relative z-[1] mx-auto mt-8 h-[min(58vh,400px)] w-full max-w-[720px] sm:pointer-events-none sm:absolute sm:inset-0 sm:mt-0 sm:h-auto sm:max-w-none"
+          className="relative z-[1] mx-auto mt-6 h-[min(58vh,400px)] w-full max-w-[720px] min-h-0 sm:pointer-events-none sm:mt-0 sm:h-0 sm:max-w-none sm:flex-1"
           aria-label="The four verticals"
         >
           {VERTICALS.map((v, i) => (
@@ -410,7 +410,7 @@ function Verticals({
               ref={(el) => {
                 cardRefs.current[i] = el;
               }}
-              className="vertical-flip-card absolute top-[52%] left-1/2 aspect-[5/7] w-[min(40vw,158px)] [perspective:1000px] sm:top-[54%] sm:aspect-auto sm:h-[min(56vh,470px)] sm:w-[min(20vw,268px)] sm:pointer-events-auto"
+              className="vertical-flip-card absolute top-1/2 left-1/2 aspect-[5/7] w-[min(40vw,158px)] [perspective:1000px] sm:aspect-auto sm:h-[min(46vh,420px)] sm:w-[min(18vw,248px)] sm:pointer-events-auto"
               style={{ zIndex: i + 1 }}
             >
               <div
@@ -509,7 +509,7 @@ function Verticals({
           ))}
         </div>
 
-        <div className="relative z-10 mx-auto mt-10 w-full max-w-[1500px] text-center sm:absolute sm:inset-x-0 sm:bottom-[clamp(1.25rem,3vh,2.5rem)] sm:mt-0 sm:px-6 lg:px-16">
+        <div className="relative z-10 mx-auto mt-8 w-full max-w-[1500px] shrink-0 pb-6 text-center sm:mt-4 sm:pb-[clamp(1rem,2.5vh,2rem)]">
           <Link
             ref={ctaRef}
             href="/services"

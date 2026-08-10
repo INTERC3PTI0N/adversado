@@ -17,7 +17,11 @@ function SplashCursor({
   BACK_COLOR = { r: 0.5, g: 0, b: 0 },
   TRANSPARENT = true,
   RAINBOW_MODE = true,
-  COLOR = '#ff0000'
+  COLOR = '#ff0000',
+  /** Optional palette — when set, each splat picks randomly from these hexes. */
+  COLORS = null,
+  /** Dye brightness multiplier (stock effect uses ~0.09). */
+  COLOR_SCALE = 0.09
 }) {
   const canvasRef = useRef(null);
   const animationFrameId = useRef(null);
@@ -59,7 +63,9 @@ function SplashCursor({
       BACK_COLOR,
       TRANSPARENT,
       RAINBOW_MODE,
-      COLOR
+      COLOR,
+      COLORS,
+      COLOR_SCALE
     };
 
     let pointers = [new pointerPrototype()];
@@ -887,20 +893,26 @@ function SplashCursor({
     function hexToRGB(hex) {
       let val = hex.replace('#', '');
       if (val.length === 3) val = val[0] + val[0] + val[1] + val[1] + val[2] + val[2];
+      const scale = config.COLOR_SCALE ?? 0.09;
       const r = parseInt(val.slice(0, 2), 16) / 255;
       const g = parseInt(val.slice(2, 4), 16) / 255;
       const b = parseInt(val.slice(4, 6), 16) / 255;
-      return { r: r * 0.09, g: g * 0.09, b: b * 0.09 };
+      return { r: r * scale, g: g * scale, b: b * scale };
     }
 
     function generateColor() {
+      if (Array.isArray(config.COLORS) && config.COLORS.length > 0) {
+        const hex = config.COLORS[Math.floor(Math.random() * config.COLORS.length)];
+        return hexToRGB(hex);
+      }
       if (!config.RAINBOW_MODE) {
         return hexToRGB(config.COLOR);
       }
       let c = HSVtoRGB(Math.random(), 1.0, 1.0);
-      c.r *= 0.15;
-      c.g *= 0.15;
-      c.b *= 0.15;
+      const scale = config.COLOR_SCALE ?? 0.15;
+      c.r *= scale;
+      c.g *= scale;
+      c.b *= scale;
       return c;
     }
 

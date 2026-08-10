@@ -19,7 +19,7 @@ function SplashCursor({
   RAINBOW_MODE = true,
   COLOR = '#ff0000',
   /** Optional palette — when set, each splat picks randomly from these hexes. */
-  COLORS = null,
+  COLORS = /** @type {string[] | null} */ (null),
   /** Dye brightness multiplier (stock effect uses ~0.09). */
   COLOR_SCALE = 0.09
 }) {

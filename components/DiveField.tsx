@@ -245,7 +245,6 @@ function rasterizeLayer(
 
   const applyFont = () => {
     ctx.font = `${opts.fontWeight} ${size}px ${opts.fontFamily}`;
-    // @ts-expect-error letterSpacing is supported in modern browsers
     ctx.letterSpacing = `${tracking * size}px`;
   };
   applyFont();

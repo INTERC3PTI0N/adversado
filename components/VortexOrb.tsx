@@ -156,7 +156,8 @@ export function VortexOrb({
                 id={id("punch")}
                 maskUnits="userSpaceOnUse"
                 maskContentUnits="userSpaceOnUse"
-                maskType="luminance"
+                // SVG masks default to luminance; React's SVG typings omit maskType.
+                style={{ maskType: "luminance" }}
               >
                 <rect x="-200" y="-200" width="1400" height="1400" fill="#fff" />
                 <g

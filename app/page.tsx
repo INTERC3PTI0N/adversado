@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import ElasticMesh from "@/components/reactbits/ElasticMesh";
 import RippleDistortion from "@/components/reactbits/RippleDistortion";
-import SplashCursor from "@/components/reactbits/SplashCursor";
 
 const NAVY = "#1F355E";
 const GOLD = "#E6B325";
@@ -75,17 +74,6 @@ export default function CountdownPage() {
           background:
             "radial-gradient(ellipse 70% 60% at 50% 46%, rgba(5,10,22,0.72), rgba(5,10,22,0) 75%)",
         }}
-      />
-
-      {/* Fluid trail. Fixed and above the page, so it's mounted outside the
-          content stack and painted last. */}
-      <SplashCursor
-        RAINBOW_MODE={false}
-        COLOR={GOLD}
-        SPLAT_RADIUS={0.14}
-        SPLAT_FORCE={3200}
-        DENSITY_DISSIPATION={3.8}
-        VELOCITY_DISSIPATION={2.6}
       />
 
       {/* Transparent to the pointer as a whole so the background shader keeps

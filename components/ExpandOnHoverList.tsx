@@ -36,7 +36,7 @@ export function ExpandOnHoverList({
 
   return (
     <ul
-      className={`overflow-hidden rounded-[20px] bg-[#120f17]/45 py-3 backdrop-blur-2xl backdrop-saturate-150 sm:py-5 ${className}`.trim()}
+      className={`overflow-hidden bg-[#120f17]/45 py-3 backdrop-blur-2xl backdrop-saturate-150 sm:py-5 ${className}`.trim()}
       onMouseLeave={() => setActive(null)}
     >
       {items.map((item, i) => {
@@ -69,7 +69,7 @@ export function ExpandOnHoverList({
                   {item.title}
                 </span>
                 <span
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-cream/8 text-cream/70 transition-[background-color,color,transform] duration-300 group-hover:bg-gold/15 group-hover:text-gold"
+                  className="grid h-9 w-9 shrink-0 place-items-center bg-cream/8 text-cream/70 transition-[background-color,color,transform] duration-300 group-hover:bg-gold/15 group-hover:text-gold"
                   aria-hidden
                 >
                   <svg
@@ -83,8 +83,8 @@ export function ExpandOnHoverList({
                       d="M5 2.5 9.5 7 5 11.5"
                       stroke="currentColor"
                       strokeWidth="1.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+                      strokeLinecap="square"
+                      strokeLinejoin="miter"
                     />
                   </svg>
                 </span>

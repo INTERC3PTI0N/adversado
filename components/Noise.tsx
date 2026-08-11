@@ -4,6 +4,7 @@ interface NoiseProps {
   patternSize?: number;
   patternScaleX?: number;
   patternScaleY?: number;
+  /** 0 = paint once (static grain). >0 = refresh every N frames. */
   patternRefreshInterval?: number;
   patternAlpha?: number;
 }
@@ -25,15 +26,13 @@ const Noise: React.FC<NoiseProps> = ({
     if (!ctx) return;
 
     let frame = 0;
-    let animationId: number;
-
-    const canvasSize = 1024;
+    let animationId = 0;
+    // 512 is enough for a soft full-bleed grain; 1024 was 4× the fill cost.
+    const canvasSize = 512;
 
     const resize = () => {
-      if (!canvas) return;
       canvas.width = canvasSize;
       canvas.height = canvasSize;
-
       canvas.style.width = '100vw';
       canvas.style.height = '100vh';
     };
@@ -53,16 +52,22 @@ const Noise: React.FC<NoiseProps> = ({
       ctx.putImageData(imageData, 0, 0);
     };
 
+    resize();
+    drawGrain();
+
+    // Static grain — same look at rest, no per-frame ImageData churn.
+    if (patternRefreshInterval <= 0) {
+      window.addEventListener('resize', resize);
+      return () => window.removeEventListener('resize', resize);
+    }
+
     const loop = () => {
-      if (frame % patternRefreshInterval === 0) {
-        drawGrain();
-      }
+      if (frame % patternRefreshInterval === 0) drawGrain();
       frame++;
       animationId = window.requestAnimationFrame(loop);
     };
 
     window.addEventListener('resize', resize);
-    resize();
     loop();
 
     return () => {

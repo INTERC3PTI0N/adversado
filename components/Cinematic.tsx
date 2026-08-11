@@ -41,9 +41,9 @@ const NAVY = "#1F355E";
 const LAYERS = [
   // near → far. Each sheet is sized to stay wider and taller than its own
   // frustum plus its full travel, or scrolling would drag its edge into shot.
-  { count: 260, spreadX: 34, spreadY: 36, z: -8, size: 0.075, opacity: 0.95, rate: 16, lean: 1.6, drift: 0.5 },
-  { count: 420, spreadX: 60, spreadY: 42, z: -22, size: 0.05, opacity: 0.6, rate: 8, lean: 0.9, drift: 0.32 },
-  { count: 640, spreadX: 110, spreadY: 64, z: -46, size: 0.032, opacity: 0.35, rate: 3.5, lean: 0.4, drift: 0.18 },
+  { count: 160, spreadX: 34, spreadY: 36, z: -8, size: 0.075, opacity: 0.95, rate: 16, lean: 1.6, drift: 0.5 },
+  { count: 260, spreadX: 60, spreadY: 42, z: -22, size: 0.05, opacity: 0.6, rate: 8, lean: 0.9, drift: 0.32 },
+  { count: 380, spreadX: 110, spreadY: 64, z: -46, size: 0.032, opacity: 0.35, rate: 3.5, lean: 0.4, drift: 0.18 },
 ];
 
 /**
@@ -102,8 +102,8 @@ export function CinematicScene() {
 
     const scene = new Scene();
     const camera = new PerspectiveCamera(52, 1, 0.1, 200);
-    const renderer = new WebGLRenderer({ alpha: true, antialias: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const renderer = new WebGLRenderer({ alpha: true, antialias: false });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     const canvas = renderer.domElement;
     // z-index 1 puts the stars above the sky gradient.
     canvas.style.cssText =
@@ -127,8 +127,10 @@ export function CinematicScene() {
     // the whole sky close on them, on the same move the headline arrives on.
     let revealed = false;
     let revealScale = 0.1;
+    let kick: () => void = () => {};
     const onReveal = () => {
       revealed = true;
+      kick();
     };
     window.addEventListener("adversado:reveal", onReveal);
 
@@ -169,6 +171,7 @@ export function CinematicScene() {
     const onMove = (e: PointerEvent) => {
       aim.x = (e.clientX / window.innerWidth - 0.5) * 0.5;
       aim.y = (e.clientY / window.innerHeight - 0.5) * 0.3;
+      kick();
     };
     window.addEventListener("pointermove", onMove);
 
@@ -188,8 +191,13 @@ export function CinematicScene() {
     let raf = 0;
     let lastFrame = performance.now();
     const clock = { t: 0 };
+    const near = (a: number, b: number) => Math.abs(a - b) < 0.0004;
+
     const frame = () => {
-      raf = requestAnimationFrame(frame);
+      if (document.hidden) {
+        raf = 0;
+        return;
+      }
       clock.t += 0.004;
       readProgress();
       // Stands in for the old `scrub: 0.6` — a fast flick glides the sky in
@@ -206,9 +214,11 @@ export function CinematicScene() {
       eased.x += (aim.x - eased.x) * 0.05;
       eased.y += (aim.y - eased.y) * 0.05;
 
+      let revealing = false;
       if (revealed && revealScale < 0.999) {
         revealScale += (1 - revealScale) * 0.035;
         universe.scale.setScalar(revealScale);
+        revealing = true;
       }
 
       for (const { points, L } of sheets) {
@@ -223,14 +233,42 @@ export function CinematicScene() {
       }
 
       renderer.render(scene, camera);
+
+      // Stop the loop once scroll/pointer/reveal have settled — continuous
+      // idle drift was burning GPU while the page looked soft.
+      const settling =
+        revealing ||
+        !near(shot.eased, shot.progress) ||
+        !near(eased.x, aim.x) ||
+        !near(eased.y, aim.y);
+      if (settling) {
+        raf = requestAnimationFrame(frame);
+      } else {
+        raf = 0;
+      }
     };
-    frame();
+    kick = () => {
+      if (raf || document.hidden) return;
+      lastFrame = performance.now();
+      raf = requestAnimationFrame(frame);
+    };
+    kick();
+    window.addEventListener("scroll", kick, { passive: true });
+    const onLenis = () => kick();
+    window.__lenis?.on("scroll", onLenis);
+    const onVisibility = () => {
+      if (!document.hidden) kick();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
       window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("scroll", kick);
+      window.__lenis?.off("scroll", onLenis);
       window.removeEventListener("adversado:reveal", onReveal);
+      document.removeEventListener("visibilitychange", onVisibility);
       renderer.dispose();
       sheets.forEach((s) => s.geo.dispose());
       host.removeChild(canvas);
@@ -332,41 +370,28 @@ export function PeachScene() {
       if (y === lastY) return;
       lastY = y;
       win.scrollTo(0, y);
-      // PeachWeb listens to scroll on window/document; synthetic scroll helps
-      // when scrollTo doesn't fire listeners across the iframe boundary.
       win.dispatchEvent(new Event("scroll"));
       doc.dispatchEvent(new Event("scroll", { bubbles: true }));
     };
 
-    const sync = () => {
-      raf = requestAnimationFrame(sync);
-      applyScroll();
+    // Event-driven only — a permanent rAF loop made the whole page feel soft.
+    const schedule = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        applyScroll();
+      });
     };
-    sync();
 
-    // Lenis drives scroll via its own loop; also bind so we catch eased frames.
-    const onLenis = () => applyScroll();
+    schedule();
+    window.addEventListener("scroll", schedule, { passive: true });
+    const onLenis = () => schedule();
     const lenis = window.__lenis;
     lenis?.on("scroll", onLenis);
 
-    const forward = (e: PointerEvent) => {
-      const doc = iframe.contentDocument;
-      if (!doc) return;
-      for (const type of ["pointermove", "mousemove"] as const) {
-        doc.dispatchEvent(
-          new MouseEvent(type, {
-            clientX: e.clientX,
-            clientY: e.clientY,
-            bubbles: true,
-          }),
-        );
-      }
-    };
-    window.addEventListener("pointermove", forward, { passive: true });
-
     return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("pointermove", forward);
+      if (raf) cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", schedule);
       lenis?.off("scroll", onLenis);
     };
   }, []);

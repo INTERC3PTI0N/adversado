@@ -1,16 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Atropos from "atropos/react";
 import "atropos/css";
 
 import ShinyText from "@/components/reactbits/ShinyText";
-import VariableProximity from "@/components/reactbits/VariableProximity";
 
 /* The Introduction. Wordmark + tagline + argument on the page starfield.
- * Atropos tilts the whole stack on desktop. VariableProximity thickens
- * each letter as the cursor nears. Marked phrases carry the argument. */
+ * Atropos tilts the whole stack on desktop. Marked phrases carry the argument. */
 
 const GOLD = "#e6b325";
 const CREAM = "#f9f7f2";
@@ -34,7 +32,6 @@ const BODY: Run[][] = [
 ];
 
 export function IntroCard({ className }: { className?: string }) {
-  const bodyRef = useRef<HTMLDivElement>(null);
   const [useAtropos, setUseAtropos] = useState(false);
 
   useEffect(() => {
@@ -73,35 +70,23 @@ export function IntroCard({ className }: { className?: string }) {
       </p>
 
       <div
-        ref={bodyRef}
         className="mt-12 flex w-full max-w-none flex-col gap-y-4 font-sans text-[clamp(1.35rem,min(3.4vw,4.2vh),3.15rem)] font-medium leading-[1.55] tracking-[-0.02em] text-cream/88 sm:mt-16 sm:gap-y-5 sm:leading-[1.65]"
         data-atropos-offset="2"
       >
         {BODY.map((sentence, si) => (
           <p key={si} className="w-full text-balance">
             {sentence.map(({ text, mark }, i) => {
-              const run = (
-                <VariableProximity
-                  label={text}
-                  containerRef={bodyRef as React.RefObject<HTMLElement>}
-                  fromFontVariationSettings="'wght' 400"
-                  toFontVariationSettings="'wght' 900"
-                  radius={150}
-                  falloff="gaussian"
-                  style={{ fontFamily: "var(--font-montserrat), sans-serif" }}
-                />
-              );
               if (mark) {
                 return (
                   <span
                     key={i}
                     className="rounded-[0.3em] bg-gold/18 px-[0.18em] py-[0.04em] font-semibold text-gold [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
                   >
-                    {run}
+                    {text}
                   </span>
                 );
               }
-              return <span key={i}>{run}</span>;
+              return <span key={i}>{text}</span>;
             })}
           </p>
         ))}

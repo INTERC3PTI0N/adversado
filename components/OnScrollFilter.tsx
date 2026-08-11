@@ -33,13 +33,6 @@ const PANEL: Record<
     final: string;
     imgClass: string;
     src: string;
-    filter: {
-      baseFrequency: string;
-      numOctaves: number;
-      scale: number;
-      morph?: boolean;
-      blur?: number;
-    };
   }
 > = {
   1: {
@@ -49,7 +42,6 @@ const PANEL: Record<
     final: "820",
     imgClass: "osf-img--1",
     src: "/storyset/1.svg",
-    filter: { baseFrequency: "0.03", numOctaves: 3, scale: 50 },
   },
   2: {
     w: 1000,
@@ -58,12 +50,6 @@ const PANEL: Record<
     final: "950",
     imgClass: "osf-img--2",
     src: "/storyset/2.svg",
-    filter: {
-      baseFrequency: "0.1",
-      numOctaves: 1,
-      scale: 100,
-      morph: true,
-    },
   },
   3: {
     w: 1000,
@@ -72,7 +58,6 @@ const PANEL: Record<
     final: "M 0 280 Q 500 800 1000 280 Q 500 -200 0 280",
     imgClass: "osf-img--3",
     src: "/storyset/3.svg",
-    filter: { baseFrequency: "0.02", numOctaves: 3, scale: 80 },
   },
   4: {
     w: 1400,
@@ -81,7 +66,6 @@ const PANEL: Record<
     final: "770",
     imgClass: "osf-img--4",
     src: "/storyset/4.svg",
-    filter: { baseFrequency: "0.5", numOctaves: 1, scale: 50 },
   },
 };
 
@@ -93,7 +77,6 @@ function FilterPanel({
   layout: 1 | 2 | 3 | 4;
 }) {
   const cfg = PANEL[layout];
-  const filterId = `${id}-filter`;
   const maskId = `${id}-mask`;
 
   return (
@@ -106,35 +89,6 @@ function FilterPanel({
       aria-hidden
     >
       <defs>
-        <filter id={filterId}>
-          <feTurbulence
-            type="fractalNoise"
-            baseFrequency={cfg.filter.baseFrequency}
-            numOctaves={cfg.filter.numOctaves}
-            result="noise"
-          />
-          <feDisplacementMap
-            in="SourceGraphic"
-            in2="noise"
-            scale={cfg.filter.scale}
-            xChannelSelector="R"
-            yChannelSelector="G"
-            result={
-              cfg.filter.morph || cfg.filter.blur ? "displacement" : undefined
-            }
-          />
-          {cfg.filter.morph ? (
-            <feMorphology
-              operator="dilate"
-              radius="2"
-              result="morph"
-              in="displacement"
-            />
-          ) : null}
-          {cfg.filter.blur ? (
-            <feGaussianBlur in="displacement" stdDeviation={cfg.filter.blur} />
-          ) : null}
-        </filter>
         <mask id={maskId}>
           {cfg.mask === "circle" ? (
             <circle
@@ -144,7 +98,6 @@ function FilterPanel({
               r="0"
               data-value-final={cfg.final}
               fill="white"
-              style={{ filter: `url(#${filterId})` }}
             />
           ) : (
             <path
@@ -152,7 +105,6 @@ function FilterPanel({
               d="M 0 280 Q 500 280 1000 280 Q 500 280 0 280"
               data-value-final={cfg.final}
               fill="white"
-              style={{ filter: `url(#${filterId})` }}
             />
           )}
         </mask>
@@ -170,8 +122,8 @@ function FilterPanel({
 }
 
 /**
- * Codrops On-Scroll Filter Effect — Flip title reflow + SVG displacement mask.
- * Brand adaptation: Storyset illustrations behind the displacement mask.
+ * Codrops On-Scroll Filter Effect — Flip title reflow + SVG mask reveal.
+ * Brand adaptation: Storyset illustrations behind the mask (no turbulence).
  */
 export function OnScrollFilter({
   items,

@@ -14,10 +14,6 @@ import { Magnify } from "@/components/Magnify";
 import { SlideBreaker } from "@/components/SlideBreaker";
 import { WelcomeVerticalsRail } from "@/components/WelcomeVerticalsRail";
 import { IntroCard } from "@/components/vendor/IntroCard";
-import SplashCursor from "@/components/reactbits/SplashCursor";
-
-/** Brand gold, for the props that take a colour rather than a class. */
-const GOLD = "#e6b325";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -702,15 +698,6 @@ export function HomeSections() {
           constellations over it (sky + stars only). */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 bg-black" />
       <CinematicScene />
-      {/* Gold fluid trail — stays for the whole page scroll. */}
-      <SplashCursor
-        RAINBOW_MODE={false}
-        COLOR={GOLD}
-        SPLAT_RADIUS={0.14}
-        SPLAT_FORCE={3200}
-        DENSITY_DISSIPATION={3.8}
-        VELOCITY_DISSIPATION={2.6}
-      />
       {/* Clipped sideways: the tilted vertical cards swing their corners a few
           px past the viewport at the extremes of the effect, which is enough
           to put a horizontal scrollbar on the whole page. */}

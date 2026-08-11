@@ -28,8 +28,9 @@ export function StickyLogo() {
   const [hovered, setHovered] = useState(false);
   const [onLight, setOnLight] = useState(false);
   const [onNavy, setOnNavy] = useState(false);
+  const pathname = usePathname();
   // The countdown holding page carries the wordmark as its own headline.
-  const hidden = usePathname() === "/";
+  const hidden = pathname === "/";
 
   useEffect(() => {
     const lightSections = document.querySelectorAll("[data-nav-light]");

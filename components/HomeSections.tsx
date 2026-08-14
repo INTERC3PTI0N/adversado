@@ -472,29 +472,27 @@ function Verticals({
                           />
                         </div>
 
-                        <div className="relative flex h-full flex-col items-center px-[14%] pb-[10%] pt-[16%]">
-                          <div className="flex min-h-0 flex-1 items-center justify-center">
-                            <Image
-                              src={v.cat}
-                              alt={v.catAlt}
-                              width={280}
-                              height={280}
-                              className="h-auto max-h-[min(42%,180px)] w-[78%] object-contain"
-                              draggable={false}
-                              priority={i === 0}
-                            />
-                          </div>
-                          <div className="mt-auto w-full text-center">
-                            <h3 className="font-sans text-[clamp(0.72rem,1.5vw,0.95rem)] font-bold uppercase leading-tight tracking-[0.14em] text-navy">
-                              {v.name}
-                            </h3>
-                            <p className="mt-2 font-sans text-[clamp(0.8rem,1.4vw,0.95rem)] font-medium leading-snug text-navy/85">
-                              {v.tagline}
-                            </p>
-                            <p className="mt-1.5 font-serif text-[0.72rem] font-light italic leading-snug text-navy/55 sm:text-[0.78rem]">
-                              {v.quip}
-                            </p>
-                          </div>
+                        <div className="pointer-events-none absolute inset-x-[8%] top-[12%] bottom-[40%] flex items-center justify-center">
+                          <Image
+                            src={v.cat}
+                            alt={v.catAlt}
+                            width={320}
+                            height={320}
+                            className="h-full w-full object-contain"
+                            draggable={false}
+                            priority={i === 0}
+                          />
+                        </div>
+                        <div className="absolute inset-x-[12%] bottom-[15%] z-[1] text-center">
+                          <h3 className="font-sans text-[clamp(0.72rem,1.5vw,0.95rem)] font-bold uppercase leading-tight tracking-[0.14em] text-navy">
+                            {v.name}
+                          </h3>
+                          <p className="mt-1.5 font-sans text-[clamp(0.8rem,1.4vw,0.95rem)] font-medium leading-snug text-navy/85">
+                            {v.tagline}
+                          </p>
+                          <p className="mt-1 font-serif text-[0.72rem] font-light italic leading-snug text-navy/55 sm:text-[0.78rem]">
+                            {v.quip}
+                          </p>
                         </div>
                       </div>
                     </div>

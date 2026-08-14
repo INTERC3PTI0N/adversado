@@ -149,6 +149,73 @@ function Introduction() {
 const CARD_SPREAD_X = [14, 38, 62, 86];
 const CARD_SPREAD_ROT = [-15, -7.5, 7.5, 15];
 
+type VerticalCard = (typeof VERTICALS)[number];
+
+/** Cream face — cat sits on the copy; copy clears the corner ranks. */
+function VerticalCardFace({
+  v,
+  priority = false,
+}: {
+  v: VerticalCard;
+  priority?: boolean;
+}) {
+  return (
+    <div className="playing-card playing-card-face relative h-full w-full overflow-hidden">
+      <div className="playing-card-frame flex flex-col">
+        <div className="playing-card-corner absolute top-3 left-2.5 z-[2] sm:top-3.5 sm:left-3">
+          <span className="playing-card-rank">{v.rank}</span>
+          <Image
+            src={v.cat}
+            alt=""
+            width={36}
+            height={36}
+            className="h-5 w-5 object-contain sm:h-6 sm:w-6"
+            draggable={false}
+          />
+        </div>
+        <div className="playing-card-corner absolute right-2.5 bottom-3 z-[2] rotate-180 sm:right-3 sm:bottom-3.5">
+          <span className="playing-card-rank">{v.rank}</span>
+          <Image
+            src={v.cat}
+            alt=""
+            width={36}
+            height={36}
+            className="h-5 w-5 object-contain sm:h-6 sm:w-6"
+            draggable={false}
+          />
+        </div>
+
+        <div className="relative z-[1] flex min-h-0 flex-1 flex-col px-3.5 pt-12 sm:px-4 sm:pt-14">
+          {/* items-end = cat rests on the text, no dead gap under the silhouette */}
+          <div className="flex min-h-0 flex-1 items-end justify-center px-1 pb-0">
+            <Image
+              src={v.cat}
+              alt={v.catAlt}
+              width={360}
+              height={360}
+              className="h-auto max-h-full w-full object-contain object-bottom"
+              draggable={false}
+              priority={priority}
+            />
+          </div>
+          {/* mb clears inverted corner (rank + icon + gap); px keeps long quips off it */}
+          <div className="mt-1.5 mb-14 w-full shrink-0 px-2 text-center sm:mb-16 sm:px-2.5">
+            <h3 className="font-sans text-[clamp(0.68rem,1.45vw,0.95rem)] font-bold uppercase leading-tight tracking-[0.14em] text-navy">
+              {v.name}
+            </h3>
+            <p className="mt-1 font-sans text-[clamp(0.75rem,1.35vw,0.95rem)] font-medium leading-snug text-navy/85">
+              {v.tagline}
+            </p>
+            <p className="mt-1 font-serif text-[0.68rem] font-light italic leading-snug text-navy/55 sm:text-[0.78rem]">
+              {v.quip}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Verticals({
   railDriven = false,
   cardDriverRef,
@@ -181,10 +248,8 @@ function Verticals({
         const tilts = tiltRefs.current.filter(Boolean) as HTMLDivElement[];
         if (cards.length !== VERTICALS.length) return;
 
-        // Slightly tighter fan on small screens so edges stay in frame.
-        const narrow = window.innerWidth < 768;
-        const spreadX = narrow ? [16, 39, 61, 84] : CARD_SPREAD_X;
-        const spreadRot = narrow ? [-12, -6, 6, 12] : CARD_SPREAD_ROT;
+        const spreadX = CARD_SPREAD_X;
+        const spreadRot = CARD_SPREAD_ROT;
 
         const spreadT = Math.min(1, progress / (1 / 3));
         cards.forEach((card, index) => {
@@ -219,7 +284,7 @@ function Verticals({
         });
       };
 
-      // Desktop inside the Welcome rail — parent scroll drives the cards.
+      // Desktop: pack flip scrub (Welcome rail drives progress when railDriven).
       mm.add(
         "(min-width: 768px) and (prefers-reduced-motion: no-preference)",
         () => {
@@ -318,59 +383,19 @@ function Verticals({
         }
       );
 
-      // Mobile: same pack scrub, self-pinned (Welcome rail stays stacked).
-      // Pin the section (not an inner stage) so pin-spacer sits outside the
-      // rail track cleanly after overflow is cleared on mobile wrappers.
-      mm.add("(max-width: 767px) and (prefers-reduced-motion: no-preference)", () => {
-        const section = sectionRef.current;
-        const cards = Array.from(
-          stage.querySelectorAll<HTMLDivElement>(".vertical-flip-card")
-        );
-        const tilts = cards
-          .map((card) => card.querySelector<HTMLDivElement>(":scope > div"))
-          .filter(Boolean) as HTMLDivElement[];
-        if (!section || cards.length !== VERTICALS.length || tilts.length !== VERTICALS.length) {
-          return;
+      // Reduced motion (desktop): final fan, already flipped.
+      mm.add(
+        "(min-width: 768px) and (prefers-reduced-motion: reduce)",
+        () => {
+          const cards = cardRefs.current.filter(Boolean) as HTMLDivElement[];
+          const tilts = tiltRefs.current.filter(Boolean) as HTMLDivElement[];
+          cards.forEach((card, index) => {
+            gsap.set(card, { left: `${CARD_SPREAD_X[index]}%` });
+            if (tilts[index]) gsap.set(tilts[index], { rotation: 0 });
+            flipToBack(card);
+          });
         }
-
-        // Keep refs in sync for applyCardProgress.
-        cards.forEach((card, i) => {
-          cardRefs.current[i] = card;
-          tiltRefs.current[i] = tilts[i];
-        });
-
-        applyCardProgress(0);
-
-        const scrollLen = () => window.innerHeight * 2.75;
-
-        ScrollTrigger.create({
-          trigger: section,
-          start: "top top",
-          end: () => `+=${scrollLen()}`,
-          pin: true,
-          // Lenis / transformed ancestors make position:fixed pins drift off-screen
-          // on mobile — transform pinning keeps the pack in view while scrubbing.
-          pinType: "transform",
-          pinSpacing: true,
-          scrub: 0.65,
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
-          onUpdate: (self) => applyCardProgress(self.progress),
-        });
-
-        ScrollTrigger.refresh();
-      });
-
-      // Reduced motion: final fan, already flipped (any width).
-      mm.add("(prefers-reduced-motion: reduce)", () => {
-        const cards = cardRefs.current.filter(Boolean) as HTMLDivElement[];
-        const tilts = tiltRefs.current.filter(Boolean) as HTMLDivElement[];
-        cards.forEach((card, index) => {
-          gsap.set(card, { left: `${CARD_SPREAD_X[index]}%` });
-          if (tilts[index]) gsap.set(tilts[index], { rotation: 0 });
-          flipToBack(card);
-        });
-      });
+      );
 
       return () => mm.revert();
     },
@@ -385,7 +410,7 @@ function Verticals({
       <div
         ref={stageRef}
         className={`relative flex w-full flex-col overflow-hidden px-6 py-16 sm:px-10 sm:py-0 lg:px-16 ${
-          railDriven ? "min-h-screen md:h-full md:min-h-0" : "min-h-screen sm:h-screen"
+          railDriven ? "min-h-0 md:h-full md:min-h-0" : "md:min-h-screen md:h-screen"
         }`}
       >
         <div className="relative z-10 mx-auto w-full max-w-[1500px] shrink-0 text-center pt-2 sm:pt-[clamp(1rem,3vh,2.5rem)]">
@@ -396,8 +421,21 @@ function Verticals({
           </h2>
         </div>
 
+        {/* Mobile — static 2×2 grid, face up, no pack animation */}
         <div
-          className="relative z-[1] mx-auto mt-6 h-[min(58vh,400px)] w-full max-w-[720px] min-h-0 sm:pointer-events-none sm:mt-0 sm:h-0 sm:max-w-none sm:flex-1"
+          className="relative z-[1] mx-auto mt-8 grid w-full max-w-[440px] grid-cols-2 gap-3 md:hidden"
+          aria-label="The four verticals"
+        >
+          {VERTICALS.map((v, i) => (
+            <div key={v.name} className="aspect-[5/8] min-h-[260px] w-full">
+              <VerticalCardFace v={v} priority={i === 0} />
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop — pack flip stage */}
+        <div
+          className="relative z-[1] mx-auto mt-6 hidden min-h-0 w-full max-w-[720px] flex-1 md:pointer-events-none md:mt-0 md:block md:max-w-none"
           aria-label="The four verticals"
         >
           {VERTICALS.map((v, i) => (
@@ -406,7 +444,7 @@ function Verticals({
               ref={(el) => {
                 cardRefs.current[i] = el;
               }}
-              className="vertical-flip-card absolute top-1/2 left-1/2 aspect-[5/7] w-[min(40vw,158px)] [perspective:1000px] sm:aspect-auto sm:h-[min(46vh,420px)] sm:w-[min(18vw,248px)] sm:pointer-events-auto"
+              className="vertical-flip-card absolute top-1/2 left-1/2 aspect-auto h-[min(56vh,520px)] w-[min(19vw,268px)] [perspective:1000px] md:pointer-events-auto"
               style={{ zIndex: i + 1 }}
             >
               <div
@@ -420,7 +458,6 @@ function Verticals({
                   style={{ animationDelay: `${i * 0.2}s` }}
                 >
                   <div className="relative h-full w-full [transform-style:preserve-3d]">
-                    {/* Deck back — patterned navy, shown in the stack */}
                     <div
                       data-card-front
                       className="playing-card playing-card-back absolute inset-0 [backface-visibility:hidden]"
@@ -433,7 +470,7 @@ function Verticals({
                             alt=""
                             width={220}
                             height={220}
-                            className="h-auto w-[72%] max-h-[58%] object-contain opacity-90"
+                            className="h-auto max-h-[58%] w-[72%] object-contain opacity-90"
                             draggable={false}
                           />
                         </div>
@@ -443,58 +480,11 @@ function Verticals({
                       </div>
                     </div>
 
-                    {/* Face — cream rank card with the vertical */}
                     <div
                       data-card-back
-                      className="playing-card playing-card-face absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)]"
+                      className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)]"
                     >
-                      <div className="playing-card-frame">
-                        <div className="playing-card-corner absolute top-[6%] left-[7%]">
-                          <span className="playing-card-rank">{v.rank}</span>
-                          <Image
-                            src={v.cat}
-                            alt=""
-                            width={36}
-                            height={36}
-                            className="mt-0.5 h-5 w-5 object-contain sm:h-6 sm:w-6"
-                            draggable={false}
-                          />
-                        </div>
-                        <div className="playing-card-corner absolute right-[7%] bottom-[6%] rotate-180">
-                          <span className="playing-card-rank">{v.rank}</span>
-                          <Image
-                            src={v.cat}
-                            alt=""
-                            width={36}
-                            height={36}
-                            className="mt-0.5 h-5 w-5 object-contain sm:h-6 sm:w-6"
-                            draggable={false}
-                          />
-                        </div>
-
-                        <div className="pointer-events-none absolute inset-x-[8%] top-[12%] bottom-[40%] flex items-center justify-center">
-                          <Image
-                            src={v.cat}
-                            alt={v.catAlt}
-                            width={320}
-                            height={320}
-                            className="h-full w-full object-contain"
-                            draggable={false}
-                            priority={i === 0}
-                          />
-                        </div>
-                        <div className="absolute inset-x-[12%] bottom-[15%] z-[1] text-center">
-                          <h3 className="font-sans text-[clamp(0.72rem,1.5vw,0.95rem)] font-bold uppercase leading-tight tracking-[0.14em] text-navy">
-                            {v.name}
-                          </h3>
-                          <p className="mt-1.5 font-sans text-[clamp(0.8rem,1.4vw,0.95rem)] font-medium leading-snug text-navy/85">
-                            {v.tagline}
-                          </p>
-                          <p className="mt-1 font-serif text-[0.72rem] font-light italic leading-snug text-navy/55 sm:text-[0.78rem]">
-                            {v.quip}
-                          </p>
-                        </div>
-                      </div>
+                      <VerticalCardFace v={v} priority={i === 0} />
                     </div>
                   </div>
                 </div>

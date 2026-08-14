@@ -418,3 +418,74 @@ dialog::backdrop {
 .animate-star-movement-top {
   animation: star-movement-top linear infinite alternate;
 }
+
+/* Projects runs its own pointer treatment — a difference-blend dot that swells
+   over interactive elements — so the native cursor is suppressed while that
+   component is mounted. Set on <html>, not scoped to the page, so it also
+   covers fixed chrome rendered outside the page's own subtree. */
+[data-projects-cursor] *,
+[data-projects-cursor] *::before,
+[data-projects-cursor] *::after {
+  cursor: none !important;
+}
+
+/* ── Aurora ground (Services) ─────────────────────────────────────────────
+   Three drift paths rather than one, so six ribbons sharing them never fall
+   into visible lockstep. Each layer's own rotation is baked into its inline
+   transform, so these keyframes only carry translation and scale. */
+@keyframes aurora-drift-1 {
+  0%,
+  100% {
+    translate: 0 0;
+    scale: 1;
+  }
+  50% {
+    translate: 8vw -4vh;
+    scale: 1.14;
+  }
+}
+@keyframes aurora-drift-2 {
+  0%,
+  100% {
+    translate: 0 0;
+    scale: 1.08;
+  }
+  50% {
+    translate: -10vw 5vh;
+    scale: 0.94;
+  }
+}
+@keyframes aurora-drift-3 {
+  0%,
+  100% {
+    translate: 0 0;
+    scale: 0.96;
+  }
+  50% {
+    translate: 6vw 7vh;
+    scale: 1.2;
+  }
+}
+.aurora-drift-1 {
+  animation: aurora-drift-1 ease-in-out infinite;
+}
+.aurora-drift-2 {
+  animation: aurora-drift-2 ease-in-out infinite;
+}
+.aurora-drift-3 {
+  animation: aurora-drift-3 ease-in-out infinite;
+}
+
+/* Fractal-noise grain over the aurora. Inline SVG so it costs no request. */
+.aurora-grain {
+  opacity: 0.055;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-drift-1,
+  .aurora-drift-2,
+  .aurora-drift-3 {
+    animation: none;
+  }
+}

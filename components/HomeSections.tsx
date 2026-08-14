@@ -47,7 +47,7 @@ const VERTICALS = [
     catAlt: "Gold cat sitting, head tilted",
   },
   {
-    name: "Brand Marketing",
+    name: "Brand Communication",
     tagline: "Say it so people listen.",
     quip: "Talking is not the same as being heard.",
     rank: "K",
@@ -55,8 +55,8 @@ const VERTICALS = [
     catAlt: "Navy cat in a play-bow stretch",
   },
   {
-    name: "Brand Reach",
-    tagline: "Make sure the right people find you.",
+    name: "Brand Growth",
+    tagline: "Build the engine to scale.",
     quip: "Van Gogh sold one painting in his lifetime. Don’t be Van Gogh.",
     rank: "Q",
     cat: "/images/cards/3.png",

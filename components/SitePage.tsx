@@ -4,6 +4,7 @@
  * Shared shell for About / Services / Contact.
  * Night starfield ground (same as home). Nav lives in the root layout.
  */
+import { AuroraField } from "@/components/AuroraField";
 import { CinematicScene } from "@/components/Cinematic";
 import { SiteFooter } from "@/components/SiteFooter";
 
@@ -11,14 +12,20 @@ type SitePageProps = {
   children: React.ReactNode;
   /** `deep` — heavier black scrim (readable type over stars). */
   sky?: "default" | "deep";
+  /** `aurora` swaps the WebGL starfield for the painted aurora ground. */
+  ground?: "stars" | "aurora";
 };
 
-export function SitePage({ children, sky = "default" }: SitePageProps) {
+export function SitePage({ children, sky = "default", ground = "stars" }: SitePageProps) {
+  const aurora = ground === "aurora";
+
   return (
     <div className="relative flex min-h-screen flex-col">
-      <div aria-hidden className="pointer-events-none fixed inset-0 z-0 bg-black" />
-      <CinematicScene />
-      {sky === "deep" ? (
+      {!aurora && (
+        <div aria-hidden className="pointer-events-none fixed inset-0 z-0 bg-black" />
+      )}
+      {aurora ? <AuroraField /> : <CinematicScene />}
+      {sky === "deep" && !aurora ? (
         <div
           aria-hidden
           className="pointer-events-none fixed inset-0 z-[3]"

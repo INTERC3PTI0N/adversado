@@ -8,6 +8,7 @@ const ITEMS = [
   { label: "Home", ariaLabel: "Go to Home page", link: "/" },
   { label: "About", ariaLabel: "Go to About page", link: "/about" },
   { label: "Services", ariaLabel: "Go to Services page", link: "/services" },
+  { label: "Projects", ariaLabel: "Go to Projects page", link: "/projects" },
   { label: "Contact", ariaLabel: "Go to Contact page", link: "/contact" },
   { label: "Audit", ariaLabel: "Request a brand audit", link: "/contact#audit" },
 ];

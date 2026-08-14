@@ -3,6 +3,7 @@ import { Montserrat, Merriweather } from "next/font/google";
 import { StickyLogo } from "@/components/StickyLogo";
 import { SiteNav } from "@/components/SiteNav";
 import { SmoothScroll } from "@/components/SmoothScroll";
+import { SiteSplash } from "@/components/SiteSplash";
 import "./globals.css";
 
 // The brand book specifies exactly two faces — Montserrat primary,
@@ -39,6 +40,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <SmoothScroll />
+        <SiteSplash />
         <StickyLogo />
         <SiteNav />
         {children}

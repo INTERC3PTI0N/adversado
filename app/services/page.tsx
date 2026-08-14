@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function Services() {
   return (
-    <SitePage background="peach">
+    <SitePage>
       <ServicesPage />
     </SitePage>
   );

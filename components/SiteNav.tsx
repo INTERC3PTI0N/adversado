@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { StaggeredMenu } from "@/components/StaggeredMenu";
 
 const ITEMS = [
-  { label: "Home", ariaLabel: "Go to Home page", link: "/home" },
+  { label: "Home", ariaLabel: "Go to Home page", link: "/" },
   { label: "About", ariaLabel: "Go to About page", link: "/about" },
   { label: "Services", ariaLabel: "Go to Services page", link: "/services" },
   { label: "Contact", ariaLabel: "Go to Contact page", link: "/contact" },
@@ -15,7 +15,6 @@ const ITEMS = [
 /**
  * Site-wide nav: React Bits Staggered Menu, branded navy / gold / cream.
  * StickyLogo stays top-left; this owns the Menu toggle and panel only.
- * Hidden on the countdown splash (`/`).
  */
 export function SiteNav() {
   const pathname = usePathname();
@@ -25,8 +24,6 @@ export function SiteNav() {
       document.documentElement.style.overflow = "";
     };
   }, [pathname]);
-
-  if (pathname === "/") return null;
 
   return (
     <StaggeredMenu

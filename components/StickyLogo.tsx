@@ -29,8 +29,6 @@ export function StickyLogo() {
   const [onLight, setOnLight] = useState(false);
   const [onNavy, setOnNavy] = useState(false);
   const pathname = usePathname();
-  // The countdown holding page carries the wordmark as its own headline.
-  const hidden = pathname === "/";
 
   useEffect(() => {
     const lightSections = document.querySelectorAll("[data-nav-light]");
@@ -69,9 +67,7 @@ export function StickyLogo() {
       lightTriggers.forEach((t) => t.kill());
       navyTriggers.forEach((t) => t.kill());
     };
-  }, []);
-
-  if (hidden) return null;
+  }, [pathname]);
 
   const swap = "opacity 0.5s ease, filter 0.5s ease, transform 0.5s ease";
   const nocatSrc = onNavy ? "/logo_nocat_navy.svg" : "/logo_nocat.svg";
@@ -84,10 +80,7 @@ export function StickyLogo() {
       /* 44px tall for the touch-target floor, pulled up 6px so the wordmark
          itself still sits on the same optical line as before — the mark is
          width-bound under `object-contain`, so the taller box only adds hit
-         area, it doesn't scale the logo.
-
-         Note: `href="/"` is the countdown holding page, not this homepage.
-         Left as-is deliberately; it resolves when /home becomes /. */
+         area, it doesn't scale the logo. */
       className="fixed top-[1.125rem] left-6 z-40 flex h-11 w-40 items-center"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}

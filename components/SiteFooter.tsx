@@ -29,7 +29,7 @@ export function SiteFooter() {
           <Link href="/contact" className="text-cream/50 transition-colors hover:text-gold">
             Contact
           </Link>
-          <Link href="/home" className="text-cream/50 transition-colors hover:text-gold">
+          <Link href="/" className="text-cream/50 transition-colors hover:text-gold">
             Home
           </Link>
         </div>

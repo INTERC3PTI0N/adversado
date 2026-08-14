@@ -1,48 +1,24 @@
 "use client";
 
-import { CinematicScene, PeachScene } from "@/components/Cinematic";
+/**
+ * Shared shell for About / Services / Contact.
+ * Night starfield ground (same as home). Nav lives in the root layout.
+ */
+import { CinematicScene } from "@/components/Cinematic";
 import { SiteFooter } from "@/components/SiteFooter";
 
 type SitePageProps = {
   children: React.ReactNode;
-  /**
-   * `stars` — cinematic starfield (default).
-   * `peach` — adv-orb PeachWeb 3D scene as the page ground (About).
-   */
-  background?: "stars" | "peach";
   /** `deep` — heavier black scrim (readable type over stars). */
   sky?: "default" | "deep";
 };
 
-/**
- * Shared shell for About / Services / Contact.
- *
- * About can swap the starfield for the adv-orb PeachWeb scene; other pages
- * keep the night flight. Nav lives in the root layout (Staggered Menu).
- */
-export function SitePage({
-  children,
-  background = "stars",
-  sky = "default",
-}: SitePageProps) {
-  const peach = background === "peach";
-
+export function SitePage({ children, sky = "default" }: SitePageProps) {
   return (
     <div className="relative flex min-h-screen flex-col">
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 bg-black" />
-      {peach ? <PeachScene /> : <CinematicScene />}
-      {peach ? (
-        <div
-          aria-hidden
-          className="pointer-events-none fixed inset-0 z-[3]"
-          style={{
-            background: [
-              "linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.28) 40%, rgba(0,0,0,0.62) 100%)",
-              "radial-gradient(ellipse 80% 60% at 50% 35%, rgba(0,0,0,0.12), rgba(0,0,0,0.55) 75%)",
-            ].join(", "),
-          }}
-        />
-      ) : sky === "deep" ? (
+      <CinematicScene />
+      {sky === "deep" ? (
         <div
           aria-hidden
           className="pointer-events-none fixed inset-0 z-[3]"

@@ -92,11 +92,12 @@ export function AboutSnap({
       event,
     }: {
       deltaY: number;
-      event: WheelEvent | TouchEvent & { lenisStopPropagation?: boolean };
+      event: WheelEvent | TouchEvent;
     }) => {
       if (Math.abs(deltaY) < 1) return;
       // Stop Lenis from also applying this wheel tick as free scroll.
-      event.lenisStopPropagation = true;
+      (event as WheelEvent & { lenisStopPropagation?: boolean }).lenisStopPropagation =
+        true;
       if (event.cancelable) event.preventDefault();
       if (locked) return;
       goTo(index + (deltaY > 0 ? 1 : -1));

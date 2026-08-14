@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import Link from "next/link";
 import AnimatedContent from "@/components/AnimatedContent";
+import { AboutSnap } from "@/components/AboutSnap";
 import { CopyReveal } from "@/components/CopyReveal";
 import { DiveStorySection } from "@/components/DiveStory";
 import FadeContent from "@/components/FadeContent";
@@ -87,11 +88,17 @@ const DIFFERENCES = [
  */
 export function AboutPage() {
   const heroRef = useRef<HTMLDivElement>(null);
+  const pageRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="relative overflow-x-hidden">
+    <div ref={pageRef} className="relative overflow-x-hidden">
+      <AboutSnap scope={pageRef} />
+
       {/* Hero — centered display over the scene */}
-      <section className="relative -mt-20 flex min-h-[100svh] items-center justify-center px-6 pt-20 sm:px-10 lg:px-16">
+      <section
+        data-about-snap
+        className="relative -mt-20 flex h-[100svh] items-center justify-center px-6 pt-20 sm:px-10 lg:px-16"
+      >
         <div ref={heroRef} className="mx-auto w-full max-w-3xl -translate-y-[8vh] text-center lg:max-w-[50%]">
           <FadeContent duration={0.7} className="mb-8">
             <p className="text-sm uppercase tracking-[0.35em] text-gold">About</p>
@@ -123,7 +130,10 @@ export function AboutPage() {
       </section>
 
       {/* Observation — full viewport, eyebrow top / indented display bottom */}
-      <section className="relative flex min-h-[100svh] flex-col justify-between px-6 pb-10 pt-28 sm:px-10 sm:pb-14 sm:pt-32 lg:px-16">
+      <section
+        data-about-snap
+        className="relative flex h-[100svh] flex-col justify-between px-6 pb-10 pt-28 sm:px-10 sm:pb-14 sm:pt-32 lg:px-16"
+      >
         <CopyReveal>
           <p className="text-sm uppercase tracking-[0.35em] text-gold">
             Design &amp; strategy for brands that want one partner
@@ -144,19 +154,17 @@ export function AboutPage() {
       </section>
 
       {/* Story — GSAP DOM dive (no WebGL) */}
-      <div className="relative z-[2] px-6 pb-6 pt-20 sm:px-10 sm:pb-8 sm:pt-28 lg:px-16">
-        <p className="font-sans text-sm font-medium uppercase tracking-[0.4em] text-gold">
-          The Story
-        </p>
-      </div>
       <DiveStorySection
         layers={[...STORY_LAYERS]}
         vhPerPlane={100}
-        caption="Scroll through the planes"
+        caption="The Story"
       />
 
       {/* Curiosity — diagonal TrueFocus, centered */}
-      <section className="relative flex min-h-[100svh] items-center justify-center px-4 sm:px-8 lg:px-12">
+      <section
+        data-about-snap
+        className="relative flex h-[100svh] items-center justify-center px-4 sm:px-8 lg:px-12"
+      >
         <TrueFocus
           sentence="Curiosity Built This Agency"
           layout="diagonal"
@@ -172,7 +180,10 @@ export function AboutPage() {
       </section>
 
       {/* Beliefs — expand-on-hover numbered list */}
-      <section className="relative px-6 py-20 sm:px-10 sm:py-28 lg:px-16">
+      <section
+        data-about-snap
+        className="relative flex h-[100svh] flex-col justify-center overflow-y-auto px-6 py-16 sm:px-10 sm:py-20 lg:px-16"
+      >
         <div className="mx-auto max-w-5xl">
           <CopyReveal>
             <p className="mb-8 text-sm uppercase tracking-[0.35em] text-gold">
@@ -200,7 +211,10 @@ export function AboutPage() {
       <OnScrollFilter items={DIFFERENCES} />
 
       {/* Team */}
-      <section className="relative px-6 py-20 sm:px-10 sm:py-28 lg:px-16">
+      <section
+        data-about-snap
+        className="relative flex h-[100svh] flex-col justify-center overflow-y-auto px-6 py-16 sm:px-10 sm:py-20 lg:px-16"
+      >
         <div className="mx-auto max-w-5xl">
           <CopyReveal>
             <p className="mb-8 text-sm uppercase tracking-[0.35em] text-gold">

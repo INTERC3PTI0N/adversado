@@ -239,12 +239,17 @@ export function OnScrollFilter({
       className={`osf relative ${className}`.trim()}
       aria-label={eyebrow}
     >
-      <div className="mx-auto max-w-[1500px] px-6 pt-20 sm:px-10 sm:pt-28 lg:px-16">
+      <div className="mx-auto max-w-[1500px] px-6 pt-10 sm:px-10 sm:pt-12 lg:px-16">
         <p className="text-sm uppercase tracking-[0.35em] text-gold">{eyebrow}</p>
       </div>
 
       {items.map((item, i) => (
-        <div key={`${item.up}-${item.down}`} className="osf-wrap" data-osf-item>
+        <div
+          key={`${item.up}-${item.down}`}
+          className="osf-wrap"
+          data-osf-item
+          data-about-snap
+        >
           <div className="osf-content">
             <div className="osf-title-wrap">
               <span className="osf-title osf-title--up">{item.up}</span>

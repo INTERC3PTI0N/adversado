@@ -5,12 +5,12 @@
 }
 
 .osf-wrap:not(:last-child) {
-  margin-bottom: 18vmax;
+  margin-bottom: 0;
 }
 
 @media (min-width: 53em) {
   .osf-wrap:not(:last-child) {
-    margin-bottom: 30vmax;
+    margin-bottom: 0;
   }
 }
 

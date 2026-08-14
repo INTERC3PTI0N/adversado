@@ -20,7 +20,7 @@ import {
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 const CREAM = 0xf9f7f2;
-const NAVY = "#1F355E";
+const NIGHT = "#000000";
 
 /**
  * The page's whole background: three sheets of constellations at different
@@ -284,7 +284,7 @@ export function CinematicScene() {
     >
       {/* Under the stars (the canvas is given z-index 1 when it is appended):
           the night-sky wallpaper from the landing page — static, no ripple. */}
-      <div className="absolute inset-0" style={{ zIndex: 0, background: NAVY }}>
+      <div className="absolute inset-0" style={{ zIndex: 0, background: NIGHT }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/night-sky.svg"
@@ -301,7 +301,7 @@ export function CinematicScene() {
         style={{
           zIndex: 0,
           background:
-            "radial-gradient(ellipse 70% 60% at 50% 46%, rgba(5,10,22,0.72), rgba(5,10,22,0) 75%)",
+            "radial-gradient(ellipse 70% 60% at 50% 46%, rgba(0,0,0,0.55), rgba(0,0,0,0) 75%)",
         }}
       />
     </div>

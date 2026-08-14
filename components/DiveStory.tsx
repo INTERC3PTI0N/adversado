@@ -104,7 +104,7 @@ export function DiveStorySection({
             start: "top top",
             end: () =>
               `+=${Math.max(1, layers.length - 1) * window.innerHeight * (vhPerPlane / 100)}`,
-            scrub: 0.12,
+            scrub: 0.15,
             pin,
             // overflow-x-hidden on SitePage forces transform pins.
             pinType: "transform",
@@ -148,6 +148,9 @@ export function DiveStorySection({
       className={`relative w-full ${className}`.trim()}
       style={{ height: `${runway}svh` }}
       aria-label="The Story"
+      data-about-snap
+      data-about-snap-planes={layers.length}
+      data-about-snap-vh={vhPerPlane}
     >
       <div
         ref={pinRef}
@@ -182,7 +185,7 @@ export function DiveStorySection({
         </div>
 
         {caption ? (
-          <p className="pointer-events-none absolute bottom-6 left-1/2 z-[2] -translate-x-1/2 text-center text-[0.65rem] uppercase tracking-[0.28em] text-cream/45">
+          <p className="pointer-events-none absolute top-8 left-6 z-[2] text-[0.7rem] uppercase tracking-[0.35em] text-gold sm:left-10 lg:left-16">
             {caption}
           </p>
         ) : null}

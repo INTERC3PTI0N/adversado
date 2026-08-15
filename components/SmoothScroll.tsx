@@ -31,7 +31,11 @@ export function SmoothScroll() {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const lenis = new Lenis({
-      lerp: 0.28,
+      // Lower lerp = longer glide. At 0.28 the page caught the wheel almost
+      // immediately, so a scrubbed camera inherited the wheel's steppiness
+      // however smooth its own easing was. This is a site-wide feel dial —
+      // raise it back toward 0.28 if the page starts feeling loose.
+      lerp: 0.16,
       wheelMultiplier: 1.05,
       touchMultiplier: 1,
     });

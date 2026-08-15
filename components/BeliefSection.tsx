@@ -5,7 +5,7 @@ import Spline from "@splinetool/react-spline";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
-import { COMMIT_SNAP } from "@/components/Hero";
+import { FLY_THROUGH_SCRUB } from "@/components/Hero";
 import { Magnify } from "@/components/Magnify";
 import { Typewriter } from "@/components/Typewriter";
 
@@ -71,7 +71,7 @@ function FitScene({ scene }: { scene: string }) {
       <span
         ref={tipRef}
         aria-hidden
-        className={`pointer-events-none absolute left-0 top-0 z-10 font-sans text-[0.65rem] font-medium uppercase tracking-[0.28em] text-white transition-opacity duration-200 ${
+        className={`pointer-events-none absolute left-0 top-0 z-10 font-sans text-[0.65rem] font-normal uppercase tracking-[0.22em] text-white transition-opacity duration-200 ${
           hovering ? "opacity-100" : "opacity-0"
         }`}
       >
@@ -107,25 +107,29 @@ export function BeliefSection() {
           scrollTrigger: { trigger: ref.current, start: "top 72%", once: true },
         });
 
-        // Receiving half of the hero fly-through. Short runway to match the
-        // hero's tight pin — settles as soon as the section top clears the
-        // lower third, not mid-viewport.
+        // Receiving half of the hero fly-through. The runway now runs the
+        // full height of the viewport rather than stopping at the lower
+        // third, so the section keeps opening for as long as it is travelling
+        // up the screen instead of arriving all at once and then sitting
+        // still. Same numeric scrub as the hero, so both halves of the
+        // handoff track the scrollbar with identical weight, and no snap —
+        // the auto-complete is what made this land as a cut.
         //
         // Animate the inner block, not the <section>: ScrollTrigger measures
         // a trigger's transformed box, and scaling the trigger feeds back on
         // itself. Origin near the top so the first line isn't parked below
         // the fold at small scale. No blur — Spline would re-raster every frame.
         gsap.from("[data-zoom]", {
-          scale: 0.72,
+          scale: 0.82,
           opacity: 0.35,
           transformOrigin: "50% 10%",
           ease: "none",
           scrollTrigger: {
             trigger: ref.current,
             start: "top bottom",
-            end: "top 68%",
-            scrub: true,
-            snap: COMMIT_SNAP,
+            end: "top 25%",
+            scrub: FLY_THROUGH_SCRUB,
+            invalidateOnRefresh: true,
           },
         });
 
@@ -148,46 +152,55 @@ export function BeliefSection() {
   );
 
   return (
-    <section ref={ref} className="relative px-6 py-28 sm:px-10 sm:py-36 lg:px-16">
+    // Top padding is deliberately much smaller than the bottom. The hero is
+    // pinned, so nothing here can move up until that pin releases — and every
+    // pixel of top padding is then dead starfield between the fly-through
+    // ending and this section's first line appearing. The bottom keeps the
+    // full section rhythm; only the leading edge is tightened.
+    <section ref={ref} className="relative px-6 pt-10 pb-28 sm:px-10 sm:pt-12 sm:pb-36 lg:px-16">
       <div data-zoom className="mx-auto max-w-[1500px]">
         {/* ── Row 1: the headline, across the whole width ───────────────── */}
-        {/* Matched to every other section's eyebrow (gold, `text-sm`,
-            `0.35em`). It was the only one set in cream at `Micro` size, and
-            the only one carrying a number — with no 02 or 03 anywhere on the
-            page, the "01 //" was sequence notation for a sequence that
-            doesn't exist. */}
-        <p data-reveal className="mb-8 text-center text-sm uppercase tracking-[0.35em] text-gold">
+        {/* Matched to every other section's eyebrow (`cream/40`, `text-sm`,
+            `0.22em`). It also used to carry a number — with no 02 or 03
+            anywhere on the page, the "01 //" was sequence notation for a
+            sequence that doesn't exist. */}
+        <p data-reveal className="mb-8 text-center text-sm font-normal uppercase tracking-[0.22em] text-cream/40">
           The Belief
         </p>
         <h2
           data-reveal
-          className="mx-auto max-w-[18ch] text-center font-sans text-[clamp(2.75rem,7vw,5.75rem)] font-black leading-[1.02] tracking-[-0.03em] text-cream"
+          className="mx-auto max-w-[18ch] text-center font-sans text-[clamp(2rem,4.2vw,3.25rem)] font-light leading-[1.12] tracking-[-0.03em] text-cream"
         >
-          Brands aren’t built in <span className="text-gold">launches.</span>
+          Brands aren’t built in <span className="font-serif italic text-gold">launches.</span>
         </h2>
 
         {/* ── Row 2: the argument, then the object ──────────────────────── */}
         <div className="mt-10 grid items-stretch gap-12 md:mt-14 md:grid-cols-2 md:gap-0">
           {/* Hairline between the two once there is a side-by-side to divide —
               stays on this column so it runs the full row height. */}
-          <div className="flex flex-col justify-start md:border-r md:border-cream/15 md:pr-16 lg:pr-20">
+          {/* Centred, not top-parked. The scene opposite sets the row height,
+              and this column only ever holds two short blocks — anchored to
+              the top they left roughly two thirds of the column empty under
+              them, which is what read as a hole rather than as air. */}
+          <div className="flex flex-col justify-center md:border-r md:border-cream/15 md:pr-16 lg:pr-20">
             <p
               data-reveal
-              className="max-w-[20ch] font-sans text-[clamp(1.85rem,3.4vw,3.15rem)] font-light leading-[1.35] tracking-[-0.02em] text-cream"
+              className="max-w-[22ch] font-sans text-[clamp(1.4rem,2.5vw,2.15rem)] font-light leading-[1.5] tracking-[-0.02em] text-cream"
             >
               They’re built in the{" "}
-              <Magnify className="font-semibold not-italic text-gold">unglamorous</Magnify>{" "}
-              act of being{" "}
-              <span className="font-medium text-cream">unmistakably yourself</span>
+              <Magnify className="font-serif font-light italic text-gold">unglamorous</Magnify>{" "}
+              {/* Only `unglamorous` is marked here. The sentence used to lift
+                  this phrase too, and one emphasis per sentence is the whole
+                  point of having one — two competing means neither reads. */}
+              act of being unmistakably yourself
               <span className="text-cream/55">,</span>
             </p>
             {/* No data-reveal: opacity from the section fade would fight the
                 Typewriter remount. Spacer keeps the line's height reserved. */}
             <p
-              className="mt-14 max-w-[16ch] font-serif text-[clamp(1.7rem,3.6vw,2.85rem)] font-bold italic leading-[1.3] tracking-[-0.015em] text-white md:mt-20"
+              className="mt-12 max-w-[18ch] font-serif text-[clamp(1.35rem,2.3vw,1.95rem)] font-light italic leading-[1.4] tracking-[-0.015em] text-cream md:mt-16"
               style={{
-                textShadow:
-                  "0 0 18px rgba(249,247,242,0.45), 0 0 42px rgba(230,179,37,0.28)",
+                textShadow: "0 0 22px rgba(249,247,242,0.28)",
               }}
             >
               {closingOn ? (
@@ -214,13 +227,10 @@ export function BeliefSection() {
             <div className="absolute inset-0 md:left-16 lg:left-20">
               <FitScene scene="https://prod.spline.design/GLgtPJT5x743jtOQ/scene.splinecode" />
             </div>
-            <p className="pointer-events-none absolute inset-x-0 bottom-[6%] z-10 px-5 font-sans text-[clamp(1.05rem,2vw,1.4rem)] font-medium leading-[1.45] tracking-tight text-cream/75 md:left-16 md:right-4 lg:left-20">
-              <span className="rounded-[0.3em] bg-gold/18 px-[0.28em] py-[0.06em] font-semibold text-gold [box-decoration-break:clone] [-webkit-box-decoration-break:clone]">
-                Copy + paste
-              </span>{" "}
-              doesn’t work.
-              <span className="mt-2 block font-semibold tracking-[-0.01em] text-cream">
-                We build what <span className="text-gold">stays.</span>
+            <p className="pointer-events-none absolute inset-x-0 bottom-[6%] z-10 px-5 font-sans text-[clamp(1.05rem,2vw,1.4rem)] font-light leading-[1.45] tracking-[-0.02em] text-cream/70 md:left-16 md:right-4 lg:left-20">
+              <span className="font-serif italic text-gold">Copy + paste</span> doesn’t work.
+              <span className="mt-2 block text-cream">
+                We build what <span className="font-serif italic">stays.</span>
               </span>
             </p>
           </div>

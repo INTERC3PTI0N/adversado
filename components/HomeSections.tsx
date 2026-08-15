@@ -200,10 +200,10 @@ function VerticalCardFace({
           </div>
           {/* mb clears inverted corner (rank + icon + gap); px keeps long quips off it */}
           <div className="mt-1.5 mb-14 w-full shrink-0 px-2 text-center sm:mb-16 sm:px-2.5">
-            <h3 className="font-sans text-[clamp(0.68rem,1.45vw,0.95rem)] font-bold uppercase leading-tight tracking-[0.14em] text-navy">
+            <h3 className="font-sans text-[clamp(0.68rem,1.45vw,0.95rem)] font-medium uppercase leading-tight tracking-[0.12em] text-navy">
               {v.name}
             </h3>
-            <p className="mt-1 font-sans text-[clamp(0.75rem,1.35vw,0.95rem)] font-medium leading-snug text-navy/85">
+            <p className="mt-1 font-sans text-[clamp(0.75rem,1.35vw,0.95rem)] font-light leading-snug text-navy/85">
               {v.tagline}
             </p>
             <p className="mt-1 font-serif text-[0.68rem] font-light italic leading-snug text-navy/55 sm:text-[0.78rem]">
@@ -414,10 +414,10 @@ function Verticals({
         }`}
       >
         <div className="relative z-10 mx-auto w-full max-w-[1500px] shrink-0 text-center pt-2 sm:pt-[clamp(1rem,3vh,2.5rem)]">
-          <p className="text-sm uppercase tracking-[0.35em] text-gold">The Four Verticals</p>
-          <h2 className="mx-auto mt-5 max-w-[14ch] font-serif text-[clamp(2.25rem,5.2vw,4rem)] font-light leading-[1.12] tracking-[-0.01em] text-cream">
+          <p className="text-sm font-normal uppercase tracking-[0.22em] text-cream/40">The Four Verticals</p>
+          <h2 className="mx-auto mt-5 max-w-[14ch] font-serif text-[clamp(1.75rem,3.4vw,2.75rem)] font-light leading-[1.18] tracking-[-0.01em] text-cream">
             Four verticals.{" "}
-            <em className="font-bold not-italic text-gold sm:italic">One journey.</em>
+            <em className="font-light italic text-gold">One journey.</em>
           </h2>
         </div>
 
@@ -474,7 +474,7 @@ function Verticals({
                             draggable={false}
                           />
                         </div>
-                        <span className="pointer-events-none absolute inset-x-0 bottom-[9%] text-center font-sans text-[0.75rem] font-medium uppercase tracking-[0.35em] text-gold/70">
+                        <span className="pointer-events-none absolute inset-x-0 bottom-[9%] text-center font-sans text-[0.75rem] font-normal uppercase tracking-[0.24em] text-gold/70">
                           Adversado
                         </span>
                       </div>
@@ -498,7 +498,7 @@ function Verticals({
             ref={ctaRef}
             href="/services"
             prefetch={false}
-            className="group inline-flex min-h-11 items-center gap-3 text-sm uppercase tracking-[0.2em] text-gold"
+            className="group inline-flex min-h-11 items-center gap-3 text-sm font-normal uppercase tracking-[0.16em] text-gold"
           >
             Explore the full journey
             <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
@@ -544,11 +544,11 @@ function SixDs() {
   return (
     <section ref={ref} className="px-6 py-28 sm:py-40">
       <div className="mx-auto max-w-4xl">
-        <p data-depth className="mb-8 text-sm uppercase tracking-[0.35em] text-gold">
+        <p data-depth className="mb-8 text-sm font-normal uppercase tracking-[0.22em] text-cream/40">
           How We Work
         </p>
         <BoxReveal>
-          <h2 className="text-[clamp(2.5rem,6.5vw,5rem)] font-bold leading-[1.08] tracking-tight text-cream">
+          <h2 className="font-sans text-[clamp(1.75rem,3.4vw,2.75rem)] font-light leading-[1.18] tracking-[-0.03em] text-cream">
             Six Ds. No filler.
           </h2>
         </BoxReveal>
@@ -573,15 +573,15 @@ function SixDs() {
                     className="absolute -left-8 top-2.5 h-1.5 w-1.5 rounded-full bg-gold transition-transform duration-500 group-hover:scale-[2.2] sm:-left-12"
                     aria-hidden
                   />
-                  <h3 className="text-2xl font-bold uppercase tracking-[0.16em] text-gold">{d}</h3>
-                  <p className="mt-3 max-w-2xl text-[clamp(1.05rem,1.7vw,1.35rem)] leading-[1.8] text-cream/70">{line}</p>
+                  <h3 className="text-lg font-normal uppercase tracking-[0.14em] text-gold">{d}</h3>
+                  <p className="mt-3 max-w-2xl font-light text-[clamp(0.98rem,1.3vw,1.15rem)] leading-[1.75] text-cream/65">{line}</p>
                 </div>
               </li>
             ))}
           </ol>
         </div>
 
-        <p data-depth className="mt-14 font-serif text-lg font-light italic text-cream/45">
+        <p data-depth className="mt-14 font-serif text-lg font-light italic tracking-[-0.01em] text-cream/45">
           Every engagement starts with an audit. No exceptions. Even the ones we like.
         </p>
       </div>
@@ -629,26 +629,24 @@ function Invitation() {
                 "0 1px 2px rgba(8,14,28,0.55), 0 6px 28px rgba(8,14,28,0.45)",
             }}
           >
-            <p className="mb-6 text-sm uppercase tracking-[0.35em] text-gold">The Invitation</p>
+            <p className="mb-6 text-sm font-normal uppercase tracking-[0.22em] text-cream/40">The Invitation</p>
 
             <BoxReveal>
-              <h2 className="font-serif text-[clamp(2.25rem,5.5vw,4.5rem)] font-light leading-[1.12] tracking-[-0.01em] text-cream">
+              <h2 className="font-serif text-[clamp(1.85rem,3.6vw,3rem)] font-light leading-[1.18] tracking-[-0.01em] text-cream">
                 We’re not for everyone.{" "}
-                <em className="font-bold not-italic text-gold sm:italic">That’s deliberate.</em>
+                <em className="font-light italic text-gold">That’s deliberate.</em>
               </h2>
             </BoxReveal>
 
-            <p className="mt-8 max-w-[36ch] font-sans text-[clamp(1.1rem,1.9vw,1.4rem)] font-light leading-[1.75] text-cream/80">
-              We work with <Magnify className="font-bold italic text-gold">ambitious</Magnify>{" "}
+            <p className="mt-8 max-w-[36ch] font-sans text-[clamp(1rem,1.4vw,1.15rem)] font-light leading-[1.75] tracking-[-0.01em] text-cream/75">
+              We work with <Magnify className="font-light">ambitious</Magnify>{" "}
               brands ready to make{" "}
-              <span className="rounded-[0.3em] bg-gold/18 px-[0.22em] py-[0.04em] font-bold text-gold [box-decoration-break:clone] [-webkit-box-decoration-break:clone]">
-                bold moves.
-              </span>
+              <span className="font-serif italic text-gold">bold moves.</span>
             </p>
 
             <p
               ref={movesRef}
-              className="mt-10 flex flex-wrap items-baseline gap-x-5 gap-y-2 font-sans text-[clamp(1.2rem,2.8vw,2rem)] font-black uppercase leading-tight tracking-tight text-gold sm:gap-x-8"
+              className="mt-10 flex flex-wrap items-baseline gap-x-5 gap-y-2 font-serif text-[clamp(1.1rem,2vw,1.5rem)] font-light italic leading-tight tracking-[-0.02em] text-gold sm:gap-x-8"
             >
               {MOVES.map((move) => (
                 <span key={move} data-move className="inline-block">
@@ -657,9 +655,9 @@ function Invitation() {
               ))}
             </p>
 
-            <p className="mt-10 max-w-[34ch] font-sans text-[clamp(1.1rem,1.9vw,1.4rem)] font-light leading-[1.75] text-cream/75">
+            <p className="mt-10 max-w-[34ch] font-sans text-[clamp(1rem,1.4vw,1.15rem)] font-light leading-[1.75] tracking-[-0.01em] text-cream/70">
               If you’re looking for{" "}
-              <span className="font-semibold text-cream">a partner,</span>{" "}
+              <span className="text-cream">a partner,</span>{" "}
               <span className="text-cream/45">not another agency,</span> we’d love to meet.
             </p>
           </div>

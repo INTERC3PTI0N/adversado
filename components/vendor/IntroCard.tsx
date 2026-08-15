@@ -5,13 +5,15 @@ import Image from "next/image";
 import Atropos from "atropos/react";
 import "atropos/css";
 
-import ShinyText from "@/components/reactbits/ShinyText";
-
 /* The Introduction. Wordmark + tagline + argument on the page starfield.
- * Atropos tilts the whole stack on desktop. Marked phrases carry the argument. */
+ * Atropos tilts the whole stack on desktop.
+ *
+ * The argument's payload phrases are set in the serif italic at the same size,
+ * weight and colour as the sentence around them. They used to be gold type on
+ * a gold-tinted chip, three times over — three highlights in one paragraph is
+ * no emphasis at all, just noise. The face change alone carries it. */
 
 const GOLD = "#e6b325";
-const CREAM = "#f9f7f2";
 
 type Run = { text: string; mark?: boolean };
 
@@ -44,10 +46,14 @@ export function IntroCard({ className }: { className?: string }) {
 
   const inner = (
     <>
-      <h2 className="flex w-full flex-wrap items-center justify-center gap-x-[0.32em] gap-y-3 font-sans text-[clamp(2rem,min(7vw,8.5vh),5.5rem)] font-black uppercase leading-[1.05] tracking-tight text-cream">
+      <h2 className="flex w-full flex-wrap items-center justify-center gap-x-[0.32em] gap-y-3 font-sans text-[clamp(2rem,min(5.8vw,7vh),4.5rem)] font-light leading-[1.05] tracking-[-0.03em] text-cream">
         <span className="shrink-0">Welcome to</span>
         <span
-          className="relative inline-flex h-[0.82em] w-[clamp(10rem,32vw,24rem)] shrink-0 items-center"
+          /* Both axes in `em` so the wordmark tracks the heading. Width was a
+             separate rem clamp, which left it sized for the old display scale
+             and a dead gap to its right once the heading came down. 4.35em is
+             the logo's own 2368:448 ratio applied to the 0.82em height. */
+          className="relative inline-flex h-[0.82em] w-[4.35em] shrink-0 items-center"
           data-atropos-offset="6"
         >
           <Image
@@ -63,14 +69,14 @@ export function IntroCard({ className }: { className?: string }) {
       </h2>
 
       <p
-        className="mt-5 shrink-0 font-serif text-[clamp(1.05rem,1.9vw,1.7rem)] font-normal italic uppercase tracking-[0.18em] sm:mt-7"
+        className="mt-5 shrink-0 font-serif text-[clamp(1rem,1.7vw,1.45rem)] font-light italic tracking-[-0.01em] sm:mt-7"
         data-atropos-offset="3"
       >
-        <ShinyText text="Brand Behind the Brands" color={GOLD} shineColor={CREAM} speed={4} spread={100} />
+        <span style={{ color: GOLD }}>Brand Behind the Brands</span>
       </p>
 
       <div
-        className="mt-12 flex w-full max-w-none flex-col gap-y-4 font-sans text-[clamp(1.35rem,min(3.4vw,4.2vh),3.15rem)] font-medium leading-[1.55] tracking-[-0.02em] text-cream/88 sm:mt-16 sm:gap-y-5 sm:leading-[1.65]"
+        className="mt-12 flex w-full max-w-none flex-col gap-y-4 font-sans text-[clamp(1.15rem,min(2.4vw,3.1vh),2rem)] font-light leading-[1.7] tracking-[-0.02em] text-cream/80 sm:mt-16 sm:gap-y-5 sm:leading-[1.65]"
         data-atropos-offset="2"
       >
         {BODY.map((sentence, si) => (
@@ -78,10 +84,7 @@ export function IntroCard({ className }: { className?: string }) {
             {sentence.map(({ text, mark }, i) => {
               if (mark) {
                 return (
-                  <span
-                    key={i}
-                    className="rounded-[0.3em] bg-gold/18 px-[0.18em] py-[0.04em] font-semibold text-gold [box-decoration-break:clone] [-webkit-box-decoration-break:clone]"
-                  >
+                  <span key={i} className="font-serif italic text-gold">
                     {text}
                   </span>
                 );

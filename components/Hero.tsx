@@ -5,7 +5,9 @@ import { animate } from "motion/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
-import { TextReveal } from "@/components/TextReveal";
+import { RevealWord } from "@/components/TextReveal";
+import { useBlockReveal } from "@/components/useBlockReveal";
+import VariableProximity from "@/components/reactbits/VariableProximity";
 import { ScrollHint } from "@/components/ScrollHint";
 import { Typewriter } from "@/components/Typewriter";
 
@@ -14,10 +16,12 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
 // Brand book palette.
 const GOLD = "#e6b325";
 
-const HEADLINE_2 = "SO DO MOST BRANDS.";
+const HEADLINE_2 = "So do most brands.";
 /** The whole of the second line now — one word doing the work a sentence used
- *  to. Typed into a gold marker stroke, which is why it is set in navy. */
-const SUBHEADING = "WHY?";
+ *  to. The pairing carries it: the statement is set in the sans, the question
+ *  answers back in the serif italic. That face change is the entire emphasis —
+ *  no weight, no colour, no marker stroke behind it. */
+const SUBHEADING = "Why?";
 
 const REVEAL_STAGGER = 0.08;
 const REVEAL_DURATION = 0.5;
@@ -68,42 +72,38 @@ const TYPE_SPEED_MS = 200;
 const TYPE_RUN_MS = SUBHEADING.length * TYPE_SPEED_MS;
 const SCROLL_HINT_DELAY_MS = TYPE_DELAY_MS + TYPE_RUN_MS + 400;
 
-/** The hand-off zoom. The hero doesn't scroll away — it is pinned for a
- *  short scrub and flown *through*, and the Belief picks the same camera
- *  move up on the other side (BeliefSection.tsx). Scrubbed, so the scrollbar
- *  is the camera position and dragging back runs it in reverse for free. */
+/** The hand-off zoom. The hero doesn't scroll away — it is pinned and flown
+ *  *through*, and the Belief picks the same camera move up on the other side
+ *  (BeliefSection.tsx). Scrubbed, so the scrollbar is the camera position and
+ *  dragging back runs it in reverse for free. */
 const FLY_THROUGH_SCALE = 6.5;
 
-/**
- * Auto-complete for a scrubbed section transition.
+/** How much scroll the fly-through is given, as a share of the viewport.
  *
- * Commits to the direction of travel so a small nudge finishes the zoom and a
- * nudge the other way rewinds it — the camera is never left parked mid-move.
+ *  This was 22% originally, which asked a 6.5× zoom to happen inside a fifth
+ *  of a screen — the move was over before it read as a move. It then went to
+ *  145%, which was smooth but made the reader scroll most of two screens
+ *  before the Belief showed up.
  *
- * Forward commits once progress clears a low threshold (~6%) so the reader
- * does not have to grind deep into the pin before the snap takes over.
- * Backward commits the same way from the far end.
+ *  85% is the balance: still ~4× the original travel, so the camera has room
+ *  to glide, but the pin releases about three-quarters of a screen in and the
+ *  next section is right there behind it. Smoothness here comes from the
+ *  scrub easing and the absent snap, not from sheer length. */
+const FLY_THROUGH_RUNWAY = "+=85%";
+
+/** Seconds the scrub takes to catch up to the scrollbar.
  *
- * `delay` stays near zero: with smooth scrolling, a longer delay waits for
- * inertia to die and feels like the snap needs "more scrolling" first.
- * `inertia: false` so velocity projection cannot skip the move entirely.
+ *  `scrub: true` is a rigid 1:1 binding — every wheel tick lands on the
+ *  animation the same frame, so the camera inherits the wheel's own
+ *  steppiness. A numeric scrub eases toward the scroll position instead,
+ *  which is what turns a sequence of discrete notches into one continuous
+ *  glide. Shared with the Belief's arrival so both halves of the handoff
+ *  track the scrollbar with the same weight.
  *
- * The end guards are load-bearing: resting exactly at 0 or 1 is the normal
- * idle state (including under the preloader), and a rule that only ever
- * answers "0 or 1" would fire "1" there and skip the hero.
- */
-export const COMMIT_SNAP = {
-  snapTo: (value: number, self?: { direction: number }) => {
-    if (value <= 0.001 || value >= 0.999) return value;
-    const goingBack = self && self.direction === -1;
-    if (goingBack) return value < 0.94 ? 0 : 1;
-    return value > 0.06 ? 1 : 0;
-  },
-  duration: { min: 0.2, max: 0.45 },
-  delay: 0,
-  inertia: false,
-  ease: "power2.inOut",
-} as const;
+ *  Kept proportionate to the runway above. At 1.35 against a short runway the
+ *  reader can scroll the whole move faster than the scrub can follow, so the
+ *  zoom carries on after they have stopped — smoothing turns into lag. */
+export const FLY_THROUGH_SCRUB = 0.9;
 
 export function Hero({ active = true }: { active?: boolean }) {
   // The disappearing headline and its countdown now open the site, inside the
@@ -124,6 +124,18 @@ export function Hero({ active = true }: { active?: boolean }) {
   // would fight. This wrapper holds the scrim *and* the copy, so the whole
   // hero — air included — flies as one object.
   const zoomRef = useRef<HTMLDivElement>(null);
+  const revealRef = useRef<HTMLSpanElement>(null);
+
+  // The block reveal is driven from here rather than from inside TextReveal,
+  // because each word now wraps a VariableProximity instead of a bare string
+  // and the two have to share one set of `[data-reveal-*]` pairs. Keyed on
+  // `phase` — the headline does not exist in the DOM until the hero arrives,
+  // so on Hero's own mount there is nothing for the hook to find.
+  useBlockReveal(
+    revealRef,
+    { stagger: REVEAL_STAGGER, duration: REVEAL_DURATION },
+    [phase]
+  );
 
   useEffect(() => {
     // Hero renders from page load, underneath the preloader/transition — but
@@ -198,23 +210,35 @@ export function Hero({ active = true }: { active?: boolean }) {
           scrollTrigger: {
             trigger: sectionRef.current,
             start: "top top",
-            // Tight pin: one short wheel nudge + snap should clear the hero
-            // and land on Belief without a long scrub runway.
-            end: "+=22%",
+            end: FLY_THROUGH_RUNWAY,
             pin: true,
-            scrub: true,
-            snap: COMMIT_SNAP,
+            // No snap. An auto-complete that fires at 6% progress turns a
+            // scrubbed camera into a cut: the reader nudges the wheel and the
+            // whole move is yanked through in under half a second, which is
+            // exactly the snappiness this pass is removing. With a real
+            // runway, resting mid-zoom is a legitimate frame of the shot
+            // rather than a state to be rescued from.
+            scrub: FLY_THROUGH_SCRUB,
+            // The pin freezes the section, so the layout below has to be told
+            // to remeasure once the runway length changes with the viewport.
+            invalidateOnRefresh: true,
           },
         });
         // Scale runs linear across the whole pin — that is the camera, and a
         // camera that eases is a camera that stutters against the scrollbar.
         tl.to(zoomRef.current, { scale: FLY_THROUGH_SCALE, ease: "none", duration: 1 }, 0)
-          // Drop the copy immediately so Belief is the visible subject for
-          // most of this short pin, not empty stars after a late fade.
+          // Held legible through the first stretch, then dissolved across the
+          // middle of the move. Starting the fade at 0 (as this did) meant the
+          // copy was gone by the time the zoom had really begun, so the long
+          // runway would otherwise just be empty stars.
           .to(
             zoomRef.current,
-            { opacity: 0, filter: "blur(16px)", ease: "power2.in", duration: 0.45 },
-            0
+            { opacity: 0, filter: "blur(16px)", ease: "power1.inOut", duration: 0.6 },
+            // Ends at 0.95 of the pin rather than 0.85. Finishing earlier left
+            // the last stretch of the runway as bare starfield before the
+            // Belief edge entered — the copy should still be dissolving as
+            // the next section starts climbing into view.
+            0.35
           );
       });
       return () => mm.revert();
@@ -261,42 +285,49 @@ export function Hero({ active = true }: { active?: boolean }) {
           >
             <h1
               ref={headlineRef}
-              className="text-[clamp(2.5rem,8vw,6.5rem)] font-bold leading-[1.02] tracking-tight text-cream"
+              className="font-sans text-[clamp(2.25rem,7vw,5.75rem)] font-light leading-[1.06] tracking-[-0.03em] text-cream"
             >
-              <TextReveal
-                text={HEADLINE_2}
-                blockColor={GOLD}
-                stagger={REVEAL_STAGGER}
-                duration={REVEAL_DURATION}
-                emphasis="brands"
-              />
+              {/* Same pointer-reactive weighting the About hero carries: each
+                  letter rides the font's `wght` axis as the cursor nears it.
+                  The range starts at 300 rather than the About page's 500, so
+                  the line still sits at the light weight it is set in and only
+                  thickens under the pointer. */}
+              <span ref={revealRef}>
+                {HEADLINE_2.split(" ").map((word, i) => (
+                  <RevealWord key={i} blockColor={GOLD}>
+                    <VariableProximity
+                      label={word}
+                      containerRef={headlineRef as React.RefObject<HTMLElement>}
+                      fromFontVariationSettings="'wght' 300"
+                      toFontVariationSettings="'wght' 700"
+                      radius={220}
+                      falloff="gaussian"
+                      style={{ fontFamily: "var(--font-montserrat), sans-serif" }}
+                    />
+                  </RevealWord>
+                ))}
+              </span>
             </h1>
             <p
               ref={subRef}
-              className="font-sans text-[clamp(3.5rem,13vw,10rem)] font-black leading-none tracking-tight"
+              className="font-serif text-[clamp(3rem,9vw,7rem)] font-light italic leading-none tracking-[-0.02em] text-gold"
             >
-              {/* The marker stroke is its own span rather than classes on the
-                  Typewriter: that component absolutely positions the typed
-                  copy over an invisible spacer with `inset-0`, so any padding
-                  of its own would offset the two from each other.
-
-                  Faded in on the same beat the typing starts — the block is
-                  sized for the finished word from the first frame, and an
-                  empty gold rectangle sitting through the whole arrival reads
-                  as a bug rather than a highlight. */}
+              {/* Faded in on the same beat the typing starts — the line is
+                  sized for the finished word from the first frame, so without
+                  this there is a held gap through the whole arrival. */}
               <span
-                className="inline-block rounded-[0.08em] bg-gold px-[0.16em] pb-[0.06em] text-navy"
+                className="inline-block"
                 style={{
                   opacity: typing ? 1 : 0,
                   transition: "opacity 450ms ease",
                 }}
               >
-                {/* The caret defaults to gold, which is invisible on gold. */}
+                {/* The caret already defaults to gold, which is what the word
+                    is now set in, so it needs no override. */}
                 <Typewriter
                   text={SUBHEADING}
                   delay={TYPE_DELAY_MS}
                   speed={TYPE_SPEED_MS}
-                  className="[&_.caret]:text-navy"
                 />
               </span>
             </p>

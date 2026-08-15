@@ -285,11 +285,13 @@ export function ServicesPage() {
             <p className="max-w-[58ch] font-serif text-[clamp(1rem,1.5vw,1.2rem)] font-light leading-[1.8] text-cream/75">
               Four verticals covering a brand&apos;s complete journey, from the
               first strategic decision to the experience people remember. Engage
-              one vertical or all four. Every engagement starts with an audit,
+              one vertical or all four.</p>
+              <br />
+              <p className="max-w-[58ch] font-serif text-[clamp(1rem,1.5vw,1.2rem)] font-light leading-[1.8] text-cream/75">Every engagement starts with an audit,
               and everything we produce holds one standard. One integrated
               branding, digital marketing and advertising agency, working from
-              Kochi with brands across India.
-            </p>
+              Kochi with brands across India.</p>
+            
           </FadeContent>
           </div>
 

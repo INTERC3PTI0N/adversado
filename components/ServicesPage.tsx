@@ -3,22 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CopyReveal } from "@/components/CopyReveal";
+import { DitherReveal } from "@/components/DitherReveal";
 import FadeContent from "@/components/FadeContent";
 import VariableProximity from "@/components/reactbits/VariableProximity";
 
 /**
- * Services — the four verticals, as the brand book states them.
+ * Services — four verticals, one journey.
  *
- * Deliberately the quietest page on the site. Home sells and About charms;
- * Services is read by someone deciding whether to spend money, so the only
- * pointer-reactive thing on it is the headline (the same treatment as About's,
- * so the two hubs open in the same register). Everything below is a hairline
- * grid, a numbered run of four, and prose — reveals are fades and line lifts,
- * nothing that pins, hijacks or lenses.
- *
- * Copy is the brand book's own, verbatim where it exists: vertical names and
- * taglines from "Everything, Connected" (p13), the puzzle passage from "The
- * Problem With Everyone Else" (p5), the four-clause close from p13's standfirst.
+ * Quiet page: proximity headline (same as About), hairline grid, numbered
+ * run of four, prose. Copy is the services brief verbatim.
  */
 
 const VERTICALS = [
@@ -26,12 +19,17 @@ const VERTICALS = [
     index: "01",
     name: "Brand Foundation",
     tagline: "Build what you stand on.",
-    body: "Before a single deliverable is designed, two questions get answered in writing: what does this brand stand for, and why should anyone care. Position, name, identity and the guidelines that keep it intact — the ground the other three verticals stand on.",
+    quip: 'Because "vibes" is not a positioning.',
+    body: [
+      "Before the campaigns, the content and the launches, there's a harder question: what does this brand stand for, and why should anyone care?",
+      "Foundation is where we answer it. **Properly, in writing**, before a single deliverable is designed.",
+      "It's the branding agency part of us, and the brand strategy agency part too. They were never meant to be separate.",
+    ],
     services: [
       "Brand strategy & positioning",
       "Brand naming",
       "Brand identity design",
-      "Visual identity system",
+      "Visual identity systems",
       "Brand packaging",
       "Brand audit & entry assessment",
       "Brand guidelines",
@@ -39,53 +37,80 @@ const VERTICALS = [
   },
   {
     index: "02",
-    name: "Brand Communication",
+    name: "Brand Marketing",
     tagline: "Say it so people listen.",
-    body: "A position nobody hears is a secret, not a strategy. Campaigns, content and media that sound unmistakably like you in every room you show up in — above the line and below it, paid and earned.",
+    quip: "Talking is not the same as being heard.",
+    body: [
+      "A strong position nobody hears about is a secret, not a strategy.",
+      "Marketing is where the brand finds its voice: **campaigns, content and conversations** that sound unmistakably like you, everywhere they show up.",
+      "It's the advertising agency side of Adversado. Same voice, bigger rooms.",
+    ],
     services: [
-      "Advertising (ATL & BTL)",
+      "Advertising campaigns (ATL & BTL)",
       "Copywriting & content strategy",
       "Social media strategy & management",
-      "Performance marketing",
-      "SEO & digital presence",
-      "PR & media relations",
       "Campaign planning & execution",
+      "Media planning",
     ],
   },
   {
     index: "03",
-    name: "Brand Growth",
-    tagline: "Build the engine to scale.",
-    body: "Attention that never converts is activity, not growth. This vertical builds the machinery underneath the brand — route to market, site, search, pipeline, measurement — so spend compounds instead of resetting every quarter.",
+    name: "Brand Reach",
+    tagline: "Make sure the right people find you.",
+    quip: "Van Gogh sold one painting in his lifetime. Don't be Van Gogh.",
+    body: [
+      "Brilliant and invisible is still invisible.",
+      "Reach is the engine: **performance, search, PR and digital presence** working together so the brand compounds instead of just spends.",
+      "It's what people mean when they search for a digital marketing agency in Kochi, in Kerala or anywhere in India. We just define the job wider.",
+    ],
     services: [
-      "Growth & GTM strategy",
-      "Sales enablement",
+      "Performance marketing",
+      "SEO & digital presence",
+      "PR & media relations",
       "Lead generation & digital marketing",
       "Website design & development",
-      "Analytics & performance",
-      "Market expansion planning",
+      "Analytics & performance tracking",
     ],
   },
   {
     index: "04",
     name: "Brand Experience",
     tagline: "Make people feel it.",
-    body: "People forget campaigns. They remember rooms. Launches, activations and exhibitions built from the same strategy that produced the identity — so the brand people meet is the brand we wrote down.",
+    quip: "Nobody ever fell in love with a PDF.",
+    body: [
+      "People forget campaigns. **They remember moments.**",
+      "Experience is where the brand becomes physical: launches, events and activations designed with the same strategy that built the identity.",
+      "So the brand people meet is the brand we built.",
+    ],
     services: [
       "Event concept & production",
-      "Activations & pop-ups",
+      "Brand activations & pop-ups",
       "Product & brand launches",
       "Corporate events & conferences",
       "Exhibition design & build",
       "Market entry experiences",
-      "Experiential campaigns",
     ],
   },
 ] as const;
 
+/* Splits `**marked**` runs out of a line into gold serif-italic spans — the
+   same one-payload-phrase-per-sentence convention used on the About/Belief
+   copy, just authored inline here since each vertical's body is data. */
+function markBody(line: string) {
+  return line.split(/(\*\*[^*]+\*\*)/g).map((run, i) => {
+    if (run.startsWith("**") && run.endsWith("**")) {
+      return (
+        <span key={i} className="font-serif italic text-gold">
+          {run.slice(2, -2)}
+        </span>
+      );
+    }
+    return <span key={i}>{run}</span>;
+  });
+}
+
 /* ── Structural furniture ───────────────────────────────────────────────── */
 
-/** Hairline-ruled label. The page's one repeated typographic device. */
 function Rule({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-baseline gap-4 border-t border-cream/15 pt-4">
@@ -96,11 +121,6 @@ function Rule({ children }: { children: React.ReactNode }) {
   );
 }
 
-/**
- * Fixed progress rail — which vertical you're in, and how many are left.
- * Borrowed from the page spec; it exists because a reader four screens into a
- * list of 27 services has legitimately lost their place.
- */
 function VerticalRail({ active }: { active: number }) {
   return (
     <div
@@ -149,8 +169,6 @@ function VerticalBlock({
       ([entry]) => {
         if (entry.isIntersecting) onActive();
       },
-      // Middle band of the viewport, so the rail changes when the block owns
-      // the screen rather than when its first pixel appears.
       { rootMargin: "-45% 0px -45% 0px" },
     );
     io.observe(el);
@@ -163,7 +181,6 @@ function VerticalBlock({
       className="relative border-t border-cream/15 px-6 py-20 sm:px-10 sm:py-24 lg:px-16 lg:py-28"
     >
       <div className="mx-auto grid max-w-[1400px] gap-x-16 gap-y-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        {/* Left — the claim */}
         <div className="relative">
           <span
             aria-hidden
@@ -183,24 +200,33 @@ function VerticalBlock({
               {vertical.tagline}
             </p>
           </CopyReveal>
-        </div>
 
-        {/* Right — what it actually is, then what you actually get */}
-        <div>
-          <FadeContent duration={0.8} threshold={0.25}>
-            <p className="max-w-[46ch] font-serif text-[clamp(0.98rem,1.35vw,1.1rem)] font-light leading-[1.85] text-cream/75">
-              {vertical.body}
+          <FadeContent duration={0.7} delay={80} className="mt-3">
+            <p className="max-w-[36ch] font-sans text-[0.88rem] font-light leading-[1.55] text-cream/50">
+              {vertical.quip}
             </p>
           </FadeContent>
+        </div>
 
-          <FadeContent duration={0.9} delay={120} threshold={0.2} className="mt-10">
+        <div>
+          <FadeContent duration={0.8} threshold={0.25} className="space-y-5">
+            {vertical.body.map((line, i) => (
+              <p
+                key={i}
+                className="max-w-[46ch] font-serif text-[clamp(0.98rem,1.35vw,1.1rem)] font-light leading-[1.85] text-cream/75"
+              >
+                {markBody(line)}
+              </p>
+            ))}
+          </FadeContent>
+
+          <FadeContent duration={0.9} delay={120} threshold={0.2} className="mt-12">
             <ul className="grid grid-cols-1 gap-x-10 sm:grid-cols-2">
               {vertical.services.map((s) => (
-                <li
-                  key={s}
-                  className="border-t border-cream/12 py-3 font-sans text-[0.82rem] font-medium leading-snug tracking-[0.02em] text-cream/85"
-                >
-                  {s}
+                <li key={s} className="border-t border-cream/12">
+                  <span className="block origin-left py-3 font-sans text-[0.82rem] font-medium leading-snug tracking-[0.02em] text-cream/85 transition-transform duration-300 ease-out hover:scale-[1.06] hover:text-cream">
+                    {s}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -221,10 +247,11 @@ export function ServicesPage() {
     <div className="relative">
       <VerticalRail active={active} />
 
-      {/* ── Hero. Same proximity headline as About, so the two hubs open in
-             the same voice. It is the only pointer-driven thing here. ── */}
       <section className="relative flex min-h-[78svh] items-center px-6 pb-20 pt-16 sm:px-10 sm:pb-24 lg:px-16">
-        <div className="mx-auto w-full max-w-[1400px]">
+        {/* Copy and image share one row from lg up; below that the image drops
+            under the headline, where a wide frame reads better than a tall one. */}
+        <div className="mx-auto grid w-full max-w-[1400px] items-center gap-y-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)] lg:gap-x-16">
+          <div className="min-w-0">
           <FadeContent duration={0.7}>
             <Rule>Services</Rule>
           </FadeContent>
@@ -255,53 +282,41 @@ export function ServicesPage() {
           </div>
 
           <FadeContent duration={0.9} delay={200} className="mt-10">
-            <p className="max-w-[52ch] font-serif text-[clamp(1rem,1.5vw,1.2rem)] font-light leading-[1.8] text-cream/75">
-              Adversado is a branding agency, digital marketing agency and
-              advertising agency in one building — based in Kochi, working with
-              brands across India. Four verticals, one standard, and one team
-              accountable for the whole picture.
+            <p className="max-w-[58ch] font-serif text-[clamp(1rem,1.5vw,1.2rem)] font-light leading-[1.8] text-cream/75">
+              Four verticals covering a brand&apos;s complete journey, from the
+              first strategic decision to the experience people remember. Engage
+              one vertical or all four. Every engagement starts with an audit,
+              and everything we produce holds one standard. One integrated
+              branding, digital marketing and advertising agency, working from
+              Kochi with brands across India.
             </p>
           </FadeContent>
-        </div>
-      </section>
-
-      {/* ── The premise. Brutalist ledger: label left, argument right. ── */}
-      <section className="relative border-t border-cream/15 px-6 py-20 sm:px-10 sm:py-24 lg:px-16">
-        <div className="mx-auto grid max-w-[1400px] gap-x-16 gap-y-8 lg:grid-cols-[18rem_minmax(0,1fr)]">
-          <FadeContent duration={0.7}>
-            <p className="font-sans text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-cream/45">
-              Why it works this way
-            </p>
-          </FadeContent>
-
-          <div>
-            <CopyReveal>
-              <p className="max-w-[34ch] font-sans text-[clamp(1.5rem,3.2vw,2.5rem)] font-medium leading-[1.2] tracking-[-0.02em] text-cream">
-                Everyone delivered their piece of the puzzle. Nobody was
-                responsible for the picture.
-              </p>
-            </CopyReveal>
-
-            <FadeContent duration={0.9} delay={150} className="mt-8">
-              <p className="max-w-[54ch] font-serif text-[clamp(0.98rem,1.35vw,1.1rem)] font-light leading-[1.85] text-cream/70">
-                Strategy sat with one agency. Advertising with another. Digital,
-                events and creative each handled by someone else. We built the
-                alternative — one integrated team, one direction, one voice, and
-                a standard that does not flex between a logo and a national
-                campaign.
-              </p>
-            </FadeContent>
           </div>
+
+          <FadeContent duration={0.9} delay={140} className="min-w-0">
+            <DitherReveal
+              image="/images/handshake.png"
+              alt="Two low-poly hands, one navy and one gold, meeting in a handshake wired into a network of nodes"
+              fit="contain"
+              dotSize={2}
+              revealRadius={230}
+              revealSoftness={55}
+              waveDensity={100}
+              waveSpeed={50}
+              ink="#f9f7f2"
+              keyWhite
+              className="aspect-[16/9] w-full sm:aspect-[2/1] lg:aspect-[16/9]"
+            />
+          </FadeContent>
         </div>
       </section>
 
-      {/* ── The four. Engage one or all of them. ── */}
       <div>
         <section className="relative border-t border-cream/15 px-6 pt-16 sm:px-10 lg:px-16">
           <div className="mx-auto max-w-[1400px]">
             <FadeContent duration={0.7}>
               <p className="font-sans text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-cream/45">
-                The four verticals — engage one, or all of them
+                The four verticals
               </p>
             </FadeContent>
           </div>
@@ -316,9 +331,8 @@ export function ServicesPage() {
         ))}
       </div>
 
-      {/* ── The close. The four clauses, in the book's own words. ── */}
-      <section className="relative border-t border-cream/15 px-6 py-20 sm:px-10 sm:py-24 lg:px-16">
-        <div className="mx-auto max-w-[1400px]">
+      <section className="relative border-t border-cream/15 px-6 py-24 text-center sm:px-10 sm:py-28 lg:px-16">
+        <div className="mx-auto max-w-[900px]">
           <FadeContent duration={0.7}>
             <p className="font-sans text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-cream/45">
               How the verticals connect
@@ -326,45 +340,62 @@ export function ServicesPage() {
           </FadeContent>
 
           <CopyReveal>
-            <p className="mt-8 max-w-[30ch] font-sans text-[clamp(1.75rem,4vw,3.25rem)] font-black uppercase leading-[1] tracking-[-0.03em] text-cream">
+            <p className="mx-auto mt-8 max-w-[20ch] font-sans text-[clamp(1.85rem,4.4vw,3.5rem)] font-black uppercase leading-[1.02] tracking-[-0.03em] text-cream">
               One journey, walked all the way through.
             </p>
           </CopyReveal>
 
-          <FadeContent duration={0.9} delay={150} className="mt-10">
-            <p className="max-w-[50ch] font-serif text-[clamp(1.05rem,1.7vw,1.35rem)] font-light leading-[1.9] text-cream/80">
-              <span className="text-gold">Foundation</span> builds it.{" "}
-              <span className="text-gold">Communication</span> makes people hear
-              it. <span className="text-gold">Growth</span> makes it compound.{" "}
-              <span className="text-gold">Experience</span> makes people feel
-              it.
+          <FadeContent duration={0.9} delay={150} className="mx-auto mt-12 max-w-[46ch] space-y-7">
+            <p className="font-serif text-[clamp(1.05rem,1.7vw,1.35rem)] font-light leading-[1.9] text-cream/80">
+              <span className="text-gold">Foundation</span> builds what the
+              brand stands on. <span className="text-gold">Marketing</span>{" "}
+              makes sure people hear it. <span className="text-gold">Reach</span>{" "}
+              makes sure the right people find it.{" "}
+              <span className="text-gold">Experience</span> makes sure they
+              feel it.
+            </p>
+            <p className="font-sans text-[clamp(0.9rem,1.2vw,1rem)] font-light leading-[1.85] tracking-[0.01em] text-cream/60">
+              Start anywhere. What doesn&apos;t change is where we start (with
+              an audit) and where everything ends: a standard that holds
+              across every single thing we produce. One creative agency in
+              Kochi, built for brands across India.
             </p>
           </FadeContent>
         </div>
       </section>
 
-      {/* ── Audit band. Full-bleed gold, ink type, one button. ── */}
-      <section className="relative bg-gold px-6 py-16 sm:px-10 sm:py-20 lg:px-16">
+      <section className="relative overflow-hidden bg-gold px-6 py-16 sm:px-10 sm:py-20 lg:px-16">
         <div className="mx-auto flex max-w-[1400px] flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="font-sans text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-charcoal/60">
+            <p className="font-sans text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-navy/60">
               Where every engagement starts
             </p>
-            <p className="mt-5 max-w-[24ch] font-sans text-[clamp(1.85rem,4.2vw,3.25rem)] font-black uppercase leading-[0.98] tracking-[-0.03em] text-charcoal">
+            <p className="mt-5 max-w-[24ch] font-sans text-[clamp(1.85rem,4.2vw,3.25rem)] font-black uppercase leading-[0.98] tracking-[-0.03em] text-navy">
               Every engagement starts with an audit.
             </p>
-            <p className="mt-4 font-serif text-[clamp(1.05rem,1.8vw,1.4rem)] font-light italic text-charcoal/75">
+            <p className="mt-4 font-serif text-[clamp(1.05rem,1.8vw,1.4rem)] font-light italic text-navy/75">
               No exceptions.
             </p>
           </div>
 
-          <Link
-            href="/contact#audit"
-            className="inline-flex shrink-0 items-center gap-3 border border-charcoal bg-charcoal px-8 py-4 font-sans text-[0.75rem] font-semibold uppercase tracking-[0.24em] text-gold transition-colors duration-300 hover:bg-transparent hover:text-charcoal"
-          >
-            Start with the audit
-            <span aria-hidden>→</span>
-          </Link>
+          {/* Cat sits centred over the button, not the section — its own
+              relative anchor, so it tracks the button through both the
+              stacked-mobile and end-aligned-row layouts. */}
+          <div className="relative shrink-0">
+            <img
+              src="/images/cat.svg"
+              alt=""
+              aria-hidden
+              className="pointer-events-none absolute bottom-full left-1/2 hidden w-[clamp(11rem,15vw,17rem)] -translate-x-1/2 translate-y-6 opacity-90 sm:block"
+            />
+            <Link
+              href="/contact#audit"
+              className="relative inline-flex items-center gap-3 border border-navy bg-navy px-8 py-4 font-sans text-[0.75rem] font-semibold uppercase tracking-[0.24em] text-gold transition-colors duration-300 hover:bg-transparent hover:text-navy"
+            >
+              Start with the audit
+              <span aria-hidden>→</span>
+            </Link>
+          </div>
         </div>
       </section>
     </div>

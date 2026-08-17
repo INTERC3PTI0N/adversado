@@ -24,8 +24,13 @@
   padding: 0 1.5rem;
 }
 
+/* Staging space for the Flip that carries the title pair down into the layout
+   row. The scrub itself only runs over 40% of a viewport (see the ScrollTrigger
+   in OnScrollFilter.tsx), so a full 100svh per item was ~1.3 screens of dead
+   travel across the four — the single largest scroll sink on the About page. */
 .osf-wrap > .osf-content:first-child {
-  height: 100svh;
+  height: 52svh;
+  min-height: 22rem;
 }
 
 .osf-content--layout {

@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { CursorField } from "@/components/CursorField";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteSplash } from "@/components/SiteSplash";
 import { StickyLogo } from "@/components/StickyLogo";
@@ -30,6 +31,7 @@ export function SiteChrome() {
   return (
     <>
       <SiteSplash />
+      <CursorField />
       <StickyLogo />
       <SiteNav />
     </>

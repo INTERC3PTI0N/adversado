@@ -3,11 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import gsap from "gsap";
-
-gsap.registerPlugin(ScrollTrigger);
+import { useNavGround } from "@/components/useNavGround";
 
 /**
  * Sticky top-left wordmark. `logo_nocat.svg` and `logo.svg` come from
@@ -26,48 +22,13 @@ gsap.registerPlugin(ScrollTrigger);
  */
 export function StickyLogo() {
   const [hovered, setHovered] = useState(false);
-  const [onLight, setOnLight] = useState(false);
-  const [onNavy, setOnNavy] = useState(false);
-  const pathname = usePathname();
+  /* Ground detection is shared with the menu button (useNavGround) rather than
+     duplicated here — both pieces of chrome have to invert on the same frame
+     or the header reads as two half-updated elements. */
+  const ground = useNavGround();
+  const onLight = ground === "light";
+  const onNavy = ground === "navy";
 
-  useEffect(() => {
-    const lightSections = document.querySelectorAll("[data-nav-light]");
-    const navySections = document.querySelectorAll("[data-nav-navy]");
-    if (!lightSections.length && !navySections.length) return;
-
-    const lightTriggers: ScrollTrigger[] = [];
-    const navyTriggers: ScrollTrigger[] = [];
-
-    const band = {
-      start: "top 40px",
-      end: "bottom 72px",
-    } as const;
-
-    lightSections.forEach((el) => {
-      lightTriggers.push(
-        ScrollTrigger.create({
-          trigger: el,
-          ...band,
-          onToggle: () => setOnLight(lightTriggers.some((t) => t.isActive)),
-        })
-      );
-    });
-
-    navySections.forEach((el) => {
-      navyTriggers.push(
-        ScrollTrigger.create({
-          trigger: el,
-          ...band,
-          onToggle: () => setOnNavy(navyTriggers.some((t) => t.isActive)),
-        })
-      );
-    });
-
-    return () => {
-      lightTriggers.forEach((t) => t.kill());
-      navyTriggers.forEach((t) => t.kill());
-    };
-  }, [pathname]);
 
   const swap = "opacity 0.5s ease, filter 0.5s ease, transform 0.5s ease";
   const nocatSrc = onNavy ? "/logo_nocat_navy.svg" : "/logo_nocat.svg";

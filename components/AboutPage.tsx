@@ -1,16 +1,16 @@
 "use client";
 
 import { useRef } from "react";
-import Link from "next/link";
-import AnimatedContent from "@/components/AnimatedContent";
-import { AboutSnap } from "@/components/AboutSnap";
+import { AboutCTA } from "@/components/AboutCTA";
 import { CopyReveal } from "@/components/CopyReveal";
 import { DiveStorySection } from "@/components/DiveStory";
 import FadeContent from "@/components/FadeContent";
 import TrueFocus from "@/components/TrueFocus";
-import { ExpandOnHoverList } from "@/components/ExpandOnHoverList";
 import { OnScrollFilter } from "@/components/OnScrollFilter";
 import { InverseStoryText } from "@/components/InverseStoryText";
+import { TeamShowcase } from "@/components/TeamShowcase";
+import { TheMethod } from "@/components/TheMethod";
+import { ThePoint } from "@/components/ThePoint";
 import VariableProximity from "@/components/reactbits/VariableProximity";
 
 const STORY_LAYERS = [
@@ -28,32 +28,6 @@ const STORY_LAYERS = [
   },
 ] as const;
 
-const BELIEFS = [
-  {
-    title: "Strategy is not a phase.",
-    line: "It comes before everything, or it isn't strategy.",
-  },
-  {
-    title: "Work that doesn't perform isn't creative.",
-    line: "It's decoration. Expensive decoration, usually.",
-  },
-  {
-    title: "A brand is not a logo.",
-    line: "It's every touchpoint, connected and considered.",
-  },
-  {
-    title: "Consistency is competitive advantage.",
-    line: "Brands are remembered through repetition, not reinvention.",
-  },
-  {
-    title: "Honest conversations win.",
-    line: "Transparency, constructive disagreement, mutual respect.",
-  },
-  {
-    title: "Premium is a standard, not a price.",
-    line: "A logo gets the same rigour as a national campaign.",
-  },
-] as const;
 
 const DIFFERENCES = [
   {
@@ -92,55 +66,79 @@ export function AboutPage() {
 
   return (
     <div ref={pageRef} className="relative overflow-x-hidden">
-      <AboutSnap scope={pageRef} />
+      {/* Hero — centered display over the scene. The only section that still
+          claims a full viewport; everything below is sized by its content so
+          the page length reflects the reading, not a stack of 100svh slabs. */}
+      <section className="relative -mt-20 flex h-[100svh] flex-col justify-between px-6 pb-10 pt-28 sm:px-10 sm:pb-14 lg:px-16">
+        {/* Top rail — editorial metadata rather than a centred eyebrow. Sets
+            the register in the first half-second: this page is a document,
+            not a brochure. */}
+        <FadeContent duration={0.7}>
+          <div className="flex items-baseline justify-between gap-6 border-b border-cream/12 pb-5">
+            <p className="font-sans text-[0.7rem] font-semibold uppercase tracking-[0.32em] text-gold">
+              About
+            </p>
+            <p className="font-sans text-[0.7rem] uppercase tracking-[0.28em] text-cream/35">
+              Kochi · India &amp; the Gulf
+            </p>
+          </div>
+        </FadeContent>
 
-      {/* Hero — centered display over the scene */}
-      <section
-        data-about-snap
-        className="relative -mt-20 flex h-[100svh] items-center justify-center px-6 pt-20 sm:px-10 lg:px-16"
-      >
-        <div ref={heroRef} className="mx-auto w-full max-w-3xl -translate-y-[8vh] text-center lg:max-w-[50%]">
-          <FadeContent duration={0.7} className="mb-8">
-            <p className="text-sm uppercase tracking-[0.35em] text-gold">About</p>
-          </FadeContent>
-
-          <h1 className="text-balance font-sans text-[clamp(2.75rem,7vw,5.75rem)] font-black leading-[1.02] tracking-[-0.03em] text-cream">
+        {/* Statement — left-set and oversized. Centring it made the largest
+            type on the site the least art-directed thing on it. */}
+        <div ref={heroRef} className="w-full max-w-[16ch] pb-[6vh]">
+          <h1 className="font-sans text-[clamp(3rem,9.5vw,8rem)] font-light leading-[0.94] tracking-[-0.04em] text-cream">
             <VariableProximity
               label="Built because brands deserved"
               containerRef={heroRef as React.RefObject<HTMLElement>}
-              fromFontVariationSettings="'wght' 500"
-              toFontVariationSettings="'wght' 900"
+              fromFontVariationSettings="'wght' 300"
+              toFontVariationSettings="'wght' 800"
               radius={220}
               falloff="gaussian"
               style={{ fontFamily: "var(--font-montserrat), sans-serif" }}
             />{" "}
-            <span className="text-gold">
+            <span className="font-serif italic text-gold">
               <VariableProximity
                 label="better."
                 containerRef={heroRef as React.RefObject<HTMLElement>}
-                fromFontVariationSettings="'wght' 500"
-                toFontVariationSettings="'wght' 900"
+                fromFontVariationSettings="'wght' 300"
+                toFontVariationSettings="'wght' 800"
                 radius={220}
                 falloff="gaussian"
-                style={{ fontFamily: "var(--font-montserrat), sans-serif" }}
+                style={{ fontFamily: "var(--font-merriweather), serif" }}
               />
             </span>
           </h1>
         </div>
+
+        {/* Bottom rail — the book's own line, and a scroll cue that says where
+            the page goes rather than just that it does. */}
+        <FadeContent duration={0.9} delay={320}>
+          <div className="flex flex-wrap items-end justify-between gap-x-12 gap-y-4 border-t border-cream/12 pt-5">
+            <p className="max-w-[34ch] font-serif text-[clamp(0.9rem,1.2vw,1.05rem)] font-light italic leading-[1.6] text-cream/55">
+              Strategy before execution, always.
+            </p>
+            <p
+              aria-hidden
+              className="font-sans text-[0.65rem] uppercase tracking-[0.3em] text-cream/30"
+            >
+              Scroll — the observation
+            </p>
+          </div>
+        </FadeContent>
       </section>
 
-      {/* Observation — full viewport, eyebrow top / indented display bottom */}
-      <section
-        data-about-snap
-        className="relative flex h-[100svh] flex-col justify-between px-6 pb-10 pt-28 sm:px-10 sm:pb-14 sm:pt-32 lg:px-16"
-      >
+      {/* Observation — eyebrow over an indented display line. Was a full
+          viewport holding two elements; the gap between them was doing no
+          compositional work, so it is now a measured rhythm instead. */}
+      <section className="relative flex flex-col gap-16 px-6 py-28 sm:gap-24 sm:px-10 sm:py-32 lg:px-16">
         <CopyReveal>
           <p className="text-sm uppercase tracking-[0.35em] text-gold">
             Design &amp; strategy for brands that want one partner
           </p>
         </CopyReveal>
 
-        <div className="w-full max-w-6xl pb-4">
+        <div className="w-full max-w-6xl">
           <InverseStoryText lensSize={260} className="cursor-none">
             <CopyReveal>
               <h2 className="indent-[12%] font-serif text-[clamp(1.65rem,3.6vw,3.1rem)] font-light leading-[1.15] tracking-[-0.02em] text-cream sm:indent-[18%] lg:indent-[25%]">
@@ -154,17 +152,19 @@ export function AboutPage() {
       </section>
 
       {/* Story — GSAP DOM dive (no WebGL) */}
+      {/* 45vh per plane. The plane-to-plane transition is fully legible in
+          under half a screen, so the original 100 spent 400svh delivering four
+          short lines — the single biggest scroll cost on the page. */}
       <DiveStorySection
         layers={[...STORY_LAYERS]}
-        vhPerPlane={100}
+        vhPerPlane={45}
         caption="The Story"
       />
 
-      {/* Curiosity — diagonal TrueFocus, centered */}
-      <section
-        data-about-snap
-        className="relative flex h-[100svh] items-center justify-center px-4 sm:px-8 lg:px-12"
-      >
+      {/* Quiet beat between the story and the working sections — a single
+          display line, nothing to do. The rhythm needs a silence here or the
+          Method arrives on top of the dive. */}
+      <section className="relative flex min-h-[70svh] items-center justify-center px-4 py-24 sm:px-8 lg:px-12">
         <TrueFocus
           sentence="Curiosity Built This Agency"
           layout="diagonal"
@@ -179,123 +179,20 @@ export function AboutPage() {
         />
       </section>
 
-      {/* Beliefs — expand-on-hover numbered list */}
-      <section
-        data-about-snap
-        className="relative flex h-[100svh] flex-col justify-center overflow-y-auto px-6 py-16 sm:px-10 sm:py-20 lg:px-16"
-      >
-        <div className="mx-auto max-w-5xl">
-          <CopyReveal>
-            <p className="mb-8 text-sm uppercase tracking-[0.35em] text-gold">
-              What we believe
-            </p>
-          </CopyReveal>
+      {/* How the work actually gets made — the page's interactive centre. */}
+      <TheMethod />
 
-          <CopyReveal>
-            <h2 className="font-sans text-[clamp(2.25rem,5vw,4rem)] font-black leading-[1.05] tracking-[-0.02em] text-cream">
-              The <span className="text-gold">Point</span> of it all.
-            </h2>
-          </CopyReveal>
-
-          <ExpandOnHoverList
-            className="mt-14 sm:mt-16"
-            items={BELIEFS.map((b) => ({
-              title: b.title,
-              description: b.line,
-            }))}
-          />
-        </div>
-      </section>
+      {/* Beliefs — Aceternity expandable-card interaction, Adversado skin. */}
+      <ThePoint />
 
       {/* Difference — on-scroll mask reveal (no turbulence) */}
       <OnScrollFilter items={DIFFERENCES} />
 
-      {/* Team */}
-      <section
-        data-about-snap
-        className="relative flex h-[100svh] flex-col justify-center overflow-y-auto px-6 py-16 sm:px-10 sm:py-20 lg:px-16"
-      >
-        <div className="mx-auto max-w-5xl">
-          <CopyReveal>
-            <p className="mb-8 text-sm uppercase tracking-[0.35em] text-gold">
-              The Team
-            </p>
-          </CopyReveal>
+      {/* Team — Framer Team Showcase interaction, real roles from the deck. */}
+      <TeamShowcase />
 
-          <div className="space-y-3 sm:space-y-4">
-            <CopyReveal>
-              <p className="font-sans text-[clamp(1.85rem,4.2vw,3.25rem)] font-medium leading-[1.15] tracking-[-0.02em] text-cream">
-                The people behind the brands
-              </p>
-            </CopyReveal>
-
-            <div className="max-w-4xl">
-              <h2 className="font-serif text-[clamp(2.5rem,7vw,5.5rem)] font-light italic leading-[0.95] tracking-[-0.02em] text-gold">
-                Behind the Brands
-              </h2>
-            </div>
-          </div>
-
-          <AnimatedContent distance={36} duration={0.8} className="mt-10 w-full max-w-5xl sm:mt-12">
-            <p className="font-sans text-[clamp(1.45rem,2.6vw,2rem)] font-light leading-[1.85] tracking-[0.005em] text-cream/80">
-              <span className="font-serif font-light italic text-gold">
-                Small by design.
-              </span>{" "}
-              <span className="font-serif font-light italic text-gold">
-                Senior by default.
-              </span>{" "}
-              Everyone at this table has shipped{" "}
-              <span className="font-medium text-cream">real work</span> in the{" "}
-              <span className="font-medium text-cream">real world</span>:{" "}
-              <span className="text-gold">FMCG</span> shelves,{" "}
-              <span className="text-gold">pharma</span> regulations,{" "}
-              <span className="text-gold">hotel</span> lobbies,{" "}
-              <span className="text-gold">event</span> floors,{" "}
-              <span className="text-gold">ad accounts</span> with actual money
-              in them.
-            </p>
-          </AnimatedContent>
-
-          <div className="relative mt-16">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -top-5 left-1/2 z-10 flex -translate-x-1/2 gap-3"
-            >
-              <span className="block h-5 w-3.5 origin-bottom -rotate-[18deg] rounded-t-full bg-gold/80" />
-              <span className="block h-5 w-3.5 origin-bottom rotate-[18deg] rounded-t-full bg-gold/80" />
-            </div>
-
-            <AnimatedContent distance={56} duration={0.9} scale={0.96}>
-              <article className="w-full rounded-[20px] border-2 border-gold bg-[#120f17]/90 px-6 py-10 sm:px-8 sm:py-12">
-                <p className="font-sans text-2xl font-black uppercase tracking-[0.12em] text-cream">
-                  The Cat
-                </p>
-                <p className="mt-2 font-sans text-xs font-medium uppercase tracking-[0.3em] text-gold">
-                  Chief Curiosity Officer
-                </p>
-                <p className="mt-6 max-w-[36ch] font-serif text-lg font-light italic leading-relaxed text-cream/70">
-                  Sees everything. Says nothing. Judges quietly. The only team
-                  member allowed on the table during meetings.
-                </p>
-              </article>
-            </AnimatedContent>
-          </div>
-
-          <FadeContent duration={0.8} className="mt-14">
-            <p className="font-sans text-[clamp(1.2rem,2vw,1.45rem)] font-light leading-[1.85] text-cream/70">
-              Want to be on this page? We hire people who flinch at the word{" "}
-              <span className="font-semibold text-gold">&ldquo;synergy.&rdquo;</span>
-            </p>
-          </FadeContent>
-
-          <Link
-            href="/contact"
-            className="mt-8 inline-block bg-gold px-8 py-4 font-sans text-sm font-medium uppercase tracking-[0.22em] text-charcoal transition-colors duration-300 hover:bg-cream"
-          >
-            Start a conversation →
-          </Link>
-        </div>
-      </section>
+      {/* The invitation, as the close of the narrative. */}
+      <AboutCTA />
     </div>
   );
 }

@@ -36,20 +36,20 @@ const PANEL: Record<
   }
 > = {
   1: {
-    w: 896,
+    w: 1200,
     h: 1344,
     mask: "circle",
     final: "820",
     imgClass: "osf-img--1",
-    src: "/storyset/1.svg",
+    src: "/storyset/1.png",
   },
   2: {
-    w: 1000,
-    h: 450,
+    w: 1774,
+    h: 887,
     mask: "circle",
     final: "950",
     imgClass: "osf-img--2",
-    src: "/storyset/2.svg",
+    src: "/storyset/2.png",
   },
   3: {
     w: 1000,
@@ -57,15 +57,15 @@ const PANEL: Record<
     mask: "path",
     final: "M 0 280 Q 500 800 1000 280 Q 500 -200 0 280",
     imgClass: "osf-img--3",
-    src: "/storyset/3.svg",
+    src: "/storyset/3.png",
   },
   4: {
     w: 1400,
-    h: 560,
+    h: 1344,
     mask: "circle",
-    final: "770",
+    final: "800",
     imgClass: "osf-img--4",
-    src: "/storyset/4.svg",
+    src: "/storyset/4.png",
   },
 };
 
@@ -248,7 +248,6 @@ export function OnScrollFilter({
           key={`${item.up}-${item.down}`}
           className="osf-wrap"
           data-osf-item
-          data-about-snap
         >
           <div className="osf-content">
             <div className="osf-title-wrap">

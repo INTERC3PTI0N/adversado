@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { StaggeredMenu } from "@/components/StaggeredMenu";
+import { useNavGround } from "@/components/useNavGround";
 
 const ITEMS = [
   { label: "Home", ariaLabel: "Go to Home page", link: "/" },
@@ -19,6 +20,9 @@ const ITEMS = [
  */
 export function SiteNav() {
   const pathname = usePathname();
+  // Cream on a gold or bone spread is unreadable; navy is the legible mark on
+  // both, and stays legible on the navy closing spread against its gold rules.
+  const ground = useNavGround();
 
   useEffect(() => {
     return () => {
@@ -33,7 +37,7 @@ export function SiteNav() {
       isFixed
       colors={["#e6b325", "#1f355e"]}
       accentColor="#e6b325"
-      menuButtonColor="#f9f7f2"
+      menuButtonColor={ground === "light" ? "#1f355e" : "#f9f7f2"}
       openMenuButtonColor="#1f355e"
       changeMenuColorOnOpen
       closeOnClickAway

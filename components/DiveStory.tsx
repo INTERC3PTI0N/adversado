@@ -148,9 +148,6 @@ export function DiveStorySection({
       className={`relative w-full ${className}`.trim()}
       style={{ height: `${runway}svh` }}
       aria-label="The Story"
-      data-about-snap
-      data-about-snap-planes={layers.length}
-      data-about-snap-vh={vhPerPlane}
     >
       <div
         ref={pinRef}

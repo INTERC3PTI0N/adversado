@@ -63,13 +63,15 @@ export function TeamShowcase() {
         {/* Two lines, break forced. The repeat is the point of the line, so
             the second "brands" is set apart — gold type on a navy block — to
             mark it as the different one. */}
-        <h2 className="mt-14 font-sans text-[clamp(2rem,5.6vw,4.6rem)] font-black uppercase leading-[0.95] tracking-[-0.03em] text-charcoal">
+        <h2 className="mt-14 font-serif text-[clamp(2rem,5.6vw,4.6rem)] font-black normal-case leading-[0.95] tracking-[-0.03em] text-charcoal">
           The people
           <span className="mt-2 block">
             behind the brands,{" "}
-            <span className="whitespace-nowrap">
+            <span className="whitespace-nowrap font-sans uppercase">
               behind the{" "}
-              <span className="bg-navy px-2 pb-[0.06em] text-gold">brands</span>
+              <span className="inline-block rotate-1 border-[3px] border-charcoal bg-navy px-2 pb-[0.06em] pt-[0.15em] text-gold shadow-[4px_4px_0_0_#212121]">
+                brands
+              </span>
             </span>
           </span>
         </h2>

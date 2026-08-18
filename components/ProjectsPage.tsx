@@ -8,6 +8,7 @@ import {
   type GalleryMode,
 } from "@/components/RingSpiralGallery";
 import { ProjectsPreloader } from "@/components/ProjectsPreloader";
+import { CinematicScene } from "@/components/Cinematic";
 
 /**
  * Projects — k95.it's works page, rebuilt on brand.
@@ -46,8 +47,6 @@ const PROJECTS: GalleryItem[] = [
   { src: "/mockups/17.png", client: "Dcube Salon", title: "Poster series", category: "Advertising" },
   { src: "/mockups/18.png", client: "Dcube Salon", title: "Social system", category: "Social" },
 ];
-
-const CATEGORIES = ["All", "Identity", "Advertising", "Web", "Packaging", "Print", "Events", "Social"] as const;
 
 const NAVY = "#1f355e";
 
@@ -89,40 +88,6 @@ function ModeSwitch({
 }
 
 /** Filter pill with a dot and a superscript count. */
-function FilterPill({
-  label,
-  count,
-  active,
-  onClick,
-}: {
-  label: string;
-  count: number;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className="group flex items-center gap-2 rounded-full border px-3.5 py-[6px] font-sans text-[0.66rem] font-semibold uppercase tracking-[0.16em] backdrop-blur-[10px] transition-colors duration-300"
-      style={{
-        borderColor: active ? "#e6b325" : "rgba(249,247,242,0.2)",
-        backgroundColor: active ? "rgba(230,179,37,0.14)" : "rgba(249,247,242,0.06)",
-        color: active ? "#e6b325" : "rgba(249,247,242,0.7)",
-      }}
-    >
-      <span
-        aria-hidden
-        className="h-[5px] w-[5px] rounded-full transition-colors duration-300"
-        style={{ backgroundColor: active ? "#e6b325" : "rgba(249,247,242,0.35)" }}
-      />
-      {label}
-      <sup className="font-normal opacity-60">{count}</sup>
-    </button>
-  );
-}
-
 /**
  * k95's pointer treatment: a small difference-blend dot that swells over
  * anything interactive, trailed by a glass label while a card is hovered.
@@ -253,23 +218,13 @@ export function ProjectsPage() {
   const [booted, setBooted] = useState(false);
   const [loaderGone, setLoaderGone] = useState(false);
   const [mode, setMode] = useState<GalleryMode>("spiral");
-  const [filter, setFilter] = useState<(typeof CATEGORIES)[number]>("All");
   const [hovered, setHovered] = useState<GalleryItem | null>(null);
   const [active, setActive] = useState(0);
 
   const sectionRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef(0);
 
-  const counts = useMemo(() => {
-    const map: Record<string, number> = { All: PROJECTS.length };
-    for (const p of PROJECTS) map[p.category] = (map[p.category] ?? 0) + 1;
-    return map;
-  }, []);
-
-  const items = useMemo(
-    () => (filter === "All" ? PROJECTS : PROJECTS.filter((p) => p.category === filter)),
-    [filter],
-  );
+  const items = PROJECTS;
 
   const clientCount = useMemo(
     () => new Set(PROJECTS.map((p) => p.client)).size,
@@ -300,7 +255,11 @@ export function ProjectsPage() {
   const activeItem = items[Math.min(active, items.length - 1)];
 
   return (
-    <div className="relative min-h-screen" style={{ backgroundColor: NAVY }}>
+    <div className="relative min-h-screen bg-black">
+      {/* Same night scene the rest of the site sits on, so Projects stops
+          being the one page with a flat navy plate behind it. */}
+      <CinematicScene />
+
       {!loaderGone && (
         <ProjectsPreloader
           onReveal={() => setBooted(true)}
@@ -316,12 +275,12 @@ export function ProjectsPage() {
       <div
         aria-hidden
         className="pointer-events-none fixed inset-x-0 top-0 z-30 h-[18vh]"
-        style={{ background: `linear-gradient(180deg, ${NAVY} 0%, transparent 100%)` }}
+        style={{ background: "linear-gradient(180deg, #05060b 0%, transparent 100%)" }}
       />
       <div
         aria-hidden
         className="pointer-events-none fixed inset-x-0 bottom-0 z-30 h-[20vh]"
-        style={{ background: `linear-gradient(0deg, ${NAVY} 0%, transparent 100%)` }}
+        style={{ background: "linear-gradient(0deg, #05060b 0%, transparent 100%)" }}
       />
 
       {/* ── Fixed chrome ─────────────────────────────────────────────────── */}
@@ -341,23 +300,9 @@ export function ProjectsPage() {
           the reference's layout, and it keeps the middle of the frame clear
           for the coil itself. */}
       <div
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex flex-col gap-4 px-6 pb-6 sm:px-10 lg:grid lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-end lg:gap-10 lg:px-14 lg:pb-8"
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex flex-col gap-4 px-6 pb-6 sm:px-10 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-10 lg:px-14 lg:pb-8"
         style={{ opacity: booted ? 1 : 0, transition: "opacity 700ms ease 200ms" }}
       >
-        {/* Filters take whatever width is left and wrap upward, so a long list
-            can never push the arrangement switch or the readout off-axis. */}
-        <div className="pointer-events-auto order-2 flex flex-wrap gap-2 lg:order-none">
-          {CATEGORIES.map((c) => (
-            <FilterPill
-              key={c}
-              label={c}
-              count={counts[c] ?? 0}
-              active={filter === c}
-              onClick={() => setFilter(c)}
-            />
-          ))}
-        </div>
-
         {/* Live readout of whichever card currently owns the front of the
             coil — the persistent counterpart to the cursor label. */}
         <div className="order-3 min-w-0 lg:order-none lg:text-right">

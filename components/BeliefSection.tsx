@@ -228,7 +228,7 @@ export function BeliefSection() {
               <FitScene scene="https://prod.spline.design/GLgtPJT5x743jtOQ/scene.splinecode" />
             </div>
             <p className="pointer-events-none absolute inset-x-0 bottom-[6%] z-10 px-5 font-sans text-[clamp(1.05rem,2vw,1.4rem)] font-light leading-[1.45] tracking-[-0.02em] text-cream/70 md:left-16 md:right-4 lg:left-20">
-              <span className="font-serif italic text-gold">Copy + paste</span> doesn’t work.
+              <span className="font-serif italic text-gold">Copy + paste</span> doesn’t work for brands.
               <span className="mt-2 block text-cream">
                 We build what <span className="font-serif italic">stays.</span>
               </span>

@@ -129,7 +129,7 @@ const FIELD_TONE: Record<(typeof FIELD_ORBS)[number]["tone"], string> = {
     "radial-gradient(circle at 38% 30%, #faf1d4 0%, #efd287 24%, #b9cbee 50%, transparent 68%)",
 };
 /** The wordmark act, from first frame to its own fade being finished. */
-const DARK_MS = 4050;
+const DARK_MS = 2900;
 /** Lights coming up over the wordmark's last frame. */
 const LIGHT_IN_MS = 400;
 /** Beat to read the line in, then THREE → TWO → ONE. Orb dive after ONE. */
@@ -316,21 +316,24 @@ export function Preloader({
       [fade, [0, 1], { duration: 0.3, ease: "easeOut", at: 0.25 }],
       [intro, [0, 1], { duration: 0.3, ease: [0.22, 1, 0.36, 1], at: 0.25 }],
 
-      // 1.55-2.05 — the cat peeks out of the gap: paw into the R, head into the E.
-      [pawReveal, [0, 1], { duration: 0.25, ease: "easeOut", at: 1.55 }],
-      [headReveal, [0, 1], { duration: 0.35, ease: "easeOut", at: 1.7 }],
+      // 0.70-1.05 — the cat peeks out of the gap: paw into the R, head into
+      // the E. Pulled forward from 1.55: the wordmark had finished a full
+      // second earlier and the screen just sat there, which is most of what
+      // made the loader feel long.
+      [pawReveal, [0, 1], { duration: 0.25, ease: "easeOut", at: 0.7 }],
+      [headReveal, [0, 1], { duration: 0.35, ease: "easeOut", at: 0.85 }],
 
-      // 2.05-2.46 — eyes open, then a single blink.
-      [eyeOpen, [0, 1], { duration: 0.22, ease: "easeOut", at: 2.05 }],
-      [eyeOpen, [1, 0.06], { duration: 0.05, ease: "easeIn", at: 2.28 }],
-      [eyeOpen, [0.06, 1], { duration: 0.13, ease: "easeOut", at: 2.33 }],
+      // 1.20-1.55 — eyes open, then a single blink.
+      [eyeOpen, [0, 1], { duration: 0.22, ease: "easeOut", at: 1.2 }],
+      [eyeOpen, [1, 0.06], { duration: 0.05, ease: "easeIn", at: 1.42 }],
+      [eyeOpen, [0.06, 1], { duration: 0.13, ease: "easeOut", at: 1.47 }],
 
-      // 2.50 — tagline wipes in left-to-right.
-      [tagline1, { clipPath: ["inset(0 100% 0 0)", "inset(0 0% 0 0)"], opacity: [0, 1] }, { duration: 1.0, ease: [0.22, 1, 0.36, 1], at: 2.5 }],
+      // 1.60 — tagline wipes in left-to-right.
+      [tagline1, { clipPath: ["inset(0 100% 0 0)", "inset(0 0% 0 0)"], opacity: [0, 1] }, { duration: 0.85, ease: [0.22, 1, 0.36, 1], at: 1.6 }],
 
-      // 3.70-4.05 — the wordmark clears the stage for the headline.
-      [fade, [1, 0], { duration: 0.35, ease: "easeIn", at: 3.7 }],
-      [tagline1, { opacity: [1, 0] }, { duration: 0.35, ease: "easeIn", at: 3.7 }],
+      // 2.55-2.90 — the wordmark clears the stage for the headline.
+      [fade, [1, 0], { duration: 0.35, ease: "easeIn", at: 2.55 }],
+      [tagline1, { opacity: [1, 0] }, { duration: 0.35, ease: "easeIn", at: 2.55 }],
 
       // ── Act two: the lights come up ───────────────────────────────────
       [light, { opacity: [0, 1] }, { duration: LIGHT_IN_MS / 1000, ease: "easeOut", at: DARK_MS / 1000 }],

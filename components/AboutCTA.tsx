@@ -31,8 +31,7 @@ export function AboutCTA() {
     <section
       ref={ref}
       aria-label="Tell us where it hurts"
-      data-nav-navy
-      className="relative overflow-hidden bg-navy px-6 py-40 sm:px-10 sm:py-56 lg:px-16"
+      className="relative overflow-hidden px-6 py-28 sm:px-10 sm:py-36 lg:px-16"
       onPointerMove={(e) => {
         if (e.pointerType !== "mouse") return;
         if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -46,7 +45,7 @@ export function AboutCTA() {
       onPointerLeave={() => setDrift({ x: 0, y: 0 })}
     >
       <div className="mx-auto max-w-[1500px]">
-        <p className="font-sans text-[0.7rem] font-semibold uppercase tracking-[0.32em] text-gold">
+        <p className="font-sans text-[0.7rem] font-semibold uppercase tracking-[0.32em] text-cream/40">
           The invitation
         </p>
 
@@ -54,7 +53,7 @@ export function AboutCTA() {
             which is the one motion the brand book's register can carry without
             looking like an effect. */}
         <h2
-          className="mt-14 font-sans text-[clamp(2.75rem,11vw,9.5rem)] font-light uppercase leading-[0.9] tracking-[-0.045em] text-cream"
+          className="mt-10 max-w-[16ch] font-sans text-[clamp(2rem,6vw,4.75rem)] font-light leading-[1.02] tracking-[-0.035em] text-cream"
           style={{
             transform: `translate3d(${drift.x}px, ${drift.y}px, 0)`,
             transition: "transform 700ms cubic-bezier(0.16,1,0.3,1)",
@@ -78,14 +77,16 @@ export function AboutCTA() {
           ))}
         </h2>
 
-        <div className="mt-24 flex flex-col gap-10 border-t border-cream/20 pt-12 sm:flex-row sm:items-end sm:justify-between">
-          <p className="max-w-[34ch] font-serif text-[clamp(1rem,1.4vw,1.2rem)] font-light italic leading-[1.7] text-cream/65">
+        {/* Line and action on one row — the invitation reads as a sentence
+            with its answer beside it, not as a banner with a button under it. */}
+        <div className="mt-10 flex flex-col items-start gap-6 sm:flex-row sm:items-center">
+          <p className="max-w-[30ch] font-serif text-[clamp(0.95rem,1.3vw,1.1rem)] font-light italic leading-[1.7] text-cream/50">
             Every engagement starts with an audit. No exceptions.
           </p>
 
           <Link
             href="/contact#audit"
-            className="group inline-flex shrink-0 items-center gap-5 bg-gold px-10 py-5 font-sans text-[0.75rem] font-semibold uppercase tracking-[0.26em] text-charcoal transition-colors duration-300 hover:bg-cream"
+            className="group inline-flex shrink-0 items-center gap-3 border border-gold/50 px-7 py-3.5 font-sans text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-gold transition-colors duration-300 hover:bg-gold hover:text-charcoal"
           >
             Start with an audit
             <span

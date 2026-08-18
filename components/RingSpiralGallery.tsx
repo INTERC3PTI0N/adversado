@@ -186,10 +186,20 @@ export function RingSpiralGallery({
         const el = cardRefs.current[i];
         if (!el) continue;
 
-        const a = i * theta - p * span * theta;
+        /* Infinite coil. `k` is the card's offset from the front of the
+           carousel; wrapping it into (-N/2, N/2] means every card is always
+           drawn at its *nearest* repeat rather than marching off into the
+           distance once `p` passes 1. The recycle happens at the far side of
+           the loop, where the card is already faded to nothing by `vy`, so it
+           is never visible as a jump. */
+        let k = i - p * span;
+        k = ((k % N) + N) % N;
+        if (k > N / 2) k -= N;
+
+        const a = k * theta;
         const rad = (a * Math.PI) / 180;
         const z = Math.cos(rad);
-        const y = i * yStep - p * span * yStep;
+        const y = k * yStep;
 
         // Depth 0 (far side) → 1 (nearest the camera).
         const t = (z + 1) / 2;

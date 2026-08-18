@@ -5,11 +5,9 @@ import { AboutCTA } from "@/components/AboutCTA";
 import { CopyReveal } from "@/components/CopyReveal";
 import { DiveStorySection } from "@/components/DiveStory";
 import FadeContent from "@/components/FadeContent";
-import TrueFocus from "@/components/TrueFocus";
 import { OnScrollFilter } from "@/components/OnScrollFilter";
-import { InverseStoryText } from "@/components/InverseStoryText";
+import TrueFocus from "@/components/TrueFocus";
 import { TeamShowcase } from "@/components/TeamShowcase";
-import { TheMethod } from "@/components/TheMethod";
 import { ThePoint } from "@/components/ThePoint";
 import VariableProximity from "@/components/reactbits/VariableProximity";
 
@@ -27,7 +25,6 @@ const STORY_LAYERS = [
     body: "You need a **brand behind the brand.**\n*Hungry* enough to make it happen.\n*Curious* enough to ask the right questions.",
   },
 ] as const;
-
 
 const DIFFERENCES = [
   {
@@ -66,28 +63,12 @@ export function AboutPage() {
 
   return (
     <div ref={pageRef} className="relative overflow-x-hidden">
-      {/* Hero — centered display over the scene. The only section that still
-          claims a full viewport; everything below is sized by its content so
-          the page length reflects the reading, not a stack of 100svh slabs. */}
-      <section className="relative -mt-20 flex h-[100svh] flex-col justify-between px-6 pb-10 pt-28 sm:px-10 sm:pb-14 lg:px-16">
-        {/* Top rail — editorial metadata rather than a centred eyebrow. Sets
-            the register in the first half-second: this page is a document,
-            not a brochure. */}
-        <FadeContent duration={0.7}>
-          <div className="flex items-baseline justify-between gap-6 border-b border-cream/12 pb-5">
-            <p className="font-sans text-[0.7rem] font-semibold uppercase tracking-[0.32em] text-gold">
-              About
-            </p>
-            <p className="font-sans text-[0.7rem] uppercase tracking-[0.28em] text-cream/35">
-              Kochi · India &amp; the Gulf
-            </p>
-          </div>
-        </FadeContent>
-
-        {/* Statement — left-set and oversized. Centring it made the largest
-            type on the site the least art-directed thing on it. */}
-        <div ref={heroRef} className="w-full max-w-[16ch] pb-[6vh]">
-          <h1 className="font-sans text-[clamp(3rem,9.5vw,8rem)] font-light leading-[0.94] tracking-[-0.04em] text-cream">
+      {/* Hero — display statement between two metadata rails. */}
+      <section className="relative -mt-20 flex h-[100svh] items-center justify-center px-6 pb-10 pt-28 sm:px-10 sm:pb-14 lg:px-16">
+        {/* Centred and full-width, sized off the viewport rather than a
+            character count, so it commands the whole frame. */}
+        <div ref={heroRef} className="w-full text-center">
+          <h1 className="font-sans text-[clamp(2.75rem,10.5vw,9rem)] font-light leading-[0.94] tracking-[-0.04em] text-cream">
             <VariableProximity
               label="Built because brands deserved"
               containerRef={heroRef as React.RefObject<HTMLElement>}
@@ -111,59 +92,29 @@ export function AboutPage() {
           </h1>
         </div>
 
-        {/* Bottom rail — the book's own line, and a scroll cue that says where
-            the page goes rather than just that it does. */}
-        <FadeContent duration={0.9} delay={320}>
-          <div className="flex flex-wrap items-end justify-between gap-x-12 gap-y-4 border-t border-cream/12 pt-5">
-            <p className="max-w-[34ch] font-serif text-[clamp(0.9rem,1.2vw,1.05rem)] font-light italic leading-[1.6] text-cream/55">
-              Strategy before execution, always.
-            </p>
-            <p
-              aria-hidden
-              className="font-sans text-[0.65rem] uppercase tracking-[0.3em] text-cream/30"
-            >
-              Scroll — the observation
-            </p>
-          </div>
-        </FadeContent>
       </section>
 
-      {/* Observation — eyebrow over an indented display line. Was a full
-          viewport holding two elements; the gap between them was doing no
-          compositional work, so it is now a measured rhythm instead. */}
-      <section className="relative flex flex-col gap-16 px-6 py-28 sm:gap-24 sm:px-10 sm:py-32 lg:px-16">
-        <CopyReveal>
-          <p className="text-sm uppercase tracking-[0.35em] text-gold">
-            Design &amp; strategy for brands that want one partner
-          </p>
-        </CopyReveal>
-
+      {/* Observation — eyebrow over an indented display line. */}
+      <section className="relative flex flex-col px-6 py-28 sm:px-10 sm:py-32 lg:px-16">
         <div className="w-full max-w-6xl">
-          <InverseStoryText lensSize={260} className="cursor-none">
-            <CopyReveal>
-              <h2 className="indent-[12%] font-serif text-[clamp(1.65rem,3.6vw,3.1rem)] font-light leading-[1.15] tracking-[-0.02em] text-cream sm:indent-[18%] lg:indent-[25%]">
-                Adversado began with a simple observation: too many businesses
-                were spending on marketing while their brands slowly lost{" "}
-                <span className="text-gold">direction.</span>
-              </h2>
-            </CopyReveal>
-          </InverseStoryText>
+          <CopyReveal>
+            <h2 className="indent-[12%] font-serif text-[clamp(1.65rem,3.6vw,3.1rem)] font-light leading-[1.15] tracking-[-0.02em] text-cream sm:indent-[18%] lg:indent-[25%]">
+              Adversado began with a simple observation: too many businesses
+              were spending on marketing while their brands slowly lost{" "}
+              <span className="text-gold">direction.</span>
+            </h2>
+          </CopyReveal>
         </div>
       </section>
 
       {/* Story — GSAP DOM dive (no WebGL) */}
-      {/* 45vh per plane. The plane-to-plane transition is fully legible in
-          under half a screen, so the original 100 spent 400svh delivering four
-          short lines — the single biggest scroll cost on the page. */}
       <DiveStorySection
         layers={[...STORY_LAYERS]}
         vhPerPlane={45}
         caption="The Story"
       />
 
-      {/* Quiet beat between the story and the working sections — a single
-          display line, nothing to do. The rhythm needs a silence here or the
-          Method arrives on top of the dive. */}
+      {/* Curiosity — diagonal TrueFocus, centered */}
       <section className="relative flex min-h-[70svh] items-center justify-center px-4 py-24 sm:px-8 lg:px-12">
         <TrueFocus
           sentence="Curiosity Built This Agency"
@@ -178,9 +129,6 @@ export function AboutPage() {
           wordClassName="block text-[clamp(2.75rem,11vw,9rem)] font-black leading-[1.02] tracking-[-0.04em]"
         />
       </section>
-
-      {/* How the work actually gets made — the page's interactive centre. */}
-      <TheMethod />
 
       {/* Beliefs — Aceternity expandable-card interaction, Adversado skin. */}
       <ThePoint />

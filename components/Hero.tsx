@@ -262,6 +262,12 @@ export function Hero({ active = true }: { active?: boolean }) {
           rather than cutting into it. A field here would only have been
           painted over by that scene anyway, at the cost of a WebGL context. */}
 
+      {/* Cue lives at the foot of the section and outside `zoomRef`, so the
+          fly-through doesn't drag it across the screen with the headline. */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-8 z-20 flex justify-center sm:bottom-10">
+        <ScrollHint delay={SCROLL_HINT_DELAY_MS} />
+      </div>
+
       <div ref={zoomRef} className="absolute inset-0 flex items-center justify-center">
         {/* Soft navy scrim, so a star or a stray highlight never lands straight
             through the headline and eats its contrast. Falls off well before
@@ -332,10 +338,6 @@ export function Hero({ active = true }: { active?: boolean }) {
               </span>
             </p>
 
-            {/* Directly under the question, not pinned to the bottom of the
-                section: the cue is the answer to "WHY?" — it points at where
-                the answer is. */}
-            <ScrollHint delay={SCROLL_HINT_DELAY_MS} />
           </div>
         )}
         </div>

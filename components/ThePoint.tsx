@@ -5,27 +5,25 @@ import { AnimatePresence, motion } from "motion/react";
 import { useOutsideClick } from "@/hooks/use-outside-click";
 
 /**
- * The Point of It All — the six beliefs as expandable editorial cards, on a
- * full-bleed gold spread.
+ * The Point of It All — the six beliefs as pinned-up paper, neobrutalist.
  *
- * The ground shift is the point. Every other section of this site sits on the
- * same dark starfield, which is why the page read as one long scroll rather
- * than a sequence of spreads. This section cuts to solid brand gold with
- * charcoal type — the hardest contrast the palette can make — so the beliefs
- * land as the confrontational centre of the page. The book's register is
- * "bold, takes positions, doesn't hedge"; a whispered dark section could not
- * carry that.
+ * The conceit: the beliefs are the things stuck to the wall above the desk, so
+ * each one is a post-it in a slightly different colour, tacked at a slightly
+ * different angle, held by a paperclip or a strip of tape. Nothing is aligned
+ * to a perfect grid, because a wall of notes never is — but the rotations are
+ * fixed per index rather than random so the layout is stable across renders
+ * and doesn't reshuffle on every keystroke in dev.
  *
- * Interaction is the Aceternity expandable-card pattern
- * (@aceternity/expandable-card-demo-standard): a `layoutId` shared-element
- * transition promotes the tapped card into a centred panel, Escape and
- * outside-click close it. Two departures from the demo:
+ * Neobrutalist rules held throughout: hard 3–4px charcoal borders, flat offset
+ * shadows with no blur, no rounded corners on the frame, no gradients. Lift on
+ * hover is a translate + a longer shadow, i.e. the note peeling off the wall —
+ * not a scale or a glow.
  *
- * 1. The demo locks the page with `document.body.style.overflow = "hidden"`.
- *    Lenis drives scroll here off its own rAF loop and ignores that entirely,
- *    so Lenis is stopped and started instead.
- * 2. The demo's cards are image-led. There is no photography for the beliefs
- *    and none may be invented, so the card is type only.
+ * Interaction is still the Aceternity expandable-card pattern
+ * (@aceternity/expandable-card-demo-standard): `layoutId` promotes the tapped
+ * note into a centred panel, Escape and outside-click close it, and Lenis is
+ * stopped rather than `body { overflow: hidden }` because Lenis drives scroll
+ * off its own rAF loop and ignores that entirely.
  *
  * All copy is verbatim from the website content doc (SECTION: WHAT WE BELIEVE).
  */
@@ -40,6 +38,50 @@ const BELIEFS = [
 ] as const;
 
 type Belief = (typeof BELIEFS)[number];
+
+/** Per-note paper stock + pin. Fixed by index, never random — a wall that
+ *  reshuffles on re-render reads as a bug, not as charm. */
+const NOTES = [
+  { paper: "bg-[#f7e15f]", tilt: "-2.2deg", pin: "clip" },
+  { paper: "bg-cream", tilt: "1.6deg", pin: "tape" },
+  { paper: "bg-[#f7b8c4]", tilt: "-1.1deg", pin: "clip" },
+  { paper: "bg-[#9fd8cb]", tilt: "2.4deg", pin: "tape" },
+  { paper: "bg-[#f7e15f]", tilt: "-1.8deg", pin: "tape" },
+  { paper: "bg-[#b8c9f7]", tilt: "1.2deg", pin: "clip" },
+] as const;
+
+/** Bent-wire paperclip. Two nested rounded rects read as the loop-back-on-
+ *  itself shape at this size far better than an accurate wire path would. */
+function Paperclip() {
+  return (
+    <svg
+      viewBox="0 0 28 46"
+      aria-hidden
+      className="h-11 w-7 drop-shadow-[2px_2px_0_rgba(33,33,33,0.45)]"
+    >
+      <rect
+        x="5"
+        y="3"
+        width="18"
+        height="40"
+        rx="9"
+        fill="none"
+        stroke="#212121"
+        strokeWidth="3"
+      />
+      <rect
+        x="11"
+        y="11"
+        width="6"
+        height="24"
+        rx="3"
+        fill="none"
+        stroke="#212121"
+        strokeWidth="3"
+      />
+    </svg>
+  );
+}
 
 export function ThePoint() {
   const [active, setActive] = useState<Belief | null>(null);
@@ -78,63 +120,95 @@ export function ThePoint() {
       className="relative bg-gold px-6 py-32 text-charcoal sm:px-10 sm:py-40 lg:px-16"
     >
       <div className="mx-auto max-w-[1500px]">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-12 gap-y-4 border-b border-charcoal/25 pb-5">
-          <p className="font-sans text-[0.7rem] font-semibold uppercase tracking-[0.32em] text-charcoal">
+        <div className="flex flex-wrap items-end justify-between gap-x-12 gap-y-5">
+          <span className="inline-block -rotate-2 border-[3px] border-charcoal bg-charcoal px-3 py-1.5 font-sans text-[0.7rem] font-black uppercase tracking-[0.28em] text-gold shadow-[5px_5px_0_0_#212121]">
             What we believe
-          </p>
-          <p className="font-sans text-[0.7rem] uppercase tracking-[0.28em] text-charcoal/50">
+          </span>
+          <span className="inline-block rotate-1 border-[3px] border-charcoal bg-cream px-3 py-1.5 font-sans text-[0.7rem] font-black uppercase tracking-[0.24em] text-charcoal shadow-[4px_4px_0_0_#212121]">
             Six, non-negotiable
-          </p>
+          </span>
         </div>
 
-        <h2 className="mt-16 max-w-[13ch] font-sans text-[clamp(2.75rem,9vw,7.5rem)] font-light leading-[0.94] tracking-[-0.04em] text-charcoal">
+        <h2 className="mt-14 max-w-[13ch] font-sans text-[clamp(2.75rem,9vw,7.5rem)] font-black uppercase leading-[0.9] tracking-[-0.03em] text-charcoal">
           The{" "}
-          <span className="font-serif italic">point</span> of it all.
+          <span className="relative inline-block">
+            point
+            {/* Marker underline, drawn slightly off-true like a real one. */}
+            <span
+              aria-hidden
+              className="absolute inset-x-[-2%] bottom-[0.06em] -z-10 block h-[0.22em] -rotate-1 bg-charcoal/85"
+            />
+          </span>{" "}
+          of it all.
         </h2>
 
-        {/* Cards ruled in charcoal on the gold ground — no tiles, no shadows,
-            no rounded corners. The grid is the composition. */}
-        <ul className="mt-24 grid border-t border-charcoal/25 sm:grid-cols-2 lg:grid-cols-3">
-          {BELIEFS.map((b) => (
-            <li key={b.n} className="relative">
-              <motion.button
-                data-cursor="Read"
-                layoutId={`card-${b.n}-${id}`}
-                type="button"
-                onClick={(e) => {
-                  originRef.current = e.currentTarget as HTMLButtonElement;
-                  setActive(b);
-                }}
-                aria-expanded={active?.n === b.n}
-                aria-label={`${b.title} — expand`}
-                className="group flex h-full w-full flex-col items-start gap-12 border-b border-charcoal/25 px-0 pb-14 pt-9 text-left outline-none transition-colors duration-500 hover:bg-charcoal/[0.06] focus-visible:bg-charcoal/[0.06] sm:px-7"
-              >
-                <motion.span
-                  layoutId={`n-${b.n}-${id}`}
-                  className="font-sans text-[0.65rem] font-bold uppercase tracking-[0.3em] text-charcoal/55"
-                >
-                  {b.n}
-                </motion.span>
+        <p className="mt-8 font-sans text-[0.72rem] font-bold uppercase tracking-[0.24em] text-charcoal/55">
+          Pick one up ↓
+        </p>
 
-                <motion.span
-                  layoutId={`title-${b.n}-${id}`}
-                  className="max-w-[15ch] font-sans text-[clamp(1.45rem,2.6vw,2.15rem)] font-medium leading-[1.1] tracking-[-0.025em] text-charcoal"
+        {/* The wall. Notes sit on a loose grid with per-note rotation; the
+            paperclip/tape overhangs the top edge so the paper reads as held
+            rather than drawn. */}
+        <ul className="mt-14 grid gap-x-8 gap-y-16 sm:grid-cols-2 lg:grid-cols-3">
+          {BELIEFS.map((b, i) => {
+            const note = NOTES[i % NOTES.length];
+            return (
+              <li key={b.n} className="relative flex">
+                <motion.button
+                  data-cursor="Read"
+                  layoutId={`card-${b.n}-${id}`}
+                  type="button"
+                  onClick={(e) => {
+                    originRef.current = e.currentTarget as HTMLButtonElement;
+                    setActive(b);
+                  }}
+                  aria-expanded={active?.n === b.n}
+                  aria-label={`${b.title} — expand`}
+                  style={{ rotate: note.tilt }}
+                  className={`group relative flex min-h-[15rem] w-full flex-col items-start gap-6 border-[4px] border-charcoal px-6 pb-6 pt-9 text-left outline-none shadow-[8px_8px_0_0_#212121] transition-[transform,box-shadow] duration-200 ease-out hover:-translate-x-1 hover:-translate-y-1.5 hover:shadow-[14px_14px_0_0_#212121] focus-visible:-translate-x-1 focus-visible:-translate-y-1.5 focus-visible:shadow-[14px_14px_0_0_#212121] motion-reduce:transition-none ${note.paper}`}
                 >
-                  {b.title}
-                </motion.span>
+                  {/* Fastener, overhanging the top edge. */}
+                  {note.pin === "clip" ? (
+                    <span
+                      aria-hidden
+                      className="absolute -top-5 right-6 rotate-[8deg] transition-transform duration-200 ease-out group-hover:-translate-y-0.5 group-hover:rotate-[2deg]"
+                    >
+                      <Paperclip />
+                    </span>
+                  ) : (
+                    <span
+                      aria-hidden
+                      className="absolute -top-4 left-1/2 h-8 w-24 -translate-x-1/2 -rotate-3 border-y-2 border-charcoal/25 bg-cream/55 shadow-[2px_2px_0_0_rgba(33,33,33,0.25)] backdrop-saturate-50"
+                    />
+                  )}
 
-                <span
-                  aria-hidden
-                  className="mt-auto inline-flex items-center gap-3 font-sans text-[0.62rem] font-bold uppercase tracking-[0.26em] text-charcoal/45 transition-colors duration-500 group-hover:text-charcoal group-focus-visible:text-charcoal"
-                >
-                  Read
-                  <span className="transition-transform duration-500 ease-out group-hover:translate-x-1.5">
-                    →
+                  <motion.span
+                    layoutId={`n-${b.n}-${id}`}
+                    className="border-[3px] border-charcoal bg-charcoal px-2 py-0.5 font-sans text-[0.65rem] font-black uppercase tracking-[0.28em] text-gold"
+                  >
+                    {b.n}
+                  </motion.span>
+
+                  <motion.span
+                    layoutId={`title-${b.n}-${id}`}
+                    className="max-w-[15ch] font-sans text-[clamp(1.35rem,2.4vw,1.95rem)] font-black uppercase leading-[1.05] tracking-[-0.02em] text-charcoal"
+                  >
+                    {b.title}
+                  </motion.span>
+
+                  <span
+                    aria-hidden
+                    className="mt-auto inline-flex items-center gap-2 border-[3px] border-charcoal bg-transparent px-3 py-1 font-sans text-[0.62rem] font-black uppercase tracking-[0.24em] text-charcoal transition-colors duration-200 group-hover:bg-charcoal group-hover:text-gold group-focus-visible:bg-charcoal group-focus-visible:text-gold"
+                  >
+                    Read
+                    <span className="transition-transform duration-200 ease-out group-hover:translate-x-1">
+                      →
+                    </span>
                   </span>
-                </span>
-              </motion.button>
-            </li>
-          ))}
+                </motion.button>
+              </li>
+            );
+          })}
         </ul>
       </div>
 
@@ -145,7 +219,7 @@ export function ThePoint() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[90] bg-charcoal/70 backdrop-blur-[3px]"
+            className="fixed inset-0 z-[90] bg-charcoal/80"
           />
         ) : null}
       </AnimatePresence>
@@ -153,20 +227,26 @@ export function ThePoint() {
       <AnimatePresence>
         {active ? (
           <div className="fixed inset-0 z-[100] grid place-items-center p-5 sm:p-8">
-            {/* Panel inverts back to charcoal — the belief steps off the gold
-                page and onto its own ground when you open it. */}
+            {/* The note, pulled off the wall and flattened out to read. */}
             <motion.div
               layoutId={`card-${active.n}-${id}`}
               ref={panelRef}
               role="dialog"
               aria-modal="true"
               aria-label={active.title}
-              className="relative w-full max-w-[48rem] border-t-2 border-gold bg-charcoal px-7 py-14 shadow-[0_50px_140px_-30px_rgba(0,0,0,0.9)] sm:px-16 sm:py-20"
+              className="relative w-full max-w-[46rem] border-[5px] border-charcoal bg-cream px-7 py-12 shadow-[16px_16px_0_0_#212121] sm:px-14 sm:py-16"
             >
+              <span
+                aria-hidden
+                className="absolute -top-6 left-10 rotate-[6deg]"
+              >
+                <Paperclip />
+              </span>
+
               <div className="flex items-start justify-between gap-8">
                 <motion.span
                   layoutId={`n-${active.n}-${id}`}
-                  className="font-sans text-[0.65rem] font-bold uppercase tracking-[0.3em] text-gold"
+                  className="border-[3px] border-charcoal bg-charcoal px-2 py-0.5 font-sans text-[0.65rem] font-black uppercase tracking-[0.28em] text-gold"
                 >
                   {active.n}
                 </motion.span>
@@ -176,7 +256,7 @@ export function ThePoint() {
                   type="button"
                   onClick={() => setActive(null)}
                   aria-label="Close"
-                  className="-mt-3 -mr-3 shrink-0 p-3 font-sans text-[0.62rem] font-bold uppercase tracking-[0.26em] text-cream/50 outline-none transition-colors duration-300 hover:text-gold focus-visible:text-gold"
+                  className="-mt-1 -mr-1 shrink-0 border-[3px] border-charcoal bg-cream px-3 py-1.5 font-sans text-[0.62rem] font-black uppercase tracking-[0.24em] text-charcoal shadow-[4px_4px_0_0_#212121] outline-none transition-[transform,box-shadow] duration-200 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0_0_#212121] focus-visible:-translate-x-0.5 focus-visible:-translate-y-0.5"
                 >
                   Close
                 </button>
@@ -184,7 +264,7 @@ export function ThePoint() {
 
               <motion.h3
                 layoutId={`title-${active.n}-${id}`}
-                className="mt-12 max-w-[15ch] font-sans text-[clamp(2rem,5vw,3.75rem)] font-light leading-[1.02] tracking-[-0.035em] text-cream"
+                className="mt-10 max-w-[15ch] font-sans text-[clamp(1.85rem,4.6vw,3.25rem)] font-black uppercase leading-[0.98] tracking-[-0.02em] text-charcoal"
               >
                 {active.title}
               </motion.h3>
@@ -195,7 +275,7 @@ export function ThePoint() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0, transition: { delay: 0.16 } }}
                 exit={{ opacity: 0, transition: { duration: 0.05 } }}
-                className="mt-10 max-w-[32ch] border-l-2 border-gold pl-7 font-serif text-[clamp(1.15rem,2vw,1.6rem)] font-light italic leading-[1.55] text-cream/85"
+                className="mt-8 max-w-[32ch] border-l-[5px] border-charcoal bg-[#f7e15f] px-5 py-4 font-sans text-[clamp(1.05rem,1.8vw,1.4rem)] font-bold leading-[1.5] text-charcoal"
               >
                 {active.line}
               </motion.p>

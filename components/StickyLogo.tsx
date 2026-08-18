@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useNavGround } from "@/components/useNavGround";
@@ -28,7 +28,6 @@ export function StickyLogo() {
   const ground = useNavGround();
   const onLight = ground === "light";
   const onNavy = ground === "navy";
-
 
   const swap = "opacity 0.5s ease, filter 0.5s ease, transform 0.5s ease";
   const nocatSrc = onNavy ? "/logo_nocat_navy.svg" : "/logo_nocat.svg";

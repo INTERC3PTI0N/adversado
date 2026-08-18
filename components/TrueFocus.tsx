@@ -18,6 +18,10 @@ interface TrueFocusProps {
   highlightFirstLetter?: boolean;
   /** Diagonal step as ems of the word size. */
   indentEm?: number;
+  /** Non-highlighted letters. */
+  textColor?: string;
+  /** First letter when `highlightFirstLetter` is set. */
+  highlightColor?: string;
 }
 
 interface FocusRect {
@@ -41,6 +45,8 @@ const TrueFocus: React.FC<TrueFocusProps> = ({
   layout = "row",
   highlightFirstLetter = false,
   indentEm = 1.15,
+  textColor = "var(--color-cream)",
+  highlightColor = "var(--color-gold)",
 }) => {
   const words = sentence.split(separator);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -140,11 +146,11 @@ const TrueFocus: React.FC<TrueFocusProps> = ({
           >
             {highlightFirstLetter && word.length > 0 ? (
               <>
-                <span className="text-gold">{word[0]}</span>
-                <span className="text-cream">{word.slice(1)}</span>
+                <span style={{ color: highlightColor }}>{word[0]}</span>
+                <span style={{ color: textColor }}>{word.slice(1)}</span>
               </>
             ) : (
-              word
+              <span style={{ color: textColor }}>{word}</span>
             )}
           </span>
         );

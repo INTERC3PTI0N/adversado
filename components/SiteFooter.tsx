@@ -29,7 +29,9 @@ const VERTICALS = [
 export function SiteFooter() {
   return (
     <footer
-      data-nav-navy
+      /* No nav-ground tag on purpose. `data-nav-navy` paints the wordmark navy,
+         which is right over a light spread and invisible here — the footer's own
+         ground is navy. The default (gold mark, cream menu) is legible on it. */
       className="relative z-10 border-t border-cream/10 bg-navy px-6 py-16 sm:px-10 sm:py-20 lg:px-16"
     >
       <div className="mx-auto max-w-[1500px]">

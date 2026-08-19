@@ -40,14 +40,19 @@ const BELIEFS = [
 type Belief = (typeof BELIEFS)[number];
 
 /** Per-note paper stock + pin. Fixed by index, never random — a wall that
- *  reshuffles on re-render reads as a bug, not as charm. */
+ *  reshuffles on re-render reads as a bug, not as charm.
+ *
+ *  Two stocks, both from the book: the pastels this ran on before were four
+ *  colours found nowhere in the brand, and on a gold wall they were the
+ *  loudest thing in the section. Variety now comes from tilt and fastener,
+ *  which is where it belongs — real notes are the same paper, hung badly. */
 const NOTES = [
-  { paper: "bg-[#f7e15f]", tilt: "-2.2deg", pin: "clip" },
-  { paper: "bg-cream", tilt: "1.6deg", pin: "tape" },
-  { paper: "bg-[#f7b8c4]", tilt: "-1.1deg", pin: "clip" },
-  { paper: "bg-[#9fd8cb]", tilt: "2.4deg", pin: "tape" },
-  { paper: "bg-[#f7e15f]", tilt: "-1.8deg", pin: "tape" },
-  { paper: "bg-[#b8c9f7]", tilt: "1.2deg", pin: "clip" },
+  { paper: "bg-cream", tilt: "-2.2deg", pin: "clip" },
+  { paper: "bg-bone", tilt: "1.6deg", pin: "tape" },
+  { paper: "bg-cream", tilt: "-1.1deg", pin: "clip" },
+  { paper: "bg-bone", tilt: "2.4deg", pin: "tape" },
+  { paper: "bg-cream", tilt: "-1.8deg", pin: "tape" },
+  { paper: "bg-bone", tilt: "1.2deg", pin: "clip" },
 ] as const;
 
 /** Bent-wire paperclip. Two nested rounded rects read as the loop-back-on-
@@ -129,15 +134,13 @@ export function ThePoint() {
           </span>
         </div>
 
-        <h2 className="mt-14 max-w-[13ch] font-sans text-[clamp(2.75rem,9vw,7.5rem)] font-black uppercase leading-[0.9] tracking-[-0.03em] text-charcoal">
+        {/* Same device as the team headline and the hero: light Montserrat for
+            the line, serif italic for the word it turns on. Navy is the italic's
+            colour here rather than gold — the wall itself is gold. */}
+        <h2 className="mt-14 max-w-[13ch] font-sans text-[clamp(2.25rem,7vw,5.75rem)] font-light leading-[1.06] tracking-[-0.03em] text-charcoal">
           The{" "}
-          <span className="relative inline-block">
+          <span className="font-serif italic tracking-[-0.02em] text-navy">
             point
-            {/* Marker underline, drawn slightly off-true like a real one. */}
-            <span
-              aria-hidden
-              className="absolute inset-x-[-2%] bottom-[0.06em] -z-10 block h-[0.22em] -rotate-1 bg-charcoal/85"
-            />
           </span>{" "}
           of it all.
         </h2>
@@ -275,7 +278,7 @@ export function ThePoint() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0, transition: { delay: 0.16 } }}
                 exit={{ opacity: 0, transition: { duration: 0.05 } }}
-                className="mt-8 max-w-[32ch] border-l-[5px] border-charcoal bg-[#f7e15f] px-5 py-4 font-sans text-[clamp(1.05rem,1.8vw,1.4rem)] font-bold leading-[1.5] text-charcoal"
+                className="mt-8 max-w-[32ch] border-l-[5px] border-charcoal bg-gold px-5 py-4 font-sans text-[clamp(1.05rem,1.8vw,1.4rem)] font-bold leading-[1.5] text-charcoal"
               >
                 {active.line}
               </motion.p>

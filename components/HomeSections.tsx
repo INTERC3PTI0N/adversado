@@ -9,8 +9,9 @@ import { useGSAP } from "@gsap/react";
 import { BoxReveal, CinematicScene, useDepthReveal } from "@/components/Cinematic";
 import { BeliefSection } from "@/components/BeliefSection";
 import { useMagnetic } from "@/components/Interactions";
-import { InvitationContactForm } from "@/components/InvitationContactForm";
+import { ContactForm } from "@/components/ContactForm";
 import { Magnify } from "@/components/Magnify";
+import { SiteFooter } from "@/components/SiteFooter";
 import { SlideBreaker } from "@/components/SlideBreaker";
 import { WelcomeVerticalsRail } from "@/components/WelcomeVerticalsRail";
 import { IntroCard } from "@/components/vendor/IntroCard";
@@ -662,8 +663,18 @@ function Invitation() {
             </p>
           </div>
 
-          <div className="relative z-20 flex w-full justify-start lg:justify-end">
-            <InvitationContactForm />
+          {/* The real form, same one the Contact page runs. What sat here
+              before was a second, simpler form that confirmed in place and
+              posted nowhere — every enquiry the home page collected was
+              thrown away. Panel treatment matches /contact so the two reads
+              as one form in two places. */}
+          <div className="relative z-20 w-full lg:justify-self-end">
+            <span className="inline-block -rotate-2 border-[3px] border-charcoal bg-gold px-3 py-1.5 font-sans text-[0.7rem] font-black uppercase tracking-[0.24em] text-charcoal shadow-[5px_5px_0_0_#212121]">
+              Start with an audit
+            </span>
+            <div className="mt-8 border-[4px] border-charcoal bg-bone p-6 shadow-[12px_12px_0_0_#e6b325] sm:p-9">
+              <ContactForm idPrefix="home" />
+            </div>
           </div>
         </div>
       </div>
@@ -700,6 +711,7 @@ export function HomeSections() {
         <SlideBreaker />
         <SixDs />
         <Invitation />
+        <SiteFooter />
       </div>
     </>
   );

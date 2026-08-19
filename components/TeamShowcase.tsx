@@ -27,13 +27,18 @@ type Member = { role: string; file: string; tilt: string; accent: string };
 
 /* `file` is the on-disk name in public/team, URL-encoded at point of use —
    the filenames contain spaces. */
+/* Duotone wash, alternating the book's two active colours. It was five
+   different tints before — three of them pastels off the brand entirely, and
+   `bg-cream` multiplied to nothing, so that one portrait sat in full colour
+   while the rest were tinted. Gold/navy alternating gives the grid a rhythm
+   and every tile the same weight. */
 const MEMBERS: Member[] = [
   { role: "Creative Head", file: "Creative Head.jpeg", tilt: "-2deg", accent: "bg-gold" },
-  { role: "Growth Head", file: "Growth Head.jpeg", tilt: "1.5deg", accent: "bg-[#f7b8c4]" },
-  { role: "Performance Manager", file: "Performance Manager.jpeg", tilt: "-1.2deg", accent: "bg-[#9fd8cb]" },
-  { role: "Account Lead", file: "Account Lead.jpeg", tilt: "2.1deg", accent: "bg-cream" },
-  { role: "Social Media Manager", file: "Social Media Manager.jpeg", tilt: "-1.7deg", accent: "bg-[#b8c9f7]" },
-  { role: "Post Production Head", file: "Post Production Head.jpeg", tilt: "1.1deg", accent: "bg-gold" },
+  { role: "Growth Head", file: "Growth Head.jpeg", tilt: "1.5deg", accent: "bg-navy" },
+  { role: "Performance Manager", file: "Performance Manager.jpeg", tilt: "-1.2deg", accent: "bg-gold" },
+  { role: "Account Lead", file: "Account Lead.jpeg", tilt: "2.1deg", accent: "bg-navy" },
+  { role: "Social Media Manager", file: "Social Media Manager.jpeg", tilt: "-1.7deg", accent: "bg-gold" },
+  { role: "Post Production Head", file: "Post Production Head.jpeg", tilt: "1.1deg", accent: "bg-navy" },
 ];
 
 const CAT = {
@@ -46,9 +51,10 @@ export function TeamShowcase() {
   return (
     <section
       aria-label="Team behind your brand"
-      /* Bone ground: chrome inverts to the dark wordmark and navy menu. */
-      data-nav-light
-      className="relative bg-bone px-6 py-32 text-charcoal sm:px-10 sm:py-40 lg:px-16"
+      /* Navy ground, so no nav-ground tag: the chrome's default gold wordmark
+         and cream menu are already legible on it. `data-nav-navy` would paint
+         the mark navy-on-navy — that flag is for navy type over a light spread. */
+      className="relative bg-navy px-6 py-32 text-cream sm:px-10 sm:py-40 lg:px-16"
     >
       <div className="mx-auto max-w-[1500px]">
         <div className="flex flex-wrap items-end justify-between gap-x-12 gap-y-5">
@@ -60,31 +66,26 @@ export function TeamShowcase() {
           </span>
         </div>
 
-        {/* Two lines, break forced. The repeat is the point of the line, so
-            the second "brands" is set apart — gold type on a navy block — to
-            mark it as the different one. */}
-        <h2 className="mt-14 font-serif text-[clamp(2rem,5.6vw,4.6rem)] font-black normal-case leading-[0.95] tracking-[-0.03em] text-charcoal">
+        {/* The hero's own two-part device, reused: light Montserrat in cream,
+            then the line that matters in serif italic gold. The repeat is the
+            point of the headline, and this is how the landing page already
+            marks the turn — a sticker on the second "brands" was a third
+            treatment doing the same job louder. */}
+        <h2 className="mt-14 font-sans text-[clamp(2.25rem,7vw,5.75rem)] font-light leading-[1.06] tracking-[-0.03em] text-cream">
           The people
           <span className="mt-2 block">
             behind the brands,{" "}
-            <span className="whitespace-nowrap font-sans uppercase">
-              behind the{" "}
-              <span className="inline-block rotate-1 border-[3px] border-charcoal bg-navy px-2 pb-[0.06em] pt-[0.15em] text-gold shadow-[4px_4px_0_0_#212121]">
-                brands
-              </span>
+            <span className="whitespace-nowrap font-serif italic tracking-[-0.02em] text-gold">
+              behind the brands
             </span>
           </span>
         </h2>
 
-        <p className="mt-12 max-w-[42ch] border-l-[5px] border-charcoal pl-6 font-sans text-[clamp(1.05rem,1.7vw,1.4rem)] font-bold leading-[1.6] tracking-[-0.01em] text-charcoal sm:pl-8">
-          <span className="bg-charcoal px-1.5 text-gold">Small by design.</span>{" "}
-          <span className="bg-charcoal px-1.5 text-gold">Senior by default.</span>{" "}
-          Everyone at this table has shipped real work in the real world:{" "}
-          <span className="border-b-4 border-gold">FMCG</span> shelves,{" "}
-          <span className="border-b-4 border-gold">pharma</span> regulations,{" "}
-          <span className="border-b-4 border-gold">hotel</span> lobbies,{" "}
-          <span className="border-b-4 border-gold">event</span> floors,{" "}
-          <span className="border-b-4 border-gold">ad accounts</span> with actual
+        <p className="mt-12 max-w-[42ch] border-l-[5px] border-gold pl-6 font-sans text-[clamp(1.05rem,1.7vw,1.4rem)] font-bold leading-[1.6] tracking-[-0.01em] text-cream sm:pl-8">
+          <span className="text-gold">Small by design.</span>{" "}
+          <span className="text-gold">Senior by default.</span> Everyone at this
+          table has shipped real work in the real world: FMCG shelves, pharma
+          regulations, hotel lobbies, event floors, ad accounts with actual
           money in them.
         </p>
 
@@ -194,12 +195,10 @@ export function TeamShowcase() {
           </motion.li>
         </motion.ul>
 
-        <div className="mt-20 flex flex-col gap-8 border-t-[4px] border-charcoal pt-10 sm:flex-row sm:items-end sm:justify-between">
-          <p className="max-w-[34ch] font-sans text-[clamp(1rem,1.5vw,1.2rem)] font-bold leading-[1.65] text-charcoal/80">
+        <div className="mt-20 flex flex-col gap-8 border-t-[4px] border-cream/25 pt-10 sm:flex-row sm:items-end sm:justify-between">
+          <p className="max-w-[34ch] font-sans text-[clamp(1rem,1.5vw,1.2rem)] font-bold leading-[1.65] text-cream/75">
             Want to be on this page? We hire people who flinch at the word{" "}
-            <span className="bg-charcoal px-1.5 text-gold">
-              &ldquo;synergy.&rdquo;
-            </span>
+            <span className="text-gold">&ldquo;synergy.&rdquo;</span>
           </p>
           <Link
             href="/contact"

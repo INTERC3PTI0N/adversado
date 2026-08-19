@@ -9,6 +9,7 @@ import {
 } from "@/components/RingSpiralGallery";
 import { ProjectsPreloader } from "@/components/ProjectsPreloader";
 import { CinematicScene } from "@/components/Cinematic";
+import { SiteFooter } from "@/components/SiteFooter";
 
 /**
  * Projects — k95.it's works page, rebuilt on brand.
@@ -335,30 +336,21 @@ export function ProjectsPage() {
         </div>
       </div>
 
-      {/* ── Footer. The wordmark at full width is the only graphic move. ─── */}
-      <footer className="relative z-20 px-6 pb-10 pt-16 sm:px-10 lg:px-14">
+      {/* ── Sign-off. The wordmark at full width is the only graphic move;
+             the sitewide footer carries the links, address and copyright so
+             this page stops running a second, divergent set of its own. ─── */}
+      {/* Above the fixed edge fades (z-30) and gallery chrome (z-40): both are
+          the coil's furniture, and once the sign-off has scrolled up over them
+          they were washing out the footer they sit in front of. */}
+      <div className="relative z-[45] px-6 pb-10 pt-16 sm:px-10 lg:px-14">
         <div className="mx-auto max-w-[1600px]">
-          <div className="grid gap-8 border-t border-cream/15 pt-10 sm:grid-cols-[minmax(0,1fr)_auto]">
-            <div>
-              <p className="font-serif text-[clamp(1.1rem,2vw,1.5rem)] font-light italic text-cream">
-                The work carries our clients&apos; names.
-              </p>
-              <p className="mt-2 max-w-[42ch] font-serif text-[clamp(1.1rem,2vw,1.5rem)] font-light italic text-gold">
-                The thinking behind it carries ours.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-x-6 gap-y-3 font-sans text-[0.66rem] font-semibold uppercase tracking-[0.2em] sm:justify-end">
-              <Link href="/services" className="text-cream/55 transition-colors hover:text-gold">
-                Services
-              </Link>
-              <Link href="/about" className="text-cream/55 transition-colors hover:text-gold">
-                About
-              </Link>
-              <Link href="/contact#audit" className="text-gold transition-colors hover:text-cream">
-                Start with an audit
-              </Link>
-            </div>
+          <div className="border-t border-cream/15 pt-10">
+            <p className="font-serif text-[clamp(1.1rem,2vw,1.5rem)] font-light italic text-cream">
+              The work carries our clients&apos; names.
+            </p>
+            <p className="mt-2 max-w-[42ch] font-serif text-[clamp(1.1rem,2vw,1.5rem)] font-light italic text-gold">
+              The thinking behind it carries ours.
+            </p>
           </div>
 
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -367,13 +359,12 @@ export function ProjectsPage() {
             alt="Adversado"
             className="mt-12 w-full opacity-90"
           />
-
-          <div className="mt-8 flex flex-wrap items-baseline justify-between gap-4 font-sans text-[0.62rem] uppercase tracking-[0.2em] text-cream/40">
-            <span>Brand &amp; digital studio · Kochi, India</span>
-            <span>© {new Date().getFullYear()} Adversado</span>
-          </div>
         </div>
-      </footer>
+      </div>
+
+      <div className="relative z-[45]">
+        <SiteFooter />
+      </div>
 
       {/* Crawlable index of the same set. The coil is transforms and rAF, which
           is exactly the kind of thing a crawler sees nothing in. */}

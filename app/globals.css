@@ -170,58 +170,6 @@ body {
   padding: 0;
 }
 
-/* Invitation CTA panel — lit by the same pointer that drives the tilt. */
-.invitation-form-stage {
-  width: min(100%, 26rem);
-}
-
-.invitation-form-panel {
-  --mx: 50%;
-  --my: 28%;
-  position: relative;
-  overflow: hidden;
-  border: 2px solid color-mix(in srgb, var(--color-gold) 85%, transparent);
-  border-radius: 20px;
-  background:
-    radial-gradient(
-      circle at var(--mx) var(--my),
-      color-mix(in srgb, #4a6aa0 45%, transparent) 0%,
-      transparent 48%
-    ),
-    linear-gradient(
-      155deg,
-      #2c4a80 0%,
-      var(--color-navy) 42%,
-      #152844 78%,
-      #0f1c33 100%
-    );
-  padding: 1.75rem 1.5rem 1.5rem;
-}
-
-@media (min-width: 640px) {
-  .invitation-form-panel {
-    padding: 2rem 1.75rem 1.75rem;
-  }
-}
-
-.invitation-form-panel__sheen {
-  background: linear-gradient(
-    125deg,
-    color-mix(in srgb, var(--color-cream) 10%, transparent) 0%,
-    transparent 38%,
-    transparent 62%,
-    color-mix(in srgb, var(--color-gold) 8%, transparent) 100%
-  );
-  opacity: 0.85;
-  mix-blend-mode: screen;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .invitation-form-panel {
-    transform: none !important;
-  }
-}
-
 /* Focus list: hovering one entry dims its siblings so the eye is pulled to a
    single step at a time. Plain CSS because the two rules have to beat each
    other by source order, which reads far clearer here than utility overrides. */

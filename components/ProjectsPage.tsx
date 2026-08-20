@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import {
   RingSpiralGallery,
   type GalleryItem,
@@ -15,9 +14,8 @@ import { SiteFooter } from "@/components/SiteFooter";
  * Projects — k95.it's works page, rebuilt on brand.
  *
  * The reference is a full-viewport scene with no scrolling document: fixed glass
- * chrome, a Rings/Spiral segmented switch, filter pills carrying counts, a
- * cursor-following label, and a footer whose only graphic move is the wordmark
- * at full width. Its palette is two colours — one saturated field, one
+ * chrome, a Rings/Spiral segmented switch and a footer whose only graphic move
+ * is the wordmark at full width. Its palette is two colours — one saturated field, one
  * off-white — so this uses the book's navy as the field and its off-white as
  * the ink, with gold kept for state.
  *
@@ -26,6 +24,10 @@ import { SiteFooter } from "@/components/SiteFooter";
  * Here the coil lives in a tall section with a sticky stage, so scroll still
  * behaves like scroll (and Lenis, the nav and the footer all keep working)
  * while the gallery gets its travel.
+ *
+ * Chrome is the sitewide chrome. This page used to run its own fixed nav and
+ * its own pointer treatment, which made the menu here look nothing like the
+ * menu everywhere else; both are gone.
  */
 
 const PROJECTS: GalleryItem[] = [
@@ -88,138 +90,12 @@ function ModeSwitch({
   );
 }
 
-/** Filter pill with a dot and a superscript count. */
-/**
- * k95's pointer treatment: a small difference-blend dot that swells over
- * anything interactive, trailed by a glass label while a card is hovered.
- *
- * The native cursor is hidden while this is mounted — that's what `data-
- * projects-cursor` on the document element switches on — so the swap is gated
- * on actually having a hover-capable pointer, and undone on unmount.
- */
-function ProjectsCursor({ item }: { item: GalleryItem | null }) {
-  const dotRef = useRef<HTMLDivElement>(null);
-  const labelRef = useRef<HTMLDivElement>(null);
-  const aim = useRef({ x: -100, y: -100 });
-  const cur = useRef({ x: -100, y: -100 });
-  const [enabled, setEnabled] = useState(false);
-  const [over, setOver] = useState(false);
-
-  useEffect(() => {
-    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
-    setEnabled(true);
-    document.documentElement.dataset.projectsCursor = "true";
-
-    let raf = 0;
-    const tick = () => {
-      cur.current.x += (aim.current.x - cur.current.x) * 0.16;
-      cur.current.y += (aim.current.y - cur.current.y) * 0.16;
-      const t = `translate3d(${cur.current.x}px, ${cur.current.y}px, 0)`;
-      if (dotRef.current) dotRef.current.style.transform = `${t} translate(-50%, -50%)`;
-      if (labelRef.current) labelRef.current.style.transform = `${t} translate(20px, 20px)`;
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-
-    const onMove = (e: PointerEvent) => {
-      aim.current.x = e.clientX;
-      aim.current.y = e.clientY;
-      const el = e.target as Element | null;
-      setOver(Boolean(el?.closest?.("a, button, [data-hover]")));
-    };
-    window.addEventListener("pointermove", onMove, { passive: true });
-
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("pointermove", onMove);
-      delete document.documentElement.dataset.projectsCursor;
-    };
-  }, []);
-
-  if (!enabled) return null;
-
-  const big = over || Boolean(item);
-
-  return (
-    <>
-      <div
-        ref={dotRef}
-        aria-hidden
-        className="pointer-events-none fixed left-0 top-0 z-[62] rounded-full transition-[width,height,background-color,border-color] duration-300"
-        style={{
-          width: big ? 44 : 15,
-          height: big ? 44 : 15,
-          backgroundColor: big ? "transparent" : "#f9f7f2",
-          border: big ? "1px solid #f9f7f2" : "1px solid transparent",
-          mixBlendMode: "difference",
-        }}
-      />
-      <div
-        ref={labelRef}
-        aria-hidden
-        className="pointer-events-none fixed left-0 top-0 z-[61] rounded-full border border-cream/20 bg-cream/10 px-4 py-2 backdrop-blur-[14px] transition-opacity duration-300"
-        style={{ opacity: item ? 1 : 0 }}
-      >
-        <p className="whitespace-nowrap font-sans text-[0.7rem] font-semibold text-cream">
-          {item?.title ?? ""}
-        </p>
-        <p className="whitespace-nowrap font-sans text-[0.6rem] uppercase tracking-[0.16em] text-cream/60">
-          {item?.client ?? ""}
-        </p>
-      </div>
-    </>
-  );
-}
-
-/** This page's own nav, since it opts out of the sitewide chrome. */
-function ProjectsNav() {
-  const links = [
-    { href: "/", label: "Home" },
-    { href: "/services", label: "Services" },
-    { href: "/about", label: "About" },
-    { href: "/contact", label: "Contact" },
-  ];
-
-  return (
-    <nav className="pointer-events-none fixed inset-x-0 top-0 z-50 flex items-center justify-between px-6 py-6 sm:px-10 lg:px-14 lg:py-8">
-      <Link
-        href="/"
-        aria-label="Adversado — home"
-        className="pointer-events-auto block w-32 sm:w-40"
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.svg" alt="Adversado" className="w-full" />
-      </Link>
-
-      <div className="pointer-events-auto flex items-center gap-6 sm:gap-9 lg:gap-12">
-        {links.map((l) => (
-          <Link
-            key={l.href}
-            href={l.href}
-            className="font-sans text-[0.66rem] font-semibold uppercase tracking-[0.2em] text-cream/65 transition-colors duration-300 hover:text-gold"
-          >
-            {l.label}
-          </Link>
-        ))}
-        <span
-          aria-current="page"
-          className="flex items-center gap-2 font-sans text-[0.66rem] font-semibold uppercase tracking-[0.2em] text-cream"
-        >
-          <span aria-hidden className="h-[6px] w-[6px] rounded-full bg-gold" />
-          Projects
-        </span>
-      </div>
-    </nav>
-  );
-}
-
 /* ── Page ───────────────────────────────────────────────────────────────── */
 
 export function ProjectsPage() {
   const [booted, setBooted] = useState(false);
   const [loaderGone, setLoaderGone] = useState(false);
   const [mode, setMode] = useState<GalleryMode>("spiral");
-  const [hovered, setHovered] = useState<GalleryItem | null>(null);
   const [active, setActive] = useState(0);
 
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -251,7 +127,6 @@ export function ProjectsPage() {
   }, []);
 
   const onActiveChange = useCallback((i: number) => setActive(i), []);
-  const onHover = useCallback((i: GalleryItem | null) => setHovered(i), []);
 
   const activeItem = items[Math.min(active, items.length - 1)];
 
@@ -267,9 +142,6 @@ export function ProjectsPage() {
           onDone={() => setLoaderGone(true)}
         />
       )}
-
-      <ProjectsCursor item={hovered} />
-      <ProjectsNav />
 
       {/* Edge fades — the reference uses these to keep the coil from colliding
           with the chrome at the top and bottom of the frame. */}
@@ -331,7 +203,6 @@ export function ProjectsPage() {
             mode={mode}
             progressRef={progressRef}
             onActiveChange={onActiveChange}
-            onHover={onHover}
           />
         </div>
       </div>

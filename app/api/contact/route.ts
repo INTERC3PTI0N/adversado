@@ -9,15 +9,19 @@ import { CONTACT } from "@/lib/contact";
  * anything can POST this route directly.
  *
  * Delivery goes through Resend's HTTP API over plain `fetch`, so no mail
- * dependency is added to the bundle. It needs two env vars:
+ * dependency is added to the bundle. One env var is required:
  *
  *   RESEND_API_KEY   — the API key
- *   CONTACT_FROM     — a verified sender on your Resend domain,
+ *
+ * and one is optional:
+ *
+ *   CONTACT_FROM     — sender, if the default below is wrong. Must be on a
+ *                      domain verified at resend.com/domains,
  *                      e.g. "Adversado site <site@adversado.com>"
  *
- * Without them the route answers 503 and says so, rather than pretending the
- * message was delivered — a form that silently drops enquiries is worse than
- * one that admits it is not wired up yet.
+ * Without the key the route answers 503 and says so, rather than pretending
+ * the message was delivered — a form that silently drops enquiries is worse
+ * than one that admits it is not wired up yet.
  */
 
 type Payload = {
@@ -32,6 +36,13 @@ type Payload = {
 };
 
 const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+
+/* Sender, when CONTACT_FROM isn't set. Derived from the studio address in
+   `lib/contact`, so the default tracks the one domain this site belongs to
+   rather than being a second place to keep it in sync.
+   `noreply@` rather than the real inbox: it must be on the Resend-verified
+   domain, and it shouldn't collide with a mailbox someone actually reads. */
+const DEFAULT_FROM = `Adversado <noreply@${CONTACT.email.split("@")[1]}>`;
 
 export async function POST(request: Request) {
   let body: Payload;
@@ -65,8 +76,8 @@ export async function POST(request: Request) {
   }
 
   const key = process.env.RESEND_API_KEY;
-  const from = process.env.CONTACT_FROM;
-  if (!key || !from) {
+  const from = process.env.CONTACT_FROM || DEFAULT_FROM;
+  if (!key) {
     return NextResponse.json(
       {
         error:

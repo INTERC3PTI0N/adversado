@@ -178,7 +178,10 @@ function VerticalBlock({
   return (
     <section
       ref={ref}
-      className="relative border-t border-cream/15 px-6 py-20 sm:px-10 sm:py-24 lg:px-16 lg:py-28"
+      /* Slugged so each vertical is linkable on its own — the menu's Events
+         entry lands on Brand Experience rather than the top of the page. */
+      id={vertical.name.toLowerCase().replace(/\s+/g, "-")}
+      className="relative scroll-mt-24 border-t border-cream/15 px-6 py-20 sm:px-10 sm:py-24 lg:px-16 lg:py-28"
     >
       <div className="mx-auto grid max-w-[1400px] gap-x-16 gap-y-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <div className="relative">

@@ -52,17 +52,20 @@ export function CatBell({ className }: { className?: string }) {
 
   return (
     <div className={`relative ${className ?? ""}`}>
+      {/* A gold bordered button, not a footnote. As a dim underlined caption it
+          read as small print and nobody found it — which for the one piece of
+          play on the page is the whole thing failing quietly. */}
       <button
         type="button"
         onClick={ring}
         aria-pressed={out}
-        className="group inline-flex items-center gap-3 border-b border-cream/20 pb-2 font-sans text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-cream/50 outline-none transition-colors duration-300 hover:border-gold/60 hover:text-gold focus-visible:border-gold focus-visible:text-gold"
+        className="group inline-flex items-center gap-4 border-2 border-gold bg-gold/10 px-6 py-4 font-sans text-[0.78rem] font-bold uppercase tracking-[0.24em] text-gold outline-none transition-[background-color,color,transform] duration-300 hover:bg-gold hover:text-charcoal focus-visible:bg-gold focus-visible:text-charcoal motion-reduce:transition-none"
       >
         <svg
           viewBox="0 0 24 24"
           fill="none"
           aria-hidden
-          className={`h-4 w-4 origin-top transition-transform duration-150 ${
+          className={`h-5 w-5 origin-top transition-transform duration-150 ${
             ringing ? "animate-[catbell-ring_0.7s_ease-in-out]" : ""
           }`}
         >

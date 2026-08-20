@@ -123,16 +123,11 @@ export function FAQPage() {
         </div>
       </section>
 
-      {/* The list */}
+      {/* The list — centred in the page, with the side label gone. Without a
+          column beside it the accordion has no reason to sit off-axis. */}
       <section className="border-t border-cream/15 px-6 py-16 sm:px-10 sm:py-20 lg:px-16">
-        <div className="mx-auto grid max-w-[1500px] gap-x-16 gap-y-12 lg:grid-cols-[minmax(0,0.28fr)_minmax(0,1fr)]">
-          <p className="font-sans text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-cream/45 lg:sticky lg:top-28 lg:self-start">
-            Eleven questions
-          </p>
-
-          <div className="min-w-0">
-            <InteractiveAccordion items={FAQS} />
-          </div>
+        <div className="mx-auto w-full max-w-[1000px]">
+          <InteractiveAccordion items={FAQS} />
         </div>
       </section>
 

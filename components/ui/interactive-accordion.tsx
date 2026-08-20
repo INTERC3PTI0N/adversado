@@ -112,7 +112,10 @@ function Row({
             transition={{ duration: 0.42, ease: EASE }}
             className="overflow-hidden"
           >
-            <p className="max-w-[68ch] pb-9 pl-0 pr-0 font-sans text-[clamp(0.95rem,1.3vw,1.08rem)] font-light leading-[1.85] text-cream/70 sm:pl-[calc(0.68rem+2.5rem)]">
+            {/* `pt` inside the animated box rather than a margin on the panel:
+                a margin would sit outside the measured height and the answer
+                would jump on open. */}
+            <p className="max-w-[68ch] pb-9 pt-5 font-sans text-[clamp(0.95rem,1.3vw,1.08rem)] font-light leading-[1.85] text-cream/70 sm:pl-[calc(0.68rem+2.5rem)]">
               {item.answer}
             </p>
           </motion.div>

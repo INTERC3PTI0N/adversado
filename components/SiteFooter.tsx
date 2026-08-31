@@ -10,6 +10,13 @@ const NAV = [
   { label: "Contact", href: "/contact" },
 ] as const;
 
+/* Reference material rather than destinations — kept out of the main menu, so
+   the footer is where someone who wants them goes looking. */
+const RESOURCES = [
+  { label: "FAQ", href: "/faq" },
+  { label: "Blog", href: "/blog" },
+] as const;
+
 const VERTICALS = [
   "Branding",
   "Advertising",
@@ -56,6 +63,22 @@ export function SiteFooter() {
             </p>
             <ul className="mt-5 flex flex-col gap-2.5">
               {NAV.map((n) => (
+                <li key={n.href}>
+                  <Link
+                    href={n.href}
+                    className="font-sans text-sm font-light text-cream/60 transition-colors duration-300 hover:text-gold"
+                  >
+                    {n.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+
+            <p className="mt-8 font-sans text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-cream/35">
+              Resources
+            </p>
+            <ul className="mt-5 flex flex-col gap-2.5">
+              {RESOURCES.map((n) => (
                 <li key={n.href}>
                   <Link
                     href={n.href}

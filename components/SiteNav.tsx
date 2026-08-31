@@ -18,8 +18,9 @@ const ITEMS = [
     link: "/services#brand-experience",
   },
   { label: "Projects", ariaLabel: "Go to Projects page", link: "/projects" },
-  { label: "FAQ", ariaLabel: "Go to Frequently Asked Questions", link: "/faq" },
-  { label: "Blog", ariaLabel: "Go to Blog", link: "/blog" },
+  /* FAQ and Blog live in the footer, not here. The panel is set at display
+     size and every entry in it reads as a primary destination; these two are
+     reference material people go looking for, not places to send someone. */
   { label: "Contact", ariaLabel: "Go to Contact page", link: "/contact" },
   {
     label: "Get a brand audit",

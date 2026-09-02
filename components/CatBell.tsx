@@ -23,22 +23,75 @@ const MESSAGE = "You rang. I'm told I'm the only one here who listens.";
 /** Long enough to read the line, short enough that it never overstays. */
 const AUTO_DISMISS_MS = 6500;
 
+/* Bell partials. A struck bell is not one pitch — it is a fundamental plus a
+   few inharmonic overtones that decay faster than it does, which is what stops
+   a sine from sounding like a test tone. Ratios are the classic ones. */
+const PARTIALS: Array<{ ratio: number; gain: number; decay: number }> = [
+  { ratio: 1, gain: 0.5, decay: 1.7 },
+  { ratio: 2, gain: 0.28, decay: 1.1 },
+  { ratio: 2.4, gain: 0.2, decay: 0.8 },
+  { ratio: 3.76, gain: 0.12, decay: 0.5 },
+  { ratio: 5.43, gain: 0.07, decay: 0.32 },
+];
+
+const FUNDAMENTAL_HZ = 784; // G5 — small desk bell, not a church bell.
+
 export function CatBell({ className }: { className?: string }) {
   const [ringing, setRinging] = useState(false);
   const [out, setOut] = useState(false);
   const timers = useRef<number[]>([]);
+  const audio = useRef<AudioContext | null>(null);
 
   useEffect(
     () => () => {
       timers.current.forEach(clearTimeout);
+      audio.current?.close();
     },
     []
   );
+
+  /* Synthesised rather than shipped as a file: it is five oscillators and an
+     envelope, against a network request for an asset that would still need
+     licensing. Built lazily on the click — browsers refuse an AudioContext
+     created before a gesture, and creating one on mount just to have it
+     suspended is how you get a console full of autoplay warnings. */
+  const chime = () => {
+    try {
+      audio.current ??= new AudioContext();
+      const ctx = audio.current;
+      if (ctx.state === "suspended") void ctx.resume();
+
+      const now = ctx.currentTime;
+      const bus = ctx.createGain();
+      bus.gain.value = 0.22;
+      bus.connect(ctx.destination);
+
+      for (const p of PARTIALS) {
+        const osc = ctx.createOscillator();
+        const env = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = FUNDAMENTAL_HZ * p.ratio;
+
+        // Fast attack, exponential decay — the shape of something struck.
+        env.gain.setValueAtTime(0.0001, now);
+        env.gain.exponentialRampToValueAtTime(p.gain, now + 0.005);
+        env.gain.exponentialRampToValueAtTime(0.0001, now + p.decay);
+
+        osc.connect(env);
+        env.connect(bus);
+        osc.start(now);
+        osc.stop(now + p.decay + 0.05);
+      }
+    } catch {
+      /* No Web Audio, or the context was refused. The visual still works. */
+    }
+  };
 
   const ring = () => {
     timers.current.forEach(clearTimeout);
     timers.current = [];
 
+    chime();
     setRinging(true);
     timers.current.push(window.setTimeout(() => setRinging(false), 700));
 

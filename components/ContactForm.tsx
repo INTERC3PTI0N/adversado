@@ -2,14 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const TURNING_POINTS = [
-  "Launching something new",
-  "Relaunching or repositioning",
-  "Expanding to new markets",
-  "Our brand doesn't match our business anymore",
-  "Something else",
-] as const;
-
 /**
  * The site's contact form. One implementation, used by the Contact page and by
  * the home page's Invitation — the home page previously ran a second, simpler
@@ -33,6 +25,7 @@ const LABEL =
   "pointer-events-none absolute left-4 top-5 font-sans text-[0.95rem] font-bold text-charcoal/45 transition-all duration-200 ease-out peer-focus:top-1.5 peer-focus:text-[0.62rem] peer-focus:font-black peer-focus:uppercase peer-focus:tracking-[0.2em] peer-focus:text-charcoal peer-[:not(:placeholder-shown)]:top-1.5 peer-[:not(:placeholder-shown)]:text-[0.62rem] peer-[:not(:placeholder-shown)]:font-black peer-[:not(:placeholder-shown)]:uppercase peer-[:not(:placeholder-shown)]:tracking-[0.2em] peer-[:not(:placeholder-shown)]:text-charcoal/70 motion-reduce:transition-none";
 
 function Field({
+  id,
   name,
   label,
   type = "text",
@@ -40,6 +33,7 @@ function Field({
   autoComplete,
   error,
 }: {
+  id: string;
   name: string;
   label: string;
   type?: string;
@@ -50,23 +44,23 @@ function Field({
   return (
     <div className="relative">
       <input
-        id={name}
+        id={id}
         name={name}
         type={type}
         required={required}
         autoComplete={autoComplete}
         aria-invalid={error ? true : undefined}
-        aria-describedby={error ? `${name}-error` : undefined}
+        aria-describedby={error ? `${id}-error` : undefined}
         /* A space, not "", so :placeholder-shown flips only when empty. */
         placeholder=" "
         className={`${FIELD} ${error ? "border-[#c8322a]" : ""}`}
       />
-      <label htmlFor={name} className={LABEL}>
+      <label htmlFor={id} className={LABEL}>
         {label}
       </label>
       {error ? (
         <p
-          id={`${name}-error`}
+          id={`${id}-error`}
           className="mt-2 inline-block bg-[#c8322a] px-2 py-0.5 font-sans text-[0.68rem] font-black uppercase tracking-[0.12em] text-cream"
         >
           {error}
@@ -157,99 +151,46 @@ export function ContactForm({ idPrefix }: { idPrefix?: string }) {
         className="pointer-events-none absolute -left-[9999px] h-px w-px opacity-0"
       />
 
+      <Field id={uid("name")} name="name" label="Name" required autoComplete="name" error={errors.name} />
       <Field
-        name="name"
-        label="Who are we talking to?"
-        required
-        autoComplete="name"
-        error={errors.name}
-      />
-      <Field
-        name="company"
-        label="The brand on the table"
+        id={uid("brand")}
+        name="brand"
+        label="Brand"
         required
         autoComplete="organization"
-        error={errors.company}
+        error={errors.brand}
       />
-
-      <div className="grid gap-9 sm:grid-cols-2">
-        <Field
-          name="email"
-          label="Email"
-          type="email"
-          required
-          autoComplete="email"
-          error={errors.email}
-        />
-        <Field
-          name="phone"
-          label="Phone"
-          type="tel"
-          autoComplete="tel"
-          error={errors.phone}
-        />
-      </div>
-
-      {/* A select never shows a placeholder, so its label is static rather than
-          floating — pretending otherwise would animate a lie. */}
-      <div className="relative">
-        <label
-          htmlFor={uid("turningPoint")}
-          className="font-sans text-[0.68rem] font-black uppercase tracking-[0.2em] text-charcoal"
-        >
-          What&apos;s the turning point?
-        </label>
-        <select
-          id={uid("turningPoint")}
-          name="turningPoint"
-          required
-          defaultValue=""
-          aria-invalid={errors.turningPoint ? true : undefined}
-          className={`mt-3 w-full appearance-none border-[3px] bg-cream px-4 py-3 font-sans text-[0.95rem] font-bold text-charcoal outline-none transition-[box-shadow,transform] duration-150 focus:-translate-x-0.5 focus:-translate-y-0.5 focus:shadow-[6px_6px_0_0_#212121] focus-visible:outline-none ${
-            errors.turningPoint ? "border-[#c8322a]" : "border-charcoal"
-          }`}
-        >
-          <option value="" disabled>
-            Choose one
-          </option>
-          {TURNING_POINTS.map((p) => (
-            <option key={p} value={p} className="bg-cream text-charcoal">
-              {p}
-            </option>
-          ))}
-        </select>
-        <span
-          aria-hidden
-          className="pointer-events-none absolute bottom-4 right-4 font-black text-charcoal"
-        >
-          ↓
-        </span>
-        {errors.turningPoint ? (
-          <p className="mt-2 inline-block bg-[#c8322a] px-2 py-0.5 font-sans text-[0.68rem] font-black uppercase tracking-[0.12em] text-cream">
-            {errors.turningPoint}
-          </p>
-        ) : null}
-      </div>
+      <Field
+        id={uid("email")}
+        name="email"
+        label="Email"
+        type="email"
+        required
+        autoComplete="email"
+        error={errors.email}
+      />
 
       <div className="relative">
         <textarea
-          id={uid("more")}
-          name="more"
+          id={uid("looking")}
+          name="looking"
           rows={3}
           required
           placeholder=" "
-          aria-invalid={errors.more ? true : undefined}
-          className={`${FIELD} resize-none ${errors.more ? "border-[#c8322a]" : ""}`}
+          aria-invalid={errors.looking ? true : undefined}
+          className={`${FIELD} resize-none ${errors.looking ? "border-[#c8322a]" : ""}`}
         />
-        <label htmlFor={uid("more")} className={LABEL}>
-          Be honest. We will be.
+        <label htmlFor={uid("looking")} className={LABEL}>
+          What you&apos;re looking for
         </label>
-        {errors.more ? (
+        {errors.looking ? (
           <p className="mt-2 inline-block bg-[#c8322a] px-2 py-0.5 font-sans text-[0.68rem] font-black uppercase tracking-[0.12em] text-cream">
-            {errors.more}
+            {errors.looking}
           </p>
         ) : null}
       </div>
+
+      <Field id={uid("budget")} name="budget" label="Budget" error={errors.budget} />
 
       {formError ? (
         <p
@@ -265,7 +206,7 @@ export function ContactForm({ idPrefix }: { idPrefix?: string }) {
         disabled={pending}
         className="group mt-2 inline-flex w-fit items-center gap-4 border-[4px] border-charcoal bg-gold px-8 py-4 font-sans text-[0.75rem] font-black uppercase tracking-[0.22em] text-charcoal shadow-[7px_7px_0_0_#212121] transition-[transform,box-shadow] duration-150 hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[11px_11px_0_0_#212121] disabled:cursor-wait disabled:opacity-70 disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[7px_7px_0_0_#212121]"
       >
-        {pending ? "Sending…" : "Start the conversation"}
+        {pending ? "Sending…" : "Submit"}
         <span
           aria-hidden
           className="transition-transform duration-300 ease-out group-hover:translate-x-1.5"

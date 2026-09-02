@@ -9,14 +9,7 @@ const ITEMS = [
   { label: "Home", ariaLabel: "Go to Home page", link: "/" },
   { label: "About", ariaLabel: "Go to About page", link: "/about" },
   { label: "Services", ariaLabel: "Go to Services page", link: "/services" },
-  /* Events has no page of its own yet — it lands on the Brand Experience
-     vertical, which is where the events copy actually lives. Swap the link
-     when there is a standalone Events page to point at. */
-  {
-    label: "Events",
-    ariaLabel: "Go to Events, under Brand Experience",
-    link: "/services#brand-experience",
-  },
+  { label: "Events", ariaLabel: "Go to Events page", link: "/events" },
   { label: "Projects", ariaLabel: "Go to Projects page", link: "/projects" },
   /* FAQ and Blog live in the footer, not here. The panel is set at display
      size and every entry in it reads as a primary destination; these two are

@@ -26,11 +26,10 @@ import { CONTACT } from "@/lib/contact";
 
 type Payload = {
   name?: unknown;
-  company?: unknown;
+  brand?: unknown;
   email?: unknown;
-  phone?: unknown;
-  turningPoint?: unknown;
-  more?: unknown;
+  looking?: unknown;
+  budget?: unknown;
   /** Honeypot: real people never fill this, bots usually do. */
   website?: unknown;
 };
@@ -56,20 +55,20 @@ export async function POST(request: Request) {
   if (str(body.website)) return NextResponse.json({ ok: true });
 
   const name = str(body.name);
-  const company = str(body.company);
+  const brand = str(body.brand);
   const email = str(body.email);
-  const phone = str(body.phone);
-  const turningPoint = str(body.turningPoint);
-  const more = str(body.more);
+  const looking = str(body.looking);
+  const budget = str(body.budget);
 
+  /* Budget is optional on purpose: making it required loses the enquiries from
+     people who genuinely do not know yet, which are not the worst ones. */
   const errors: Record<string, string> = {};
-  if (!name) errors.name = "Tell us who we're talking to.";
-  if (!company) errors.company = "Which brand is on the table?";
+  if (!name) errors.name = "Please add your name.";
+  if (!brand) errors.brand = "Please add your brand.";
   if (!email) errors.email = "We need a way to reply.";
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
     errors.email = "That email doesn't look right.";
-  if (!turningPoint) errors.turningPoint = "Pick the closest turning point.";
-  if (!more) errors.more = "A line or two is plenty.";
+  if (!looking) errors.looking = "Tell us what you're looking for.";
 
   if (Object.keys(errors).length) {
     return NextResponse.json({ errors }, { status: 422 });
@@ -88,13 +87,13 @@ export async function POST(request: Request) {
   }
 
   const lines = [
-    `Name:           ${name}`,
-    `Company:        ${company}`,
-    `Email:          ${email}`,
-    `Phone:          ${phone || "—"}`,
-    `Turning point:  ${turningPoint}`,
+    `Name:    ${name}`,
+    `Brand:   ${brand}`,
+    `Email:   ${email}`,
+    `Budget:  ${budget || "—"}`,
     "",
-    more,
+    "Looking for:",
+    looking,
   ].join("\n");
 
   try {
@@ -109,7 +108,7 @@ export async function POST(request: Request) {
         to: [CONTACT.email],
         // So hitting reply in the inbox goes to the enquirer, not to the site.
         reply_to: email,
-        subject: `New enquiry — ${company} (${turningPoint})`,
+        subject: `New enquiry — ${brand}`,
         text: lines,
       }),
     });

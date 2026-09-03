@@ -45,6 +45,16 @@ export function SiteFooter() {
         <div className="grid gap-12 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.7fr)_minmax(0,1fr)_minmax(0,1fr)]">
           {/* Identity */}
           <div>
+            {/* The gold mark, not the navy one: this ground is navy. Plain
+                <img> rather than next/image — it's an SVG, so there is nothing
+                for the optimiser to do. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.svg"
+              alt="Adversado"
+              className="mb-8 block w-44 max-w-full sm:w-52"
+            />
+
             <p className="font-serif text-[clamp(1.15rem,2.2vw,1.6rem)] font-light italic tracking-[0.06em] text-cream">
               The Brand Behind The Brands.
             </p>
@@ -54,6 +64,21 @@ export function SiteFooter() {
             <p className="mt-6 font-sans text-[0.7rem] font-medium uppercase tracking-[0.24em] text-cream/40">
               {VERTICALS.join(" / ")}
             </p>
+
+            {/* Events is its own business with its own landing page, so it gets
+                a block of its own rather than a line in the sitemap list. */}
+            <Link
+              href="/events"
+              className="group mt-9 inline-flex items-center gap-4 border-2 border-gold bg-gold/10 px-6 py-4 font-sans text-[0.72rem] font-bold uppercase tracking-[0.22em] text-gold transition-colors duration-300 hover:bg-gold hover:text-charcoal"
+            >
+              Adversado Events
+              <span
+                aria-hidden
+                className="transition-transform duration-300 ease-out group-hover:translate-x-1.5"
+              >
+                →
+              </span>
+            </Link>
           </div>
 
           {/* Sitemap */}

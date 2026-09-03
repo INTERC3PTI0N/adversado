@@ -23,22 +23,22 @@ function useWindowSize() {
 const CUTS = [
   {
     src: "https://videos.pexels.com/video-files/7269763/7269763-hd_1920_1080_25fps.mp4",
-    label: "Vibrant Energy",
+    label: "Corporate Events",
     veils: [EV.navy, EV.gold],
   },
   {
     src: "https://videos.pexels.com/video-files/5003647/5003647-hd_1920_1080_30fps.mp4",
-    label: "Behind the Scenes",
+    label: "Conferences",
     veils: [EV.navy, EV.cream],
   },
   {
     src: "https://videos.pexels.com/video-files/4774631/4774631-hd_1920_1080_25fps.mp4",
-    label: "Unforgettable Nights",
+    label: "Entertainment",
     veils: [EV.gold, EV.navy],
   },
   {
     src: "https://videos.pexels.com/video-files/7271364/7271364-hd_1920_1080_25fps.mp4",
-    label: "Shared Moments",
+    label: "Gaming & Brand Events",
     veils: [EV.cream, EV.gold],
   },
 ] as const;
@@ -186,9 +186,9 @@ export function ShowreelCard({
             className="font-sans text-3xl font-black uppercase leading-tight tracking-tight"
             style={{ color: EV.charcoal }}
           >
-            Where experiences
+            The room empties.
             <br />
-            take centre stage
+            The event shouldn&apos;t.
           </span>
         </motion.div>
 

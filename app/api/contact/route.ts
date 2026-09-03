@@ -30,6 +30,8 @@ type Payload = {
   email?: unknown;
   looking?: unknown;
   budget?: unknown;
+  /** Which page the form was submitted from. */
+  source?: unknown;
   /** Honeypot: real people never fill this, bots usually do. */
   website?: unknown;
 };
@@ -59,6 +61,7 @@ export async function POST(request: Request) {
   const email = str(body.email);
   const looking = str(body.looking);
   const budget = str(body.budget);
+  const source = str(body.source);
 
   /* Budget is optional on purpose: making it required loses the enquiries from
      people who genuinely do not know yet, which are not the worst ones. */
@@ -91,6 +94,7 @@ export async function POST(request: Request) {
     `Brand:   ${brand}`,
     `Email:   ${email}`,
     `Budget:  ${budget || "—"}`,
+    `Source:  ${source || "Contact page"}`,
     "",
     "Looking for:",
     looking,
@@ -108,7 +112,7 @@ export async function POST(request: Request) {
         to: [CONTACT.email],
         // So hitting reply in the inbox goes to the enquirer, not to the site.
         reply_to: email,
-        subject: `New enquiry — ${brand}`,
+        subject: `New enquiry — ${brand}${source ? ` (${source})` : ""}`,
         text: lines,
       }),
     });

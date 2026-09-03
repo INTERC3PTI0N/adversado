@@ -70,7 +70,15 @@ function Field({
   );
 }
 
-export function ContactForm({ idPrefix }: { idPrefix?: string }) {
+export function ContactForm({
+  idPrefix,
+  /** Which page the enquiry came from, carried through to the email subject.
+   *  Without it an events lead and a contact-page lead are indistinguishable. */
+  source,
+}: {
+  idPrefix?: string;
+  source?: string;
+}) {
   const sentRef = useRef<HTMLDivElement>(null);
   const [sent, setSent] = useState(false);
   const [pending, setPending] = useState(false);
@@ -141,6 +149,8 @@ export function ContactForm({ idPrefix }: { idPrefix?: string }) {
         }
       }}
     >
+      {source ? <input type="hidden" name="source" value={source} /> : null}
+
       {/* Honeypot — off-screen for sighted users, hidden from AT. */}
       <input
         type="text"

@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useMotionValue, useSpring, animate, useScroll } from "motion/react";
-import { Background } from "@/components/events/Background";
+import { HeroStage } from "@/components/events/HeroStage";
 import { ShowreelCard } from "@/components/events/Showreel";
-import { ProjectSlider } from "@/components/events/ProjectSlider";
-import { LiquidSchedule } from "@/components/events/LiquidSchedule";
-import { MetricsSection } from "@/components/events/MetricsSection";
+import { ServicesSection } from "@/components/events/ServicesSection";
+import { AboutSection } from "@/components/events/AboutSection";
+import { WhySection } from "@/components/events/WhySection";
+import { ProcessSection } from "@/components/events/ProcessSection";
 import { CTASection } from "@/components/events/CTASection";
 import { EV } from "@/components/events/palette";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -54,9 +55,11 @@ export function EventsPage() {
       {/* Hero: bone ground under the chrome, so the wordmark inverts. */}
       <div ref={containerRef} data-nav-light className="relative h-[400vh]">
         <div className="sticky top-0 h-screen overflow-hidden">
-          <Background />
+          <HeroStage scrollProgress={scrollYProgress} />
 
-          <div className="pointer-events-none absolute inset-0 z-[30] flex items-center justify-center">
+          {/* Above the hero's navy plate (z-37), not under it — the plate was
+              clipping the card in half as the pointer crossed it. */}
+          <div className="pointer-events-none absolute inset-0 z-[45] flex items-center justify-center">
             <ShowreelCard
               progress={smoothPlayhead}
               scrollProgress={scrollYProgress}
@@ -67,9 +70,10 @@ export function EventsPage() {
         </div>
       </div>
 
-      <LiquidSchedule />
-      <ProjectSlider />
-      <MetricsSection />
+      <AboutSection />
+      <WhySection />
+      <ServicesSection />
+      <ProcessSection />
       <CTASection />
       <SiteFooter />
     </main>

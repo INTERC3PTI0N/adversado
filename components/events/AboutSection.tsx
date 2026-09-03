@@ -46,11 +46,11 @@ const ruleY = (duration: number, delay = 0) => ({
 });
 
 /**
- * Draughtsman's grid: a gold frame that draws itself in, quartered by two
- * dividers, with corner handles snapping in behind. Two of the quadrants hold
- * video, two hold type.
+ * 01 — About us. Draughtsman's grid: a gold frame that draws itself in,
+ * quartered by two dividers, with corner handles snapping in behind. Two of
+ * the quadrants hold video, two hold type.
  */
-export function LiquidSchedule() {
+export function AboutSection() {
   return (
     <div
       data-nav-navy
@@ -137,11 +137,11 @@ export function LiquidSchedule() {
           </div>
 
           <div className="absolute left-0 top-0 p-3 font-sans text-[3vw] font-bold uppercase leading-[0.9] tracking-[-0.05em] text-cream md:p-5 md:text-[1.2vw]">
-            WORK IN
+            01 — About us
             <br />
-            PROGRESS 2026
+            Adversado Events
             <br />
-            BY ADVERSADO®
+            Est. Kochi®
           </div>
 
           <div className="absolute left-[45%] top-0 -translate-x-full p-3 font-sans text-[3vw] font-bold uppercase leading-[0.9] tracking-[-0.05em] text-cream md:p-5 md:text-[1.2vw]">
@@ -154,47 +154,40 @@ export function LiquidSchedule() {
                 className="mb-4 font-sans text-[2.5vw] font-bold uppercase tracking-[0.2em] opacity-90 md:text-[0.85vw]"
                 style={{ color: EV.gold }}
               >
-                Adversado / Studio
+                The advantage is integration.
               </h4>
               <p className="font-sans text-[3.5vw] font-medium leading-[1.3] tracking-[-0.02em] text-cream md:text-[1.35vw]">
-                A specialised creative practice dedicated to advanced interactive
-                architectures, spatial interfaces, and kinetic live experiences.
+                We design and build events under one roof, so nothing gets lost
+                between suppliers, because there are none. The crew, the
+                workshop, the cameras and the press desk sit in one building in
+                Kochi, which is how we ended up called the best event company
+                in Kerala.
               </p>
             </div>
           </div>
 
           <div className="pointer-events-auto absolute bottom-[25%] left-[45%] right-0 top-0 flex items-center justify-center overflow-hidden p-3 md:p-5">
-            <motion.video
+            {/* Stock for now — swap for the studio's own floor coverage. */}
+            <motion.img
               initial={{ opacity: 0, scale: 1.05 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true, margin: "-10%" }}
               transition={{ duration: 1.2, ease: "easeOut" }}
-              src="https://www.pexels.com/download/video/3740041/"
-              autoPlay
-              loop
-              muted
-              playsInline
-              onCanPlay={(e) => {
-                e.currentTarget.playbackRate = 2;
-              }}
+              src="https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=2069&auto=format&fit=crop"
+              alt="Corporate floor mid-event"
               className="h-full w-full object-cover opacity-80"
             />
           </div>
 
           <div className="pointer-events-auto absolute bottom-0 left-[45%] right-0 top-[75%] flex items-center justify-center overflow-hidden p-3 md:p-5">
-            <motion.video
+            {/* Stock for now — swap for the studio's own workshop coverage. */}
+            <motion.img
               initial={{ opacity: 0, scale: 1.05 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true, margin: "-10%" }}
               transition={{ duration: 1.2, ease: "easeOut" }}
-              src="https://www.pexels.com/download/video/29117167/"
-              autoPlay
-              loop
-              muted
-              playsInline
-              onCanPlay={(e) => {
-                e.currentTarget.playbackRate = 2;
-              }}
+              src="https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?q=80&w=2070&auto=format&fit=crop"
+              alt="Stage build in the workshop"
               className="h-full w-full object-cover opacity-80"
             />
           </div>

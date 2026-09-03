@@ -4,38 +4,48 @@ import { useRef } from "react";
 import { motion, useScroll, useTransform, useSpring, type MotionValue } from "motion/react";
 import { EV } from "./palette";
 
+/* The five moves of the job, in order. Stock imagery throughout — each frame
+   is a placeholder for the studio's own coverage of that stage. */
 const METRICS = [
   {
-    value: "270+",
+    value: "01",
     prefix: "[1]",
-    left: "PROJECTS DELIVERED",
-    right: "Big stages, small details. Each one designed to leave a mark.",
+    left: "DEFINE",
+    right: "We start with what the event actually has to achieve.",
     image:
-      "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=2070&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=2070&auto=format&fit=crop",
   },
   {
-    value: "90%",
+    value: "02",
     prefix: "[2]",
-    left: "LOYAL CLIENTS",
-    right: "Our clients love to come back, proof that true partnership lasts.",
+    left: "DESIGN",
+    right: "Then the room and the guest journey are drawn around it.",
     image:
-      "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2069&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1503387762-592deb58ef4e?q=80&w=2071&auto=format&fit=crop",
   },
   {
-    value: "21",
+    value: "03",
     prefix: "[3]",
-    left: "TEAM NATIONALITIES",
-    right: "One team. Twenty-one perspectives. Countless cultural insights.",
+    left: "BUILD",
+    right: "It goes into our own workshop, not out to a supplier.",
     image:
-      "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2070&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?q=80&w=2070&auto=format&fit=crop",
   },
   {
-    value: "31",
+    value: "04",
     prefix: "[4]",
-    left: "INDUSTRY AWARDS",
-    right: "Recognised globally for pushing the boundaries of live experiences.",
+    left: "RUN",
+    right: "We run the show on the day, floor to backstage.",
     image:
-      "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=2067&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1531058020387-3be344556be6?q=80&w=2070&auto=format&fit=crop",
+  },
+  {
+    value: "05",
+    prefix: "[5]",
+    left: "AMPLIFY",
+    right: "Then we film it, place it and get it seen.",
+    image:
+      "https://images.unsplash.com/photo-1485846234645-a62644f84728?q=80&w=2069&auto=format&fit=crop",
   },
 ];
 
@@ -125,11 +135,11 @@ function MetricImage({
 }
 
 /**
- * Four counts on a sticky stage. The numbers translate a viewport per item;
+ * 04 — Process. Five steps on a sticky stage. The numbers translate a viewport per item;
  * the image frame snaps between +8° and −8° on a spring while the numbers
  * inside counter-rotate, so they stay on the page's axis while the frame tilts.
  */
-export function MetricsSection() {
+export function ProcessSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -167,7 +177,7 @@ export function MetricsSection() {
             className="font-sans text-lg font-bold tracking-wide md:text-xl"
             style={{ color: EV.navy }}
           >
-            Where vision meets execution
+            From vision to buzz.
           </span>
         </div>
 
@@ -193,7 +203,7 @@ export function MetricsSection() {
             style={{ color: EV.navy }}
           >
             <div className="mr-3 h-2.5 w-2.5 shrink-0" style={{ background: EV.navy }} />
-            METRICS OVERVIEW
+            04 — PROCESS
           </div>
           <div className="flex flex-col gap-4 md:gap-5">
             {METRICS.map((m, i) => (
@@ -214,7 +224,7 @@ export function MetricsSection() {
             style={{ color: EV.navy }}
           >
             <div className="mr-3 h-2.5 w-2.5 shrink-0" style={{ background: EV.navy }} />
-            INSIGHTS
+            HOW IT RUNS
           </div>
           <div className="flex flex-col items-end gap-4 text-right md:gap-5">
             {METRICS.map((m, i) => (

@@ -129,12 +129,15 @@ const FIELD_TONE: Record<(typeof FIELD_ORBS)[number]["tone"], string> = {
     "radial-gradient(circle at 38% 30%, #faf1d4 0%, #efd287 24%, #b9cbee 50%, transparent 68%)",
 };
 /** The wordmark act, from first frame to its own fade being finished. Every
- *  beat inside the timeline below is scaled to match. */
-const DARK_MS = 1500;
+ *  beat inside the timeline below is scaled to match. The tagline now holds
+ *  finished for ~450ms before the fade rather than being wiped as it lands. */
+const DARK_MS = 2100;
 /** Lights coming up over the wordmark's last frame. */
 const LIGHT_IN_MS = 260;
 /** Beat to read the line in, then THREE → TWO → ONE. Orb dive after ONE. */
-const LIGHT_HOLD_MS = 180 + COUNT_STEP_MS * 2 + 260;
+/* The trailing 660 is the beat after ONE, before the dive — the lit scene
+   fully up with nothing moving. */
+const LIGHT_HOLD_MS = 180 + COUNT_STEP_MS * 2 + 660;
 /** When the lit act is fully up, in ms and in seconds. */
 const LIGHT_ON_MS = DARK_MS + LIGHT_IN_MS;
 /** When the countdown first shows ONE. */
@@ -333,8 +336,8 @@ export function Preloader({
       [tagline1, { clipPath: ["inset(0 100% 0 0)", "inset(0 0% 0 0)"], opacity: [0, 1] }, { duration: 0.5, ease: [0.22, 1, 0.36, 1], at: 0.9 }],
 
       // 2.55-2.90 — the wordmark clears the stage for the headline.
-      [fade, [1, 0], { duration: 0.25, ease: "easeIn", at: 1.25 }],
-      [tagline1, { opacity: [1, 0] }, { duration: 0.25, ease: "easeIn", at: 1.25 }],
+      [fade, [1, 0], { duration: 0.25, ease: "easeIn", at: 1.85 }],
+      [tagline1, { opacity: [1, 0] }, { duration: 0.25, ease: "easeIn", at: 1.85 }],
 
       // ── Act two: the lights come up ───────────────────────────────────
       [light, { opacity: [0, 1] }, { duration: LIGHT_IN_MS / 1000, ease: "easeOut", at: DARK_MS / 1000 }],

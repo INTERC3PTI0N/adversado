@@ -35,7 +35,7 @@ const REVEAL_DURATION = 0.34;
 // headline and subheading then sit at their own depths *within* the block, so
 // they don't arrive together — the subheading is nearest, grows the most, and
 // lands last. That spread is the parallax.
-const ARRIVE_MS = 1500;
+const ARRIVE_MS = 1900;
 /** The block's own depth — 1/10th size at the start of the approach. */
 const BLOCK_Z = 10;
 /** Depths within the block, multiplied on top of it. */
@@ -46,7 +46,7 @@ const SUB_Z = 2.9;
 const ARRIVE_EASE = [0.2, 0.45, 0.3, 1] as const;
 /** Roughly when the block is close enough to read. The subheading waits for it
  * — no point typing a sentence while it's still a smudge in the distance. */
-const ARRIVE_SETTLE_MS = 700;
+const ARRIVE_SETTLE_MS = 1100;
 /** The t = 0 frame of the arrival, authored into the markup. The block mounts
  * the instant the tunnel starts opening, and the driver below is an effect —
  * without this it would paint once at full size before the first update. */
@@ -62,7 +62,9 @@ const HEADLINE_2_DONE_MS = (3 * REVEAL_STAGGER + REVEAL_DURATION * 2) * 1000;
 // Offset past the arrival below: the headline's blocks can sweep while it is
 // still closing, but the subheading shouldn't start typing until there is
 // something legible to type underneath.
-const TYPE_DELAY_MS = ARRIVE_SETTLE_MS + HEADLINE_2_DONE_MS + 120;
+/* The trailing 720 lets the headline stand finished before the question
+   starts typing under it, instead of the two running together. */
+const TYPE_DELAY_MS = ARRIVE_SETTLE_MS + HEADLINE_2_DONE_MS + 720;
 // One character at a time, slowly — four letters rattled out at the default
 // speed would be over before the eye reached them.
 const TYPE_SPEED_MS = 130;

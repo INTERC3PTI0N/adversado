@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { useNavGround } from "@/components/useNavGround";
@@ -29,6 +30,12 @@ export function StickyLogo() {
   const onLight = ground === "light";
   const onNavy = ground === "navy";
 
+  /* Events runs its own lockup — ADVERSADO EXPERIENCES. It ships as one
+     flattened navy-and-gold PNG, so on a dark ground the only way to keep it
+     legible is to knock it back to a solid light mark; the gold subtitle is
+     lost there until there is a light-ground version of the asset. */
+  const onEvents = usePathname()?.startsWith("/events") ?? false;
+
   const swap = "opacity 0.5s ease, filter 0.5s ease, transform 0.5s ease";
   const nocatSrc = onNavy ? "/logo_nocat_navy.svg" : "/logo_nocat.svg";
   const catSrc = onNavy ? "/logo_navy.svg" : "/logo.svg";
@@ -45,10 +52,26 @@ export function StickyLogo() {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        filter: onLight && !onNavy ? "brightness(0)" : "none",
+        filter: onEvents
+          ? onLight
+            ? "none"
+            : "brightness(0) invert(1)"
+          : onLight && !onNavy
+            ? "brightness(0)"
+            : "none",
         transition: "filter 0.4s ease",
       }}
     >
+      {onEvents ? (
+        <Image
+          src="/logo_events.png"
+          alt="Adversado Experiences"
+          fill
+          priority
+          className="object-contain object-left"
+        />
+      ) : (
+      <>
       <span
         className="absolute inset-0"
         style={{
@@ -71,6 +94,8 @@ export function StickyLogo() {
       >
         <Image key={catSrc} src={catSrc} alt="Adversado" fill priority className="object-contain object-left" />
       </span>
+      </>
+      )}
     </Link>
   );
 }

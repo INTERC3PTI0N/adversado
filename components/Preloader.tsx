@@ -90,11 +90,11 @@ const DOT_PATH =
  * bolted on after it.
  */
 const COUNT_WORDS: Record<number, string> = { 3: "THREE", 2: "TWO", 1: "ONE" };
-// Whole sequence tightened. The old pacing was set when every headline word
-// was a WarpText canvas that needed a beat to be *looked at* — plain type
-// reads instantly, so the holds around it were dead air. A 650ms tick still
-// reads as a countdown; it just stops feeling like waiting.
-const COUNT_STEP_MS = 650;
+// Whole sequence tightened again. Preloader-to-headline was ten seconds, which
+// is a long time to hold someone on a splash. A 340ms tick still reads as
+// three-two-one — a countdown is legible well below a beat a second, and at a
+// second each it was a third of the whole wait on its own.
+const COUNT_STEP_MS = 340;
 
 /**
  * Engaged-style satellite orbs around the hero pearl. Softness comes from the
@@ -128,12 +128,13 @@ const FIELD_TONE: Record<(typeof FIELD_ORBS)[number]["tone"], string> = {
   pearl:
     "radial-gradient(circle at 38% 30%, #faf1d4 0%, #efd287 24%, #b9cbee 50%, transparent 68%)",
 };
-/** The wordmark act, from first frame to its own fade being finished. */
-const DARK_MS = 2900;
+/** The wordmark act, from first frame to its own fade being finished. Every
+ *  beat inside the timeline below is scaled to match. */
+const DARK_MS = 1500;
 /** Lights coming up over the wordmark's last frame. */
-const LIGHT_IN_MS = 400;
+const LIGHT_IN_MS = 260;
 /** Beat to read the line in, then THREE → TWO → ONE. Orb dive after ONE. */
-const LIGHT_HOLD_MS = 420 + COUNT_STEP_MS * 2 + 900;
+const LIGHT_HOLD_MS = 180 + COUNT_STEP_MS * 2 + 260;
 /** When the lit act is fully up, in ms and in seconds. */
 const LIGHT_ON_MS = DARK_MS + LIGHT_IN_MS;
 /** When the countdown first shows ONE. */
@@ -313,27 +314,27 @@ export function Preloader({
     const controls = animate([
       // ── Act one, in the dark ──────────────────────────────────────────
       // 0.25-0.55 — wordmark reveals outward from the centre.
-      [fade, [0, 1], { duration: 0.3, ease: "easeOut", at: 0.25 }],
-      [intro, [0, 1], { duration: 0.3, ease: [0.22, 1, 0.36, 1], at: 0.25 }],
+      [fade, [0, 1], { duration: 0.2, ease: "easeOut", at: 0.12 }],
+      [intro, [0, 1], { duration: 0.2, ease: [0.22, 1, 0.36, 1], at: 0.12 }],
 
       // 0.70-1.05 — the cat peeks out of the gap: paw into the R, head into
       // the E. Pulled forward from 1.55: the wordmark had finished a full
       // second earlier and the screen just sat there, which is most of what
       // made the loader feel long.
-      [pawReveal, [0, 1], { duration: 0.25, ease: "easeOut", at: 0.7 }],
-      [headReveal, [0, 1], { duration: 0.35, ease: "easeOut", at: 0.85 }],
+      [pawReveal, [0, 1], { duration: 0.18, ease: "easeOut", at: 0.36 }],
+      [headReveal, [0, 1], { duration: 0.24, ease: "easeOut", at: 0.44 }],
 
       // 1.20-1.55 — eyes open, then a single blink.
-      [eyeOpen, [0, 1], { duration: 0.22, ease: "easeOut", at: 1.2 }],
-      [eyeOpen, [1, 0.06], { duration: 0.05, ease: "easeIn", at: 1.42 }],
-      [eyeOpen, [0.06, 1], { duration: 0.13, ease: "easeOut", at: 1.47 }],
+      [eyeOpen, [0, 1], { duration: 0.16, ease: "easeOut", at: 0.62 }],
+      [eyeOpen, [1, 0.06], { duration: 0.04, ease: "easeIn", at: 0.78 }],
+      [eyeOpen, [0.06, 1], { duration: 0.1, ease: "easeOut", at: 0.82 }],
 
       // 1.60 — tagline wipes in left-to-right.
-      [tagline1, { clipPath: ["inset(0 100% 0 0)", "inset(0 0% 0 0)"], opacity: [0, 1] }, { duration: 0.85, ease: [0.22, 1, 0.36, 1], at: 1.6 }],
+      [tagline1, { clipPath: ["inset(0 100% 0 0)", "inset(0 0% 0 0)"], opacity: [0, 1] }, { duration: 0.5, ease: [0.22, 1, 0.36, 1], at: 0.9 }],
 
       // 2.55-2.90 — the wordmark clears the stage for the headline.
-      [fade, [1, 0], { duration: 0.35, ease: "easeIn", at: 2.55 }],
-      [tagline1, { opacity: [1, 0] }, { duration: 0.35, ease: "easeIn", at: 2.55 }],
+      [fade, [1, 0], { duration: 0.25, ease: "easeIn", at: 1.25 }],
+      [tagline1, { opacity: [1, 0] }, { duration: 0.25, ease: "easeIn", at: 1.25 }],
 
       // ── Act two: the lights come up ───────────────────────────────────
       [light, { opacity: [0, 1] }, { duration: LIGHT_IN_MS / 1000, ease: "easeOut", at: DARK_MS / 1000 }],

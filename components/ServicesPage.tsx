@@ -125,7 +125,11 @@ function VerticalRail({ active }: { active: number }) {
   return (
     <div
       aria-hidden
-      className="pointer-events-none fixed left-6 top-1/2 z-20 hidden -translate-y-1/2 flex-col gap-4 lg:flex"
+      /* Shown only once the page gutter can actually hold it. The rail is
+         ~66px wide starting 24px in, so it needs the content's left edge at
+         ~106px; with a centred max-w-[1400px] and lg:px-16 that isn't true
+         until about 1484px. At `lg` it sat on top of the headline. */
+      className="pointer-events-none fixed left-6 top-1/2 z-20 hidden -translate-y-1/2 flex-col gap-4 [@media(min-width:1500px)]:flex"
     >
       {VERTICALS.map((v, i) => {
         const on = i === active;

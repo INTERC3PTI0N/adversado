@@ -46,20 +46,44 @@ const CUTS = [
 export function ShowreelCard({
   progress,
   scrollProgress,
+  maxWidth,
+  maxHeight,
   onHover,
   onLeave,
 }: {
   progress: MotionValue<number>;
   scrollProgress: MotionValue<number>;
+  /** The gap the hero has left between its two blocks of type. */
+  maxWidth: number;
+  maxHeight: number;
   onHover: () => void;
   onLeave: () => void;
 }) {
   const win = useWindowSize();
 
   /* Pixel values rather than "100vw" strings, so the size interpolates
-     smoothly instead of snapping at the unit boundary. */
-  const initialWidth = Math.min(520, win.width * 0.9);
-  const initialHeight = Math.min(320, win.height * 0.6);
+     smoothly instead of snapping at the unit boundary.
+
+     The start size is bounded by the measured gap, not by the viewport: the
+     card used to be centred independently of the copy and would run into the
+     headline above and the sub-line below on a short screen. `16` leaves a
+     little air on each side of the box rather than filling it exactly. */
+  const availW = Math.max(0, maxWidth - 16);
+  const availH = Math.max(0, maxHeight - 16);
+
+  /* The card is tilted 2deg at rest, which makes its bounding box taller than
+     its height by `width * sin(2deg)`. Budgeting for that is the difference
+     between fitting the row and clipping the headline by ~18px. */
+  const RAD = (2 * Math.PI) / 180;
+  const initialWidth = Math.min(520, availW);
+  const initialHeight = Math.min(
+    320,
+    Math.max(0, (availH - initialWidth * Math.sin(RAD)) / Math.cos(RAD)),
+  );
+
+  /* Below this the card is a letterbox slit with nothing readable in it, so
+     the hero shows type only rather than a squashed frame. */
+  const tooSmall = initialHeight < 90;
 
   const width = useTransform(
     scrollProgress,
@@ -130,6 +154,8 @@ export function ShowreelCard({
     { o: vid4, clip: vid4Clip, a: vid4VeilA, b: vid4VeilB, y: text4Y, to: text4Opacity },
   ];
 
+  if (tooSmall) return null;
+
   return (
     <motion.div
       onMouseEnter={onHover}
@@ -169,12 +195,15 @@ export function ShowreelCard({
           style={{ opacity: op1, background: EV.ink }}
           className="absolute inset-0 flex items-center justify-center"
         >
-          <span
-            className="font-sans text-[2.5rem] font-black uppercase tracking-widest"
-            style={{ color: EV.gold }}
-          >
-            Adversado
-          </span>
+          {/* Knocked to a solid light mark: the asset is navy-and-gold and
+              this card's ground is near-black. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo_events.png"
+            alt="Adversado Experiences"
+            className="w-[min(62%,26rem)] max-w-full"
+            style={{ filter: "brightness(0) invert(1)" }}
+          />
         </motion.div>
 
         {/* Scene 2 — the line */}

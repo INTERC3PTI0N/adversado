@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useMotionValue, useSpring, animate, useScroll } from "motion/react";
 import { HeroStage } from "@/components/events/HeroStage";
-import { ShowreelCard } from "@/components/events/Showreel";
 import { ServicesSection } from "@/components/events/ServicesSection";
 import { AboutSection } from "@/components/events/AboutSection";
 import { WhySection } from "@/components/events/WhySection";
@@ -55,18 +54,12 @@ export function EventsPage() {
       {/* Hero: bone ground under the chrome, so the wordmark inverts. */}
       <div ref={containerRef} data-nav-light className="relative h-[400vh]">
         <div className="sticky top-0 h-screen overflow-hidden">
-          <HeroStage scrollProgress={scrollYProgress} />
-
-          {/* Above the hero's navy plate (z-37), not under it — the plate was
-              clipping the card in half as the pointer crossed it. */}
-          <div className="pointer-events-none absolute inset-0 z-[45] flex items-center justify-center">
-            <ShowreelCard
-              progress={smoothPlayhead}
-              scrollProgress={scrollYProgress}
-              onHover={() => setIsHovered(true)}
-              onLeave={() => setIsHovered(false)}
-            />
-          </div>
+          <HeroStage
+            scrollProgress={scrollYProgress}
+            playhead={smoothPlayhead}
+            onHover={() => setIsHovered(true)}
+            onLeave={() => setIsHovered(false)}
+          />
         </div>
       </div>
 
@@ -75,7 +68,7 @@ export function EventsPage() {
       <ServicesSection />
       <ProcessSection />
       <CTASection />
-      <SiteFooter />
+      <SiteFooter variant="events" />
     </main>
   );
 }

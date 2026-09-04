@@ -94,14 +94,17 @@ export function AboutPage() {
 
       </section>
 
-      {/* Observation — eyebrow over an indented display line. */}
+      {/* Observation — a centred display line. The first-line indent it used to
+          carry is gone: CopyReveal converts `text-indent` into padding on line
+          one, which pushes that line off-centre against the rest. */}
       <section className="relative flex flex-col px-6 py-28 sm:px-10 sm:py-32 lg:px-16">
-        <div className="w-full max-w-6xl">
+        <div className="mx-auto w-full max-w-4xl">
           <CopyReveal>
-            <h2 className="indent-[12%] font-serif text-[clamp(1.65rem,3.6vw,3.1rem)] font-light leading-[1.15] tracking-[-0.02em] text-cream sm:indent-[18%] lg:indent-[25%]">
-              Adversado began with a simple observation: too many businesses
-              were spending on marketing while their brands slowly lost{" "}
-              <span className="text-gold">direction.</span>
+            <h2 className="text-center font-serif text-[clamp(1.65rem,3.6vw,3.1rem)] font-light leading-[1.42] tracking-[-0.02em] text-cream">
+              Adversado began with a simple{" "}
+              <span className="text-gold">observation:</span> too many
+              businesses were spending on marketing while their brands slowly
+              lost <span className="text-gold">direction.</span>
             </h2>
           </CopyReveal>
         </div>

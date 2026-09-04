@@ -41,6 +41,7 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
 const VERTICALS = [
   {
     name: "Brand Foundation",
+    href: "/services#brand-foundation",
     tagline: "Build what you stand on.",
     quip: "Because “vibes” is not a positioning.",
     rank: "A",
@@ -49,6 +50,7 @@ const VERTICALS = [
   },
   {
     name: "Brand Marketing",
+    href: "/services#brand-marketing",
     tagline: "Say it so people listen.",
     quip: "Talking is not the same as being heard.",
     rank: "K",
@@ -57,6 +59,7 @@ const VERTICALS = [
   },
   {
     name: "Brand Reach",
+    href: "/services#brand-reach",
     tagline: "Make sure the right people find you.",
     quip: "Van Gogh sold one painting in his lifetime. Don’t be Van Gogh.",
     rank: "Q",
@@ -65,6 +68,7 @@ const VERTICALS = [
   },
   {
     name: "Brand Experience",
+    href: "/services#brand-experience",
     tagline: "Make people feel it.",
     quip: "Nobody ever fell in love with a PDF.",
     rank: "J",
@@ -428,9 +432,14 @@ function Verticals({
           aria-label="The four verticals"
         >
           {VERTICALS.map((v, i) => (
-            <div key={v.name} className="aspect-[5/8] min-h-[260px] w-full">
+            <Link
+              key={v.name}
+              href={v.href}
+              aria-label={`${v.name} — ${v.tagline}`}
+              className="block aspect-[5/8] min-h-[260px] w-full"
+            >
               <VerticalCardFace v={v} priority={i === 0} />
-            </div>
+            </Link>
           ))}
         </div>
 
@@ -490,6 +499,12 @@ function Verticals({
                   </div>
                 </div>
               </div>
+
+              <Link
+                href={v.href}
+                aria-label={`${v.name} — ${v.tagline}`}
+                className="absolute inset-0 z-[3] rounded-[inherit]"
+              />
             </div>
           ))}
         </div>

@@ -33,7 +33,14 @@ const VERTICALS = [
  * Address and number come from `lib/contact` so the footer and the contact
  * page can never drift out of sync.
  */
-export function SiteFooter() {
+export function SiteFooter({
+  /** Events runs its own lockup; every other page uses the house mark. */
+  variant = "house",
+}: {
+  variant?: "house" | "events";
+} = {}) {
+  const events = variant === "events";
+
   return (
     <footer
       /* No nav-ground tag on purpose. `data-nav-navy` paints the wordmark navy,
@@ -45,14 +52,15 @@ export function SiteFooter() {
         <div className="grid gap-12 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.7fr)_minmax(0,1fr)_minmax(0,1fr)]">
           {/* Identity */}
           <div>
-            {/* The gold mark, not the navy one: this ground is navy. Plain
-                <img> rather than next/image — it's an SVG, so there is nothing
-                for the optimiser to do. */}
+            {/* The gold mark, not the navy one: this ground is navy. The
+                Events lockup is a flattened navy-and-gold PNG, so it is knocked
+                back to a solid light mark to stay legible here. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/logo.svg"
-              alt="Adversado"
+              src={events ? "/logo_events.png" : "/logo.svg"}
+              alt={events ? "Adversado Experiences" : "Adversado"}
               className="mb-8 block w-44 max-w-full sm:w-52"
+              style={events ? { filter: "brightness(0) invert(1)" } : undefined}
             />
 
             <p className="font-serif text-[clamp(1.15rem,2.2vw,1.6rem)] font-light italic tracking-[0.06em] text-cream">

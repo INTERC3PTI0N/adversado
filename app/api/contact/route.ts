@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { CONTACT } from "@/lib/contact";
+import { recordIntake, parseUtm } from "@/lib/crm/intake";
+import type { LeadSource } from "@/lib/supabase/types";
 
 /**
  * Contact form endpoint.
@@ -22,7 +24,18 @@ import { CONTACT } from "@/lib/contact";
  * Without the key the route answers 503 and says so, rather than pretending
  * the message was delivered — a form that silently drops enquiries is worse
  * than one that admits it is not wired up yet.
+ *
+ * The enquiry is written to the CRM *before* the email is attempted, and the
+ * response does not depend on the email succeeding once it is stored. A Resend
+ * outage should cost you a notification, not the lead.
  */
+
+/** Which form each `source` value belongs to, for CRM attribution. */
+const FORM_KEYS: Record<string, { key: string; source: LeadSource }> = {
+  "Events page": { key: "events_brief", source: "events" },
+  "Home page":   { key: "home",         source: "website" },
+};
+const DEFAULT_FORM = { key: "contact", source: "website" as LeadSource };
 
 type Payload = {
   name?: unknown;
@@ -77,9 +90,32 @@ export async function POST(request: Request) {
     return NextResponse.json({ errors }, { status: 422 });
   }
 
+  // ── Persist first ───────────────────────────────────────────────────────
+  const form = FORM_KEYS[source] ?? DEFAULT_FORM;
+  const referer = request.headers.get("referer");
+
+  const intake = await recordIntake({
+    formKey: form.key,
+    source: form.source,
+    name,
+    email,
+    company: brand,
+    message: looking,
+    budget: budget || null,
+    sourcePage: source || referer,
+    utm: parseUtm(referer),
+    raw: body as Record<string, unknown>,
+    ip: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+    userAgent: request.headers.get("user-agent"),
+  });
+
   const key = process.env.RESEND_API_KEY;
   const from = process.env.CONTACT_FROM || DEFAULT_FROM;
   if (!key) {
+    // Stored in the CRM but no mail transport: that is a delivered enquiry as
+    // far as the visitor is concerned, so don't tell them it failed.
+    if (intake.recorded) return NextResponse.json({ ok: true });
+
     return NextResponse.json(
       {
         error:
@@ -120,6 +156,7 @@ export async function POST(request: Request) {
     if (!res.ok) {
       const detail = await res.text();
       console.error("Resend rejected the message:", res.status, detail);
+      if (intake.recorded) return NextResponse.json({ ok: true });
       return NextResponse.json(
         { error: "We couldn't send that. Please try again, or email us." },
         { status: 502 }
@@ -127,6 +164,7 @@ export async function POST(request: Request) {
     }
   } catch (err) {
     console.error("Contact route failed:", err);
+    if (intake.recorded) return NextResponse.json({ ok: true });
     return NextResponse.json(
       { error: "We couldn't send that. Please try again, or email us." },
       { status: 502 }

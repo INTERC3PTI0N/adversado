@@ -1,7 +1,7 @@
 import { getSupabase } from "@/lib/supabase/server";
 import { requireStaff } from "@/lib/auth/rbac";
 import {
-  ButtonLink, EmptyState, PageHeading, Pagination, Panel, Stat, Table, Td, Th,
+  ButtonLink, EmptyState, PageHeading, Pagination, Panel, Stat, Table, Th,
 } from "@/components/admin/ui";
 import { FilterBar } from "@/components/admin/FilterBar";
 import { SubmissionRow } from "@/components/admin/SubmissionRow";

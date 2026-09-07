@@ -1,5 +1,5 @@
 import { getSupabase } from "@/lib/supabase/server";
-import { requireStaffApi } from "@/lib/auth/rbac";
+import { isAdmin, requireStaffApi } from "@/lib/auth/rbac";
 
 /**
  * Media upload.
@@ -64,6 +64,22 @@ export async function POST(request: Request) {
   const file = form.get("file");
   const folderId = form.get("folder_id");
 
+  /* Two buckets, chosen explicitly. `media` is public and serves the website;
+     `documents` is private and is where a client's contract belongs — a file
+     meant for one client must not be reachable by anyone holding the URL.
+     Anything but these two is rejected rather than defaulted, so a typo can't
+     quietly publish a private file. */
+  const requested = form.get("bucket");
+  const bucket = requested === "documents" ? "documents" : "media";
+  if (requested && requested !== "documents" && requested !== "media") {
+    return Response.json({ error: "Unknown bucket." }, { status: 400 });
+  }
+  // Writing to `documents` needs is_admin() at the storage policy; failing
+  // here gives a readable message instead of a storage-layer error.
+  if (bucket === "documents" && !isAdmin(guard.session.profile.role)) {
+    return Response.json({ error: "Only an admin can upload client documents." }, { status: 403 });
+  }
+
   if (!(file instanceof File) || file.size === 0) {
     return Response.json({ error: "No file received." }, { status: 400 });
   }
@@ -84,7 +100,7 @@ export async function POST(request: Request) {
   const path = storageKey(file.name, file.type);
 
   const { error: uploadError } = await supabase.storage
-    .from("media")
+    .from(bucket)
     .upload(path, file, { contentType: file.type, upsert: false });
 
   if (uploadError) {
@@ -94,7 +110,7 @@ export async function POST(request: Request) {
   const { data, error } = await supabase
     .from("media")
     .insert({
-      bucket: "media",
+      bucket,
       storage_path: path,
       filename: file.name,
       mime_type: file.type,
@@ -107,7 +123,7 @@ export async function POST(request: Request) {
 
   if (error) {
     // The row is the record; an object with no row is invisible and unreclaimable.
-    await supabase.storage.from("media").remove([path]);
+    await supabase.storage.from(bucket).remove([path]);
     return Response.json({ error: error.message }, { status: 500 });
   }
 

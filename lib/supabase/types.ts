@@ -543,6 +543,8 @@ export type Database = {
         Returns: { slot_start: string; slot_end: string }[];
       };
       publish_scheduled_content: { Args: Record<string, never>; Returns: number };
+      bump_redirect: { Args: { p_from: string }; Returns: undefined };
+      mark_client_messages_read: { Args: Record<string, never>; Returns: undefined };
     };
     Enums: {
       user_role: UserRole;

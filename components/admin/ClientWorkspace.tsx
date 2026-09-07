@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   archiveClient, grantPortalAccess, postClientMessage, saveClient,
   setPortalEnabled, shareDocument, unshareDocument,
 } from "@/app/(admin)/admin/(guarded)/clients/actions";
 import { dateTime } from "@/lib/format";
-import type { Client, Json } from "@/lib/supabase/types";
+import type { Client } from "@/lib/supabase/types";
 import {
   Alert, Badge, Button, Field, INPUT_CLASS, Panel, PanelHeader,
 } from "./ui";
@@ -62,6 +62,8 @@ export function ClientWorkspace({
   const [note, setNote] = useState("");
   const [share, setShare] = useState({ mediaId: "", title: "" });
   const [confirmArchive, setConfirmArchive] = useState(false);
+  const privateInput = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   function run(fn: () => Promise<{ ok: true } | { ok: false; error: string }>, success?: string) {
     setMessage(null);
@@ -90,6 +92,39 @@ export function ClientWorkspace({
         router.refresh();
       }
     });
+  }
+
+  /**
+   * Upload straight into the private `documents` bucket and share it.
+   *
+   * The library picker below shares a file from the public website bucket,
+   * which is right for a brand deck and wrong for a contract. This path is for
+   * the second kind: the object is unreadable without a signed URL minted for
+   * that client.
+   */
+  async function uploadPrivate(file: File) {
+    if (!client) return;
+    setMessage(null);
+    setUploading(true);
+
+    const body = new FormData();
+    body.append("file", file);
+    body.append("bucket", "documents");
+
+    const res = await fetch("/api/admin/media/upload", { method: "POST", body });
+    const data = await res.json().catch(() => ({}));
+    setUploading(false);
+
+    if (!res.ok || !data.media?.id) {
+      setMessage({ tone: "error", text: data.error ?? "Upload failed." });
+      return;
+    }
+
+    run(
+      () => shareDocument(client.id, data.media.id, share.title || file.name),
+      "Uploaded and shared privately.",
+    );
+    setShare({ mediaId: "", title: "" });
   }
 
   return (
@@ -291,10 +326,34 @@ export function ClientWorkspace({
           </Panel>
 
           <Panel>
-            <PanelHeader title="Shared files" hint="Visible in the portal. The file stays in the media library." />
+            <PanelHeader
+              title="Shared files"
+              hint="Visible in the portal, and only there."
+              action={
+                <>
+                  <input
+                    ref={privateInput}
+                    type="file"
+                    hidden
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) uploadPrivate(file);
+                      e.target.value = "";
+                    }}
+                  />
+                  <Button
+                    tone="secondary"
+                    disabled={pending || uploading}
+                    onClick={() => privateInput.current?.click()}
+                  >
+                    {uploading ? "Uploading…" : "Upload private file"}
+                  </Button>
+                </>
+              }
+            />
 
             <div className="grid gap-4 border-b-[3px] border-charcoal bg-bone/60 p-5 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-              <Field label="File">
+              <Field label="File from the library" help="Public URL — fine for a deck, not for a contract.">
                 <select
                   value={share.mediaId}
                   onChange={(e) => setShare((s) => ({ ...s, mediaId: e.target.value }))}

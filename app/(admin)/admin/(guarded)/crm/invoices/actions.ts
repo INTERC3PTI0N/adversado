@@ -189,13 +189,22 @@ export async function sendInvoice(id: string): Promise<ActionResult> {
 
   const { data: invoice } = await supabase
     .from("invoices")
-    .select("*, clients(name, email)")
+    .select("*")
     .eq("id", id)
     .single();
 
   if (!invoice) return { ok: false, error: "Invoice not found." };
 
-  const client = invoice.clients as unknown as { name: string; email: string | null } | null;
+  // Fetched separately rather than embedded: the Database type declares no
+  // relationships, so a PostgREST embed cannot be typed.
+  const { data: client } = invoice.client_id
+    ? await supabase
+        .from("clients")
+        .select("name, email")
+        .eq("id", invoice.client_id)
+        .single()
+    : { data: null };
+
   if (!client?.email) {
     return { ok: false, error: "That client has no email address. Add one first." };
   }

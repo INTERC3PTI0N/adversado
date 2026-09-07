@@ -294,17 +294,20 @@ server 302, so protected HTML is never sent.
 /admin/content/testimonials
 /admin/content/faqs
 /admin/media               library, upload, folders, alt text
-/admin/seo                 defaults, redirects, per-page overrides, sitemap preview
+/admin/seo                 defaults, redirects, "needs attention" audit, robots.txt
 /admin/crm/leads           table: search, filter, bulk, CSV export
 /admin/crm/leads/[id]      detail: pipeline, notes, activity history, convert
 /admin/crm/pipeline        kanban by status
-/admin/crm/invoices        list + builder + PDF/send
+/admin/crm/invoices        list + builder + payments + email send
 /admin/pm                  projects, tasks board, progress
 /admin/bookings            calendar, services, availability
 /admin/clients             client records + portal access
 /admin/settings/users      RBAC (super_admin only)
 /admin/settings/site       identity, integrations, notification prefs
-/admin/audit               audit log (super_admin)
+/admin/audit               audit log with field-level diffs (admin)
+/admin/crm/submissions     form entries — the permanent record, Events separated
+/book                      public booking flow (add-on)
+/portal                    client portal: overview, invoices, files, messages
 ```
 
 **Design language:** reuses the public site's tokens exactly. Cards are
@@ -328,20 +331,38 @@ with a signed token, so an editor can see unpublished work at the real URL.
 
 ---
 
-## 7. Build order
+## 7. Build status
 
-1. Schema + RLS + helper functions + seed *(foundation — nothing works without it)*
-2. Supabase clients, session handling, RBAC guards
-3. Admin shell, navigation, dashboard
-4. Media library *(other modules depend on image pickers)*
-5. CMS: pages/sections editor, then collections
-6. SEO module
-7. CRM: leads, pipeline, notes, activity, CSV, notifications
-8. Invoicing
-9. PM dashboard
-10. Bookings
-11. Client portal
-12. Public site wiring, revalidation, draft preview
+| # | Module | State |
+|---|--------|-------|
+| 1 | Schema, RLS, helper functions, seed | **Built** — migrations 0001–0008, pushed |
+| 2 | Supabase clients, sessions, RBAC guards | **Built** |
+| 3 | Admin shell, navigation, dashboard | **Built** |
+| 4 | Media library | **Built** — upload, folders, alt text, public/private buckets |
+| 5 | CMS: pages/sections, collections | **Built** |
+| 6 | SEO module | **Built** — defaults, redirects, audit, robots.txt, sitemap.xml |
+| 7 | CRM: leads, pipeline, notes, activity, CSV, notifications | **Built** — plus the form-entries browser |
+| 8 | Invoicing | **Built** — builder, payments, email send |
+| 9 | PM dashboard | **Built** — projects, task board, milestones |
+| 10 | Bookings | **Built** — admin, availability, and the public `/book` flow |
+| 11 | Client portal | **Built** — overview, invoices, files, messages |
+| 12 | Public site wiring, revalidation, draft preview | **Partial** — `/faq` reads the CMS; the other six pages still render their hardcoded fallbacks. Draft preview not built. |
+
+### Known gaps
+
+- **Public pages not yet CMS-wired.** Home, About, Services, Projects, Events
+  and Contact still render their hardcoded copy. The sections are editable in
+  the admin and the schemas exist; what is missing is the read side on each
+  page. `/faq` is the worked example to follow.
+- **Draft preview.** Editors can save and schedule but cannot view unpublished
+  work at the real URL. Needs Next Draft Mode plus a signed token.
+- **Invoice PDF.** Invoices are emailed as text and rendered in the portal.
+  There is no PDF generator; the browser's print view is the stand-in.
+- **Per-service availability.** The schema supports rules scoped to one booking
+  service (`availability_rules.service_id`); the admin only edits the
+  studio-wide rules.
+- **Rate limiting.** `/api/contact` and `/api/book` have honeypots and server
+  validation but no request throttle.
 
 ---
 

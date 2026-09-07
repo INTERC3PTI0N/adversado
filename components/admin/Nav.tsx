@@ -14,10 +14,7 @@ import type { UserRole } from "@/lib/supabase/types";
  * the route guard and, failing that, by Postgres.
  */
 
-/** `soon` marks a module that is specified but not yet built. Shown greyed and
-    unclickable rather than omitted, so the shape of the finished admin is
-    visible and a click never lands on a 404. */
-type Item = { href: string; label: string; min: UserRole; soon?: boolean };
+type Item = { href: string; label: string; min: UserRole };
 type Group = { heading: string; items: Item[] };
 
 const GROUPS: Group[] = [
@@ -46,15 +43,15 @@ const GROUPS: Group[] = [
       { href: "/admin/crm/leads", label: "Leads", min: "admin" },
       { href: "/admin/crm/pipeline", label: "Pipeline", min: "admin" },
       { href: "/admin/crm/submissions", label: "Form entries", min: "admin" },
-      { soon: true, href: "/admin/crm/invoices", label: "Invoices", min: "admin" },
+      { href: "/admin/crm/invoices", label: "Invoices", min: "admin" },
     ],
   },
   {
     heading: "Delivery",
     items: [
-      { soon: true, href: "/admin/pm", label: "Projects & tasks", min: "admin" },
-      { soon: true, href: "/admin/bookings", label: "Bookings", min: "admin" },
-      { soon: true, href: "/admin/clients", label: "Clients & portal", min: "admin" },
+      { href: "/admin/pm", label: "Projects & tasks", min: "admin" },
+      { href: "/admin/bookings", label: "Bookings", min: "admin" },
+      { href: "/admin/clients", label: "Clients & portal", min: "admin" },
     ],
   },
   {
@@ -98,19 +95,6 @@ export function AdminNav({ role }: { role: UserRole }) {
                 item.href === "/admin"
                   ? pathname === "/admin"
                   : pathname.startsWith(item.href);
-
-              if (item.soon) {
-                return (
-                  <li key={item.href}>
-                    <span className="flex items-center justify-between gap-2 border-l-[3px] border-transparent px-4 py-2 font-sans text-[0.82rem] font-bold text-cream/25">
-                      {item.label}
-                      <span className="font-sans text-[0.5rem] font-black uppercase tracking-[0.16em] text-cream/25">
-                        Soon
-                      </span>
-                    </span>
-                  </li>
-                );
-              }
 
               return (
                 <li key={item.href}>

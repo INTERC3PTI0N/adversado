@@ -29,7 +29,7 @@ export default async function ClientPage({
       isNew ? { data: null } : supabase.from("clients").select("*").eq("id", id).single(),
       isNew ? { data: [] } : supabase.from("client_documents").select("id, title, created_at, media_id").eq("client_id", id).order("created_at", { ascending: false }),
       isNew ? { data: [] } : supabase.from("client_messages").select("id, body, created_at, author_id").eq("client_id", id).order("created_at", { ascending: false }).limit(30),
-      supabase.from("media").select("id, filename").order("created_at", { ascending: false }).limit(200),
+      supabase.from("media").select("id, filename").eq("bucket", "media").order("created_at", { ascending: false }).limit(200),
       isNew ? { data: [] } : supabase.from("invoices").select("*").eq("client_id", id).is("deleted_at", null).order("issue_date", { ascending: false }),
       isNew ? { data: [] } : supabase.from("pm_projects").select("*").eq("client_id", id).is("deleted_at", null).order("created_at", { ascending: false }),
       isNew ? { data: [] } : supabase.from("profiles").select("id").eq("client_id", id).limit(1),

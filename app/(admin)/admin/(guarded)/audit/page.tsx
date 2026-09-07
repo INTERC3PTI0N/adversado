@@ -1,7 +1,7 @@
 import { getSupabase } from "@/lib/supabase/server";
 import { requireStaff } from "@/lib/auth/rbac";
 import {
-  EmptyState, PageHeading, Pagination, Panel, Table, Td, Th,
+  EmptyState, PageHeading, Pagination, Panel, Table, Th,
 } from "@/components/admin/ui";
 import { FilterBar, enumOptions } from "@/components/admin/FilterBar";
 import { AuditRow } from "@/components/admin/AuditRow";

@@ -27,7 +27,15 @@ export default async function MediaPage({
   // rather than an empty grid that looks like data loss.
   const folderId = folders.some((f) => f.id === sp.folder) ? sp.folder! : "";
 
-  let query = supabase.from("media").select("*").order("created_at", { ascending: false }).limit(300);
+  /* Public bucket only. Client documents live in the private `documents`
+     bucket and are managed from the client's own page — showing them here
+     would invite someone to paste a URL that only works for them. */
+  let query = supabase
+    .from("media")
+    .select("*")
+    .eq("bucket", "media")
+    .order("created_at", { ascending: false })
+    .limit(300);
   if (folderId) query = query.eq("folder_id", folderId);
 
   const { data } = await query;

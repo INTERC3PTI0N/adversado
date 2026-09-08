@@ -7,9 +7,16 @@ import { isMailConfigured, sendMail } from "@/lib/mail";
 import type { UserRole } from "@/lib/supabase/types";
 
 /**
- * User and role management. Super admin only, at every layer:
- * `requireStaff("super_admin")` here, and `profiles_admin_manage` in the
- * database, which is the one that actually stops a forged request.
+ * User and role management.
+ *
+ * Anything that changes access is super admin only, at every layer:
+ * `requireStaff("super_admin")` here, `profiles_admin_manage` in RLS, and the
+ * `profiles_privilege_guard` trigger — which is the one that actually holds,
+ * because RLS is row-level and `profiles_self_update` would otherwise let a
+ * user rewrite their own `role`.
+ *
+ * `setUserDetails` is the exception: a name and a job title decide nothing, so
+ * anyone may edit their own.
  *
  * Two invariants this file exists to protect, neither of which RLS can express:
  * you cannot demote or deactivate yourself, and the last active super admin
@@ -34,6 +41,45 @@ async function isLastSuperAdmin(userId: string): Promise<boolean> {
 
   const admins = data ?? [];
   return admins.length <= 1 && admins.some((a) => a.id === userId);
+}
+
+/**
+ * Name and job title.
+ *
+ * Your own row, or anyone's if you are a super admin. Neither field decides
+ * anything — "Strategy Head" is what someone does, `role` is what they may
+ * touch — so a spelling correction should not need a super admin, and the
+ * database allows the self-edit through `profiles_self_update`.
+ */
+export async function setUserDetails(
+  userId: string,
+  fields: { full_name: string; job_title: string },
+): Promise<ActionResult> {
+  const { profile } = await requireStaff("editor");
+
+  if (userId !== profile.id && profile.role !== "super_admin") {
+    return { ok: false, error: "You can only change your own name and position." };
+  }
+
+  const name = fields.full_name.trim();
+  const title = fields.job_title.trim();
+
+  if (name.length > 120) return { ok: false, error: "That name is too long." };
+  if (title.length > 80) return { ok: false, error: "That position is too long." };
+
+  const supabase = await getSupabase();
+  const { error } = await supabase
+    .from("profiles")
+    .update({ full_name: name || null, job_title: title || null })
+    .eq("id", userId);
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/admin/settings/users");
+  revalidatePath("/admin/account");
+  // The topbar renders the name on every admin screen.
+  revalidatePath("/admin", "layout");
+  return { ok: true };
 }
 
 export async function setUserRole(
@@ -125,6 +171,7 @@ export async function inviteUser(
   email: string,
   role: UserRole,
   fullName: string,
+  jobTitle = "",
 ): Promise<InviteResult> {
   const { profile } = await requireStaff("super_admin");
 
@@ -160,9 +207,17 @@ export async function inviteUser(
 
   const link = data.properties.action_link;
 
-  // The trigger has created the profile by now; apply the chosen role to it.
+  // The trigger has created the profile by now; apply the chosen role and
+  // position to it. Service role, so the privilege guard lets the role through.
   if (data.user?.id) {
-    await service.from("profiles").update({ role }).eq("id", data.user.id);
+    await service
+      .from("profiles")
+      .update({
+        role,
+        full_name: fullName.trim() || null,
+        job_title: jobTitle.trim() || null,
+      })
+      .eq("id", data.user.id);
   }
 
   let emailed = false;

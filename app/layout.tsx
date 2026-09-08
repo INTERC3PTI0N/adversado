@@ -26,6 +26,11 @@ const merriweather = Merriweather({
    configuration around it. */
 const GTM_ID = "GTM-TQZP3SMT";
 
+/* OpenAI / ChatGPT conversion pixel. Same reasoning as the GTM container
+   above: it ships in the client HTML by design and is identical in every
+   environment, so it is a constant rather than configuration. */
+const OPENAI_PIXEL_ID = "LEakj6DiAygMrYcuPZ5wD9";
+
 export const metadata: Metadata = {
   title: "Adversado — The Brand Behind The Brands",
   description:
@@ -55,6 +60,17 @@ new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
 })(window,document,'script','dataLayer','${GTM_ID}');`}
+        </Script>
+
+        {/* ChatGPT conversion pixel. `afterInteractive` for the same reason as
+            GTM — Next hoists it into the head, and blocking hydration on a
+            tracker costs LCP on every route for nothing.
+
+            `debug` is on outside production only. OpenAI's setup dialog hands
+            you `debug:true`, which logs every event to the console; useful
+            while wiring it up, noise on the live site. */}
+        <Script id="openai-pixel" strategy="afterInteractive">
+          {`!function(w,d,s,u){if(w.oaiq)return;var q=function(){q.q.push(arguments)};q.q=[];w.oaiq=q;var j=d.createElement(s);j.async=1;j.src=u;var f=d.getElementsByTagName(s)[0];f.parentNode.insertBefore(j,f)}(window,document,"script","https://bzrcdn.openai.com/sdk/oaiq.min.js");oaiq("init",{pixelId:"${OPENAI_PIXEL_ID}",debug:${process.env.NODE_ENV !== "production"}});`}
         </Script>
       </head>
       <body className="min-h-full flex flex-col">

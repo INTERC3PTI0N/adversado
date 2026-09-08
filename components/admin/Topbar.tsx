@@ -161,14 +161,23 @@ export function AdminTopbar({
           ) : null}
         </div>
 
-        <div className="hidden text-right sm:block">
-          <p className="font-sans text-[0.78rem] font-black text-charcoal">
+        {/* The job title is what people call each other; the role is what the
+            database enforces. Show the title when it is set and keep the role
+            beside it, so neither has to be guessed from the other. */}
+        <Link
+          href="/admin/account"
+          className="hidden text-right sm:block"
+          title="Your profile"
+        >
+          <p className="font-sans text-[0.78rem] font-black text-charcoal underline decoration-transparent underline-offset-4 transition-colors hover:decoration-charcoal/40">
             {profile.full_name ?? profile.email}
           </p>
           <p className="font-sans text-[0.6rem] font-bold uppercase tracking-[0.16em] text-charcoal/50">
-            {ROLE_LABEL[profile.role]}
+            {profile.job_title
+              ? `${profile.job_title} · ${ROLE_LABEL[profile.role]}`
+              : ROLE_LABEL[profile.role]}
           </p>
-        </div>
+        </Link>
 
         <button
           type="button"

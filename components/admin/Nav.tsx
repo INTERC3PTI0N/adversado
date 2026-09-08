@@ -57,6 +57,7 @@ const GROUPS: Group[] = [
   {
     heading: "System",
     items: [
+      { href: "/admin/account", label: "Your profile", min: "editor" },
       { href: "/admin/settings/users", label: "Users & roles", min: "super_admin" },
       { href: "/admin/settings/site", label: "Site settings", min: "admin" },
       { href: "/admin/audit", label: "Audit log", min: "admin" },

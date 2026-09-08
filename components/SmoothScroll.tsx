@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Lenis from "lenis";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { isAppArea } from "@/lib/routes";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -25,9 +27,22 @@ declare global {
  *
  * Exposed on `window.__lenis` so scroll handoffs can stop the glide and jump
  * instantly when a panel needs an immediate park.
+ *
+ * Not mounted over the admin or the client portal. This component sits in the
+ * root layout, above the route groups, so it reached them by default — and
+ * Lenis hijacking the wheel over a dense table means the inner scroller never
+ * receives the event and the page can't be scrolled to the end. Those are
+ * working screens; native scrolling is the correct behaviour there.
+ *
+ * Keyed on the *area* rather than the path, so moving between two public pages
+ * keeps one Lenis instance and only crossing into /admin tears it down —
+ * which is what removes the classes Lenis writes onto <html>.
  */
 export function SmoothScroll() {
+  const isApp = isAppArea(usePathname());
+
   useEffect(() => {
+    if (isApp) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const lenis = new Lenis({
@@ -54,7 +69,7 @@ export function SmoothScroll() {
       if (window.__lenis === lenis) delete window.__lenis;
       lenis.destroy();
     };
-  }, []);
+  }, [isApp]);
 
   return null;
 }

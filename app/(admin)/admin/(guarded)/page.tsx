@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { getSupabase } from "@/lib/supabase/server";
-import { requireStaff, isAdmin } from "@/lib/auth/rbac";
+import { requireStaff, isAdmin, ROLE_LABEL } from "@/lib/auth/rbac";
 import {
+  Alert,
   Badge,
   ButtonLink,
   EmptyState,
@@ -34,8 +35,16 @@ const currency = (n: number) =>
  * is. An editor sees the content half only; the CRM half is admin-gated both
  * here and by RLS, so a missing check here still returns nothing.
  */
-export default async function AdminDashboard() {
+export default async function AdminDashboard({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
   const { profile } = await requireStaff("editor");
+  // `requireStaff` bounces here with ?denied=1 when someone lacks the role for
+  // a page. Without this the refusal is silent, and a page you may not open
+  // looks exactly like a page that is broken.
+  const denied = (await searchParams).denied === "1";
   const supabase = await getSupabase();
   const admin = isAdmin(profile.role);
 
@@ -80,6 +89,16 @@ export default async function AdminDashboard() {
 
   return (
     <>
+      {denied ? (
+        <div className="mb-7">
+          <Alert tone="error">
+            You don&rsquo;t have access to that page. You&rsquo;re signed in as{" "}
+            <strong>{ROLE_LABEL[profile.role]}</strong> — ask a super admin if
+            you need it.
+          </Alert>
+        </div>
+      ) : null}
+
       <PageHeading
         eyebrow="Overview"
         title={`Afternoon, ${(profile.full_name ?? profile.email).split(" ")[0]}`}

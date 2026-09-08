@@ -79,6 +79,9 @@ export type Profile = {
   id: string;
   email: string;
   full_name: string | null;
+  /** What the person does — "Founder", "Strategy Head". Display only; access
+      is decided by `role`. */
+  job_title: string | null;
   avatar_url: string | null;
   role: UserRole;
   is_active: boolean;

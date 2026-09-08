@@ -7,6 +7,7 @@ import {
   removeUser,
   setUserActive,
   setUserClient,
+  setUserDetails,
   setUserRole,
 } from "@/app/(admin)/admin/(guarded)/settings/users/actions";
 import { ROLE_DESCRIPTION, ROLE_LABEL } from "@/lib/auth/roles";
@@ -48,9 +49,21 @@ export function UsersTable({
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<{ tone: "error" | "success"; text: string } | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [invite, setInvite] = useState({ email: "", name: "", role: "editor" as UserRole });
+  const [invite, setInvite] = useState({
+    email: "",
+    name: "",
+    position: "",
+    role: "editor" as UserRole,
+  });
+
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+
+  /* Names and positions are edited in place and saved on blur. Keyed by user
+     id so one row's draft never bleeds into another's, and seeded lazily — an
+     untouched row reads straight from the server value, so a change made
+     elsewhere is not masked by a stale draft. */
+  const [drafts, setDrafts] = useState<Record<string, { name: string; position: string }>>({});
 
   function run(fn: () => Promise<{ ok: true } | { ok: false; error: string }>, success?: string) {
     setMessage(null);
@@ -65,18 +78,43 @@ export function UsersTable({
     });
   }
 
+  const draftFor = (user: Profile) =>
+    drafts[user.id] ?? { name: user.full_name ?? "", position: user.job_title ?? "" };
+
+  function editDraft(user: Profile, patch: Partial<{ name: string; position: string }>) {
+    setDrafts((d) => ({ ...d, [user.id]: { ...draftFor(user), ...patch } }));
+  }
+
+  /** Saves on blur, and only when something actually changed. */
+  function commit(user: Profile) {
+    const draft = drafts[user.id];
+    if (!draft) return;
+
+    if (
+      draft.name === (user.full_name ?? "") &&
+      draft.position === (user.job_title ?? "")
+    ) {
+      return;
+    }
+
+    run(
+      () => setUserDetails(user.id, { full_name: draft.name, job_title: draft.position }),
+      "Saved.",
+    );
+  }
+
   function submitInvite() {
     setMessage(null);
     setInviteLink(null);
     startTransition(async () => {
-      const result = await inviteUser(invite.email, invite.role, invite.name);
+      const result = await inviteUser(invite.email, invite.role, invite.name, invite.position);
 
       if (!result.ok) {
         setMessage({ tone: "error", text: result.error });
         return;
       }
 
-      setInvite({ email: "", name: "", role: "editor" });
+      setInvite({ email: "", name: "", position: "", role: "editor" });
       if (result.emailed) {
         setMessage({ tone: "success", text: `Invite sent to ${invite.email}.` });
         setInviteOpen(false);
@@ -125,7 +163,7 @@ export function UsersTable({
         />
 
         {inviteOpen ? (
-          <div className="grid gap-5 border-b-[3px] border-charcoal bg-bone/60 p-5 sm:grid-cols-[1fr_1fr_auto_auto] sm:items-end">
+          <div className="grid gap-5 border-b-[3px] border-charcoal bg-bone/60 p-5 sm:grid-cols-[1fr_1fr_1fr_auto_auto] sm:items-end">
             <Field label="Email" required>
               <input
                 type="email"
@@ -139,6 +177,14 @@ export function UsersTable({
                 type="text"
                 value={invite.name}
                 onChange={(e) => setInvite((v) => ({ ...v, name: e.target.value }))}
+                className={INPUT_CLASS}
+              />
+            </Field>
+            <Field label="Position" help="Founder, Strategy Head…">
+              <input
+                type="text"
+                value={invite.position}
+                onChange={(e) => setInvite((v) => ({ ...v, position: e.target.value }))}
                 className={INPUT_CLASS}
               />
             </Field>
@@ -165,6 +211,7 @@ export function UsersTable({
           <thead>
             <tr>
               <Th>Person</Th>
+              <Th>Position</Th>
               <Th>Role</Th>
               <Th>Client</Th>
               <Th>Status</Th>
@@ -178,15 +225,35 @@ export function UsersTable({
               return (
                 <tr key={user.id} className={user.is_active ? "" : "bg-charcoal/[0.04]"}>
                   <Td>
-                    <span className="font-black">
-                      {user.full_name ?? user.email.split("@")[0]}
+                    <div className="flex items-center gap-2">
+                      <input
+                        value={draftFor(user).name}
+                        disabled={pending}
+                        onChange={(e) => editDraft(user, { name: e.target.value })}
+                        onBlur={() => commit(user)}
+                        placeholder={user.email.split("@")[0]}
+                        aria-label={`Name for ${user.email}`}
+                        className="w-full min-w-[8rem] max-w-[13rem] border-[3px] border-charcoal bg-cream px-3 py-1.5 font-sans text-[0.82rem] font-black text-charcoal outline-none disabled:border-charcoal/25 disabled:bg-transparent"
+                      />
                       {isSelf ? (
-                        <span className="ml-2 font-sans text-[0.58rem] font-black uppercase tracking-[0.16em] text-charcoal/45">
+                        <span className="shrink-0 font-sans text-[0.58rem] font-black uppercase tracking-[0.16em] text-charcoal/45">
                           You
                         </span>
                       ) : null}
-                    </span>
-                    <span className="block text-[0.78rem] text-charcoal/55">{user.email}</span>
+                    </div>
+                    <span className="mt-1 block text-[0.78rem] text-charcoal/55">{user.email}</span>
+                  </Td>
+
+                  <Td>
+                    <input
+                      value={draftFor(user).position}
+                      disabled={pending}
+                      onChange={(e) => editDraft(user, { position: e.target.value })}
+                      onBlur={() => commit(user)}
+                      placeholder="—"
+                      aria-label={`Position for ${user.email}`}
+                      className="w-full min-w-[8rem] max-w-[12rem] border-[3px] border-charcoal bg-cream px-3 py-1.5 font-sans text-[0.82rem] font-medium text-charcoal outline-none disabled:border-charcoal/25 disabled:bg-transparent"
+                    />
                   </Td>
 
                   <Td>

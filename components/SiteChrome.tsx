@@ -5,6 +5,7 @@ import { CursorField } from "@/components/CursorField";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteSplash } from "@/components/SiteSplash";
 import { StickyLogo } from "@/components/StickyLogo";
+import { isAppArea } from "@/lib/routes";
 
 /**
  * Sitewide chrome — wordmark, staggered menu, gold fluid cursor.
@@ -16,18 +17,11 @@ import { StickyLogo } from "@/components/StickyLogo";
  *
  * The admin and the client portal do opt out. They are working software, not
  * the marketing site: a fluid cursor and a full-screen staggered menu over a
- * dense table is noise, and the admin has navigation of its own.
+ * dense table is noise, and the admin has navigation of its own. The rule
+ * lives in `lib/routes` because SmoothScroll needs the same one.
  */
-const APP_AREAS = ["/admin", "/portal"];
-
 export function SiteChrome() {
-  const pathname = usePathname();
-
-  const isApp = APP_AREAS.some(
-    (area) => pathname === area || pathname.startsWith(`${area}/`),
-  );
-
-  if (isApp) return null;
+  if (isAppArea(usePathname())) return null;
 
   return (
     <>

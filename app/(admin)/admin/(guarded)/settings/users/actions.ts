@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getServiceSupabase, getSupabase } from "@/lib/supabase/server";
 import { requireStaff } from "@/lib/auth/rbac";
 import { isMailConfigured, sendMail } from "@/lib/mail";
+import { siteUrl } from "@/lib/seo";
 import type { UserRole } from "@/lib/supabase/types";
 
 /**
@@ -183,15 +184,16 @@ export async function inviteUser(
 
   const service = getServiceSupabase();
 
-  const site =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
-
   const { data, error } = await service.auth.admin.generateLink({
     type: "invite",
     email: address,
     options: {
       data: { full_name: fullName.trim() || undefined },
-      redirectTo: `${site}/admin/login`,
+      // `siteUrl()`, not a bare NEXT_PUBLIC_SITE_URL read: that variable is
+      // unset here, so the old fallback posted `http://localhost:3000` into
+      // invitations sent from production. siteUrl() falls back to Vercel's
+      // deployment URL instead, which at least resolves.
+      redirectTo: `${siteUrl()}/admin/login`,
     },
   });
 

@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import type { FilterOption } from "@/lib/filters";
 import { Button, INPUT_CLASS } from "./ui";
 
 /**
@@ -19,7 +20,7 @@ export type SelectFilter = {
   key: string;
   label: string;
   /** First entry is the "all" option; its value must be "". */
-  options: { value: string; label: string }[];
+  options: FilterOption[];
 };
 
 export type ToggleFilter = { key: string; label: string };
@@ -129,15 +130,4 @@ export function FilterBar({
       ) : null}
     </form>
   );
-}
-
-/** Builds an "All …" option list from enum values. */
-export function enumOptions(all: string, values: readonly string[]) {
-  return [
-    { value: "", label: all },
-    ...values.map((v) => ({
-      value: v,
-      label: v.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()),
-    })),
-  ];
 }

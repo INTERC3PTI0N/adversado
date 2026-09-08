@@ -1,6 +1,7 @@
 "use client";
 
-import { FilterBar, enumOptions } from "./FilterBar";
+import { enumOptions } from "@/lib/filters";
+import { FilterBar } from "./FilterBar";
 
 /** Thin wrapper over the shared filter bar, so the Leads list keeps its own
     vocabulary while the behaviour lives in one place. */

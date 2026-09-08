@@ -3,7 +3,8 @@ import { requireStaff } from "@/lib/auth/rbac";
 import {
   EmptyState, PageHeading, Pagination, Panel, Table, Th,
 } from "@/components/admin/ui";
-import { FilterBar, enumOptions } from "@/components/admin/FilterBar";
+import { FilterBar } from "@/components/admin/FilterBar";
+import { enumOptions } from "@/lib/filters";
 import { AuditRow } from "@/components/admin/AuditRow";
 import type { AuditEntry, Profile } from "@/lib/supabase/types";
 

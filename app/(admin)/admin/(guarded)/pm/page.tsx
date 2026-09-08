@@ -4,7 +4,8 @@ import { requireStaff } from "@/lib/auth/rbac";
 import {
   Badge, ButtonLink, EmptyState, PageHeading, Panel, Stat, Table, Td, Th, label,
 } from "@/components/admin/ui";
-import { FilterBar, enumOptions } from "@/components/admin/FilterBar";
+import { FilterBar } from "@/components/admin/FilterBar";
+import { enumOptions } from "@/lib/filters";
 import { daysUntil, money, shortDate } from "@/lib/format";
 import type { Client, PmProject, ProjectStatus } from "@/lib/supabase/types";
 

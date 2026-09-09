@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { trackLeadCreated } from "@/lib/pixel";
 
 /**
  * The site's contact form. One implementation, used by the Contact page and by
@@ -130,6 +131,9 @@ export function ContactForm({
           const json = await res.json().catch(() => ({}));
 
           if (res.ok) {
+            // Only on a 2xx: the server has stored the enquiry by this point,
+            // so the conversion is real rather than an optimistic guess.
+            trackLeadCreated();
             setSent(true);
             return;
           }

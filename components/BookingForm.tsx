@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { trackLeadCreated } from "@/lib/pixel";
 
 type Service = {
   id: string;
@@ -188,6 +189,9 @@ export function BookingForm({ services }: { services: Service[] }) {
     const data = await res.json().catch(() => ({}));
 
     if (res.ok) {
+      // The booking is committed server-side by here — the slot is held and
+      // the lead written — so this is a conversion, not an attempt.
+      trackLeadCreated();
       setStatus("done");
       return;
     }

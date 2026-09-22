@@ -31,6 +31,9 @@ export type GalleryItem = {
   client: string;
   title: string;
   category: string;
+  /** The project's page. Absent on the built-in placeholder set, whose cards
+      have nothing to open onto. */
+  slug?: string;
 };
 
 export type GalleryMode = "ring" | "spiral";

@@ -27,8 +27,7 @@ const GROUPS: Group[] = [
     items: [
       { href: "/admin/content/pages", label: "Pages & sections", min: "editor" },
       { href: "/admin/content/blog", label: "Blog", min: "editor" },
-      { href: "/admin/content/projects", label: "Portfolio", min: "editor" },
-      { href: "/admin/content/case-studies", label: "Case studies", min: "editor" },
+      { href: "/admin/content/projects", label: "Projects", min: "editor" },
       { href: "/admin/content/services", label: "Services", min: "editor" },
       { href: "/admin/content/team", label: "Team", min: "editor" },
       { href: "/admin/content/testimonials", label: "Testimonials", min: "editor" },

@@ -12,6 +12,9 @@ import {
   Alert, Badge, Button, Field, INPUT_CLASS, Panel, PanelHeader, label,
 } from "./ui";
 
+/** A media-library image, as offered to an `image` field. */
+export type MediaOption = { id: string; filename: string; url: string };
+
 /**
  * Editor for one collection item.
  *
@@ -19,12 +22,14 @@ import {
  * and a testimonial. The SEO block is appended for collections that carry one.
  */
 export function ItemEditor({
-  collection, id, initial, role,
+  collection, id, initial, role, media = [],
 }: {
   collection: Collection;
   id: string | null;
   initial: Record<string, unknown>;
   role: UserRole;
+  /** Images from the library, for any `image` field. Stored as the media id. */
+  media?: MediaOption[];
 }) {
   const router = useRouter();
   const [values, setValues] = useState<Record<string, unknown>>(initial);
@@ -120,6 +125,52 @@ export function ItemEditor({
           maxLength={field.maxLength}
           className={`${INPUT_CLASS} resize-y`}
         />
+      );
+    }
+
+    /* The schema has declared `image` all along, but nothing rendered it — it
+       fell through to the text input below, so a cover could only be set by
+       pasting a uuid. It stores the media row's id, which is what the `_id`
+       foreign keys (`cover_id`, `photo_id`, `avatar_id`) expect. */
+    if (field.type === "image") {
+      const selected = media.find((m) => m.id === value);
+
+      return (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+          <div className="flex h-28 w-40 shrink-0 items-center justify-center overflow-hidden border-[3px] border-charcoal bg-bone">
+            {selected ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={selected.url} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <span className="font-sans text-[0.6rem] font-black uppercase tracking-[0.16em] text-charcoal/35">
+                No image
+              </span>
+            )}
+          </div>
+
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <select
+              value={typeof value === "string" ? value : ""}
+              onChange={(e) => set(field.key, e.target.value || null)}
+              className={`${INPUT_CLASS} appearance-none`}
+            >
+              <option value="">None</option>
+              {media.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.filename}
+                </option>
+              ))}
+            </select>
+            <a
+              href="/admin/media"
+              target="_blank"
+              rel="noreferrer"
+              className="font-sans text-[0.74rem] font-bold text-charcoal/55 underline decoration-charcoal/25 underline-offset-4 hover:text-charcoal"
+            >
+              {media.length === 0 ? "Upload one in the media library ↗" : "Upload another ↗"}
+            </a>
+          </div>
+        </div>
       );
     }
 

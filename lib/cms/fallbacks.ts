@@ -11,6 +11,8 @@
  * component, belongs here.
  */
 
+import type { GalleryItem } from "@/components/RingSpiralGallery";
+
 export type AccordionItem = { question: string; answer: string };
 
 export const FAQ_FALLBACK: AccordionItem[] = [
@@ -95,3 +97,32 @@ export const FAQ_HERO_FALLBACK: FaqHero = {
   ctaHref: "/contact#audit",
 };
 
+/* ── Projects ─────────────────────────────────────────────────────────── */
+
+/**
+ * The gallery as it stood before projects came from the CMS.
+ *
+ * Shown only while no published project has a cover, so the page never goes
+ * from eighteen pieces to a blank coil. These have no `slug`: they are
+ * pictures, not case studies, and a card with nowhere to go stays inert.
+ */
+export const PROJECTS_FALLBACK: GalleryItem[] = [
+  { src: "/mockups/1.png", client: "Velvet Threads", title: "Monogram & wax seal", category: "Identity" },
+  { src: "/mockups/2.png", client: "Velvet Threads", title: "Invitation suite", category: "Print" },
+  { src: "/mockups/3.png", client: "Velvet Threads", title: "Retail collateral", category: "Identity" },
+  { src: "/mockups/4.png", client: "Velvet Threads", title: "Keepsake packaging", category: "Packaging" },
+  { src: "/mockups/5.png", client: "Velvet Threads", title: "Client journal", category: "Packaging" },
+  { src: "/mockups/6.png", client: "AgeWell", title: "Aura — transit shelter", category: "Advertising" },
+  { src: "/mockups/7.png", client: "AgeWell", title: "Aura — digital screen", category: "Advertising" },
+  { src: "/mockups/8.png", client: "AgeWell", title: "Aura — pack in context", category: "Packaging" },
+  { src: "/mockups/9.png", client: "AgeWell", title: "Tandem — facade billboard", category: "Advertising" },
+  { src: "/mockups/10.png", client: "AISA", title: "Course brochure", category: "Print" },
+  { src: "/mockups/11.png", client: "AISA", title: "Website", category: "Web" },
+  { src: "/mockups/12.png", client: "AISA", title: "Identity & stationery", category: "Identity" },
+  { src: "/mockups/13.png", client: "AISA", title: "Responsive build", category: "Web" },
+  { src: "/mockups/14.png", client: "AISA", title: "Prospectus", category: "Print" },
+  { src: "/mockups/15.png", client: "Dynamic Constructions", title: "Pickleball Classic", category: "Events" },
+  { src: "/mockups/16.png", client: "Dr. Susan Koruthu", title: "Practice website", category: "Web" },
+  { src: "/mockups/17.png", client: "Dcube Salon", title: "Poster series", category: "Advertising" },
+  { src: "/mockups/18.png", client: "Dcube Salon", title: "Social system", category: "Social" },
+];

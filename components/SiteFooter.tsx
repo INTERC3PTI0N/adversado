@@ -15,6 +15,10 @@ const NAV = [
 const RESOURCES = [
   { label: "FAQ", href: "/faq" },
   { label: "Blog", href: "/blog" },
+  /* Existing clients check project progress, invoices and shared files here.
+     Nothing else on the public site points at the portal, so without this a
+     client can only find it through the invite email. */
+  { label: "Client login", href: "/portal/login" },
 ] as const;
 
 const VERTICALS = [

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   inviteUser,
   removeUser,
+  resendInvite,
   setUserActive,
   setUserClient,
   setUserDetails,
@@ -40,10 +41,14 @@ export function UsersTable({
   users,
   clients,
   self,
+  pendingInvites = [],
 }: {
   users: Profile[];
   clients: Pick<Client, "id" | "name">[];
   self: string;
+  /** Ids of accounts that have never signed in — the only ones a fresh
+      invite link may be issued for. */
+  pendingInvites?: string[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -103,30 +108,47 @@ export function UsersTable({
     );
   }
 
+  /** Shared by Invite and Resend: say it was emailed, or hand over the link. */
+  function deliver(
+    result: Awaited<ReturnType<typeof inviteUser>>,
+    sentTo: string,
+    onSent?: () => void,
+  ) {
+    if (!result.ok) {
+      setMessage({ tone: "error", text: result.error });
+      return;
+    }
+
+    if (result.emailed) {
+      setMessage({ tone: "success", text: `Invite sent to ${sentTo}.` });
+      onSent?.();
+    } else {
+      // No mail transport — surface the link rather than pretending it sent.
+      setInviteLink(result.link);
+      setMessage({
+        tone: "success",
+        text: "Link ready. Email isn't connected, so send them this link yourself.",
+      });
+    }
+    router.refresh();
+  }
+
   function submitInvite() {
     setMessage(null);
     setInviteLink(null);
+    const sentTo = invite.email;
     startTransition(async () => {
       const result = await inviteUser(invite.email, invite.role, invite.name, invite.position);
+      if (result.ok) setInvite({ email: "", name: "", position: "", role: "editor" });
+      deliver(result, sentTo, () => setInviteOpen(false));
+    });
+  }
 
-      if (!result.ok) {
-        setMessage({ tone: "error", text: result.error });
-        return;
-      }
-
-      setInvite({ email: "", name: "", position: "", role: "editor" });
-      if (result.emailed) {
-        setMessage({ tone: "success", text: `Invite sent to ${invite.email}.` });
-        setInviteOpen(false);
-      } else {
-        // No mail transport — surface the link rather than pretending it sent.
-        setInviteLink(result.link);
-        setMessage({
-          tone: "success",
-          text: "Account created. Email isn't connected, so send them this link yourself.",
-        });
-      }
-      router.refresh();
+  function resend(user: Profile) {
+    setMessage(null);
+    setInviteLink(null);
+    startTransition(async () => {
+      deliver(await resendInvite(user.id), user.email);
     });
   }
 
@@ -297,13 +319,30 @@ export function UsersTable({
                   </Td>
 
                   <Td>
-                    <Badge tone={user.is_active ? ROLE_TONE[user.role] : "archived"}>
-                      {user.is_active ? "Active" : "Off"}
-                    </Badge>
+                    <div className="flex flex-wrap gap-1.5">
+                      <Badge tone={user.is_active ? ROLE_TONE[user.role] : "archived"}>
+                        {user.is_active ? "Active" : "Off"}
+                      </Badge>
+                      {pendingInvites.includes(user.id) ? (
+                        <Badge tone="in_review">Never signed in</Badge>
+                      ) : null}
+                    </div>
                   </Td>
 
                   <Td className="text-right">
                     <div className="flex flex-wrap justify-end gap-2">
+                      {pendingInvites.includes(user.id) ? (
+                        <button
+                          type="button"
+                          disabled={pending}
+                          onClick={() => resend(user)}
+                          title="Issue a fresh set-password link. Only possible for accounts that have never signed in."
+                          className="border-2 border-charcoal bg-gold px-3 py-1 font-sans text-[0.6rem] font-black uppercase tracking-[0.14em] text-charcoal disabled:opacity-30"
+                        >
+                          Resend invite
+                        </button>
+                      ) : null}
+
                       <button
                         type="button"
                         disabled={pending || (isSelf && user.is_active)}

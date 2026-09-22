@@ -176,3 +176,90 @@ export function mediaUrl(bucket: string, path: string): string {
   if (!base) return path;
   return `${base}/storage/v1/object/public/${bucket}/${path}`;
 }
+
+/* ── Projects (each one is its case study) ─────────────────────────────── */
+
+export type ProjectCard = {
+  src: string;
+  client: string;
+  title: string;
+  category: string;
+  slug: string;
+};
+
+/** Cover URLs for a set of media ids, in one round trip. */
+async function coverUrls(ids: string[]): Promise<Map<string, string>> {
+  if (ids.length === 0) return new Map();
+
+  const { data } = await getPublicSupabase()
+    .from("media")
+    .select("id, bucket, storage_path")
+    .in("id", ids);
+
+  return new Map(
+    (data ?? []).map((m) => [m.id, mediaUrl(m.bucket, m.storage_path)]),
+  );
+}
+
+/**
+ * Gallery cards for /projects: published projects that have a cover.
+ *
+ * A project without a cover is left off rather than shown as a blank card —
+ * the gallery is nothing but images. Its page still resolves at
+ * /projects/[slug], so a missing cover hides a card, never a case study.
+ */
+export const getProjectCards = unstable_cache(
+  async (): Promise<ProjectCard[]> => {
+    const projects = await collection<Project>("projects", {
+      column: "position",
+      ascending: true,
+    });
+
+    const withCovers = projects.filter((p) => p.cover_id);
+    if (withCovers.length === 0) return [];
+
+    try {
+      const urls = await coverUrls(withCovers.map((p) => p.cover_id!));
+
+      return withCovers
+        .filter((p) => urls.has(p.cover_id!))
+        .map((p) => ({
+          src: urls.get(p.cover_id!)!,
+          client: p.client_name ?? "",
+          title: p.title,
+          category: p.category ?? "",
+          slug: p.slug,
+        }));
+    } catch {
+      return [];
+    }
+  },
+  ["cms-project-cards"],
+  { tags: [CMS_TAG], revalidate: 300 },
+);
+
+/** One published project — the case study page — with its cover resolved. */
+export async function getProject(
+  slug: string,
+): Promise<(Project & { coverUrl: string | null }) | null> {
+  if (!isSupabaseConfigured()) return null;
+
+  try {
+    const { data } = await getPublicSupabase()
+      .from("projects")
+      .select("*")
+      .eq("slug", slug)
+      .eq("status", "published")
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (!data) return null;
+
+    const project = data as Project;
+    const urls = project.cover_id ? await coverUrls([project.cover_id]) : new Map();
+
+    return { ...project, coverUrl: urls.get(project.cover_id ?? "") ?? null };
+  } catch {
+    return null;
+  }
+}

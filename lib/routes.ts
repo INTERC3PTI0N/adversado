@@ -6,7 +6,10 @@
  * unless it asks. One definition, because two copies of this rule drifting
  * apart is how Lenis ended up running over the admin's tables.
  */
-const APP_AREAS = ["/admin", "/portal"] as const;
+/* `/auth` is the first-login flow — redeem an invite, set a password — shared
+   by staff and clients. A form, not a page to scroll through with a cinematic
+   ground behind it. */
+const APP_AREAS = ["/admin", "/portal", "/auth"] as const;
 
 export function isAppArea(pathname: string | null | undefined): boolean {
   if (!pathname) return false;

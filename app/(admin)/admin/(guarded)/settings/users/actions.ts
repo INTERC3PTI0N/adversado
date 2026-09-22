@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { getServiceSupabase, getSupabase } from "@/lib/supabase/server";
 import { requireStaff } from "@/lib/auth/rbac";
-import { isMailConfigured, sendMail } from "@/lib/mail";
-import { siteUrl } from "@/lib/seo";
+import { buttonEmail, isMailConfigured, sendMail } from "@/lib/mail";
+import { createInvite, reissueInvite } from "@/lib/auth/invites";
 import type { UserRole } from "@/lib/supabase/types";
 
 /**
@@ -167,6 +167,10 @@ export async function setUserClient(
  *
  * The new user lands as an inactive editor via `handle_new_user()`; the role
  * chosen here is applied after, and activation stays a separate deliberate act.
+ *
+ * The link itself comes from `lib/auth/invites` — on our own domain, redeemed
+ * by our own page — rather than Supabase's `action_link`, which read as a
+ * random string and landed on localhost. See that file for why.
  */
 export async function inviteUser(
   email: string,
@@ -182,66 +186,92 @@ export async function inviteUser(
   }
   if (!ROLES.includes(role)) return { ok: false, error: "Unknown role." };
 
-  const service = getServiceSupabase();
+  const invite = await createInvite(address, { full_name: fullName.trim() || undefined });
 
-  const { data, error } = await service.auth.admin.generateLink({
-    type: "invite",
-    email: address,
-    options: {
-      data: { full_name: fullName.trim() || undefined },
-      // `siteUrl()`, not a bare NEXT_PUBLIC_SITE_URL read: that variable is
-      // unset here, so the old fallback posted `http://localhost:3000` into
-      // invitations sent from production. siteUrl() falls back to Vercel's
-      // deployment URL instead, which at least resolves.
-      redirectTo: `${siteUrl()}/admin/login`,
-    },
-  });
-
-  if (error || !data?.properties?.action_link) {
-    const message = error?.message ?? "Could not create the invite.";
+  if (!invite.ok) {
     return {
       ok: false,
-      error: /already been registered|already exists/i.test(message)
-        ? "That email already has an account. Change its role in the table instead."
-        : message,
+      error: invite.exists
+        ? "That email already has an account. If they never got in, use Resend invite on their row."
+        : invite.error,
     };
   }
 
-  const link = data.properties.action_link;
-
   // The trigger has created the profile by now; apply the chosen role and
   // position to it. Service role, so the privilege guard lets the role through.
-  if (data.user?.id) {
-    await service
-      .from("profiles")
-      .update({
-        role,
-        full_name: fullName.trim() || null,
-        job_title: jobTitle.trim() || null,
-      })
-      .eq("id", data.user.id);
-  }
+  await getServiceSupabase()
+    .from("profiles")
+    .update({
+      role,
+      full_name: fullName.trim() || null,
+      job_title: jobTitle.trim() || null,
+    })
+    .eq("id", invite.userId);
 
-  let emailed = false;
-  if (isMailConfigured()) {
-    const invitedBy = profile.full_name ?? profile.email;
-    const result = await sendMail({
-      to: address,
-      subject: "You've been added to the Adversado admin",
-      text: [
-        `${invitedBy} has given you access to the Adversado admin.`,
-        "",
-        "Set your password and sign in here:",
-        link,
-        "",
-        "The link is single-use and expires. Ask for another if it lapses.",
-      ].join("\n"),
-    });
-    emailed = result.ok;
-  }
+  const emailed = await mailStaffInvite(address, invite.link, profile.full_name ?? profile.email);
 
   revalidatePath("/admin/settings/users");
-  return { ok: true, emailed, link };
+  return { ok: true, emailed, link: invite.link };
+}
+
+async function mailStaffInvite(to: string, link: string, invitedBy: string): Promise<boolean> {
+  if (!isMailConfigured()) return false;
+
+  const { text, html } = buttonEmail({
+    heading: "You're on the team",
+    body: `${invitedBy} has given you access to the Adversado admin. Set a password to get started.`,
+    cta: "Set your password",
+    link,
+    footnote: "The link works once and expires. Ask for another if it lapses.",
+  });
+
+  const result = await sendMail({ to, subject: "Your Adversado admin access", text, html });
+  return result.ok;
+}
+
+/**
+ * Send a fresh link to someone who never got in.
+ *
+ * Every invite sent before `lib/auth/invites` existed pointed at localhost, and
+ * those people already have accounts — so inviting them again is refused.
+ * `reissueInvite` issues a new password-setting link, and only for accounts that
+ * have never signed in; see there for why that limit matters.
+ */
+export async function resendInvite(userId: string): Promise<InviteResult> {
+  const { profile } = await requireStaff("super_admin");
+
+  const reissued = await reissueInvite(userId);
+  if (!reissued.ok) return { ok: false, error: reissued.error };
+
+  const { data: target } = await getServiceSupabase()
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .single();
+
+  const invitedBy = profile.full_name ?? profile.email;
+  const emailed =
+    target?.role === "client"
+      ? await mailPortalInvite(reissued.email, reissued.link, invitedBy)
+      : await mailStaffInvite(reissued.email, reissued.link, invitedBy);
+
+  revalidatePath("/admin/settings/users");
+  return { ok: true, emailed, link: reissued.link };
+}
+
+async function mailPortalInvite(to: string, link: string, invitedBy: string): Promise<boolean> {
+  if (!isMailConfigured()) return false;
+
+  const { text, html } = buttonEmail({
+    heading: "Your client portal",
+    body: `${invitedBy} has set up your Adversado portal — your projects, invoices and shared files in one place. Set a password to get in.`,
+    cta: "Set your password",
+    link,
+    footnote: "The link works once and expires. Ask for another if it lapses.",
+  });
+
+  const result = await sendMail({ to, subject: "Your Adversado client portal", text, html });
+  return result.ok;
 }
 
 /**

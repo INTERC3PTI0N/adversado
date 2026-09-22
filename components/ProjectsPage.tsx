@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   RingSpiralGallery,
   type GalleryItem,
@@ -9,6 +11,7 @@ import {
 import { ProjectsPreloader } from "@/components/ProjectsPreloader";
 import { CinematicScene } from "@/components/Cinematic";
 import { SiteFooter } from "@/components/SiteFooter";
+import { PROJECTS_FALLBACK } from "@/lib/cms/fallbacks";
 
 /**
  * Projects — k95.it's works page, rebuilt on brand.
@@ -30,26 +33,7 @@ import { SiteFooter } from "@/components/SiteFooter";
  * menu everywhere else; both are gone.
  */
 
-const PROJECTS: GalleryItem[] = [
-  { src: "/mockups/1.png", client: "Velvet Threads", title: "Monogram & wax seal", category: "Identity" },
-  { src: "/mockups/2.png", client: "Velvet Threads", title: "Invitation suite", category: "Print" },
-  { src: "/mockups/3.png", client: "Velvet Threads", title: "Retail collateral", category: "Identity" },
-  { src: "/mockups/4.png", client: "Velvet Threads", title: "Keepsake packaging", category: "Packaging" },
-  { src: "/mockups/5.png", client: "Velvet Threads", title: "Client journal", category: "Packaging" },
-  { src: "/mockups/6.png", client: "AgeWell", title: "Aura — transit shelter", category: "Advertising" },
-  { src: "/mockups/7.png", client: "AgeWell", title: "Aura — digital screen", category: "Advertising" },
-  { src: "/mockups/8.png", client: "AgeWell", title: "Aura — pack in context", category: "Packaging" },
-  { src: "/mockups/9.png", client: "AgeWell", title: "Tandem — facade billboard", category: "Advertising" },
-  { src: "/mockups/10.png", client: "AISA", title: "Course brochure", category: "Print" },
-  { src: "/mockups/11.png", client: "AISA", title: "Website", category: "Web" },
-  { src: "/mockups/12.png", client: "AISA", title: "Identity & stationery", category: "Identity" },
-  { src: "/mockups/13.png", client: "AISA", title: "Responsive build", category: "Web" },
-  { src: "/mockups/14.png", client: "AISA", title: "Prospectus", category: "Print" },
-  { src: "/mockups/15.png", client: "Dynamic Constructions", title: "Pickleball Classic", category: "Events" },
-  { src: "/mockups/16.png", client: "Dr. Susan Koruthu", title: "Practice website", category: "Web" },
-  { src: "/mockups/17.png", client: "Dcube Salon", title: "Poster series", category: "Advertising" },
-  { src: "/mockups/18.png", client: "Dcube Salon", title: "Social system", category: "Social" },
-];
+
 
 const NAVY = "#1f355e";
 
@@ -92,7 +76,17 @@ function ModeSwitch({
 
 /* ── Page ───────────────────────────────────────────────────────────────── */
 
-export function ProjectsPage() {
+/**
+ * `items` comes from the CMS via the server page. The default is the
+ * pre-CMS set, so the page renders exactly as it did if the backend is empty
+ * or unreachable — the same rule every public page follows.
+ */
+export function ProjectsPage({
+  items = PROJECTS_FALLBACK,
+}: {
+  items?: GalleryItem[];
+} = {}) {
+  const router = useRouter();
   const [booted, setBooted] = useState(false);
   const [loaderGone, setLoaderGone] = useState(false);
   const [mode, setMode] = useState<GalleryMode>("spiral");
@@ -101,11 +95,18 @@ export function ProjectsPage() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef(0);
 
-  const items = PROJECTS;
-
   const clientCount = useMemo(
-    () => new Set(PROJECTS.map((p) => p.client)).size,
-    [],
+    () => new Set(items.map((p) => p.client)).size,
+    [items],
+  );
+
+  /* A card opens its case study. The placeholder set has no slugs, so those
+     cards stay inert rather than routing to a page that doesn't exist. */
+  const onSelect = useCallback(
+    (item: GalleryItem) => {
+      if (item.slug) router.push(`/projects/${item.slug}`);
+    },
+    [router],
   );
 
   /* Scroll progress through the gallery's own section. Written to a ref so the
@@ -165,7 +166,7 @@ export function ProjectsPage() {
           Selected Works
         </h1>
         <p className="mt-1 font-sans text-[0.66rem] uppercase tracking-[0.18em] text-cream/50">
-          {clientCount} clients · {PROJECTS.length} pieces
+          {clientCount} clients · {items.length} pieces
         </p>
       </div>
 
@@ -203,6 +204,7 @@ export function ProjectsPage() {
             mode={mode}
             progressRef={progressRef}
             onActiveChange={onActiveChange}
+            onSelect={onSelect}
           />
         </div>
       </div>
@@ -238,11 +240,20 @@ export function ProjectsPage() {
       </div>
 
       {/* Crawlable index of the same set. The coil is transforms and rAF, which
-          is exactly the kind of thing a crawler sees nothing in. */}
+          is exactly the kind of thing a crawler sees nothing in — and, now
+          that cards open case studies, the only keyboard route to them too. */}
       <ul className="sr-only">
-        {PROJECTS.map((p) => (
+        {items.map((p) => (
           <li key={p.src}>
-            {p.client} — {p.title} ({p.category})
+            {p.slug ? (
+              <Link href={`/projects/${p.slug}`}>
+                {p.client} — {p.title} ({p.category})
+              </Link>
+            ) : (
+              <>
+                {p.client} — {p.title} ({p.category})
+              </>
+            )}
           </li>
         ))}
       </ul>

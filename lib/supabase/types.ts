@@ -165,6 +165,10 @@ export type Project = SeoFields & {
   cover_id: string | null;
   gallery: Json;
   summary: string | null;
+  /** Case study narrative — migration 0010 folded case studies into projects. */
+  challenge: string | null;
+  approach: string | null;
+  result: string | null;
   body: Json;
   is_featured: boolean;
   position: number;

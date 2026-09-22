@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { getServiceSupabase, getSupabase } from "@/lib/supabase/server";
 import { requireStaff } from "@/lib/auth/rbac";
-import { isMailConfigured, sendMail } from "@/lib/mail";
-import { siteUrl } from "@/lib/seo";
+import { buttonEmail, isMailConfigured, sendMail } from "@/lib/mail";
+import { createInvite } from "@/lib/auth/invites";
 import type { Json } from "@/lib/supabase/types";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -99,45 +99,38 @@ export async function grantPortalAccess(
     .eq("id", clientId)
     .single();
 
-  const { data, error } = await service.auth.admin.generateLink({
-    type: "invite",
-    email: address,
-    options: { redirectTo: `${siteUrl()}/portal/login` },
-  });
+  // Our own link, not Supabase's `action_link` — see lib/auth/invites for why
+  // that one read as a random string and landed on localhost.
+  const invite = await createInvite(address);
 
-  if (error || !data?.properties?.action_link || !data.user?.id) {
-    const message = error?.message ?? "Could not create the account.";
+  if (!invite.ok) {
     return {
       ok: false,
-      error: /already been registered|already exists/i.test(message)
-        ? "That email already has an account. Link it from Users & roles instead."
-        : message,
+      error: invite.exists
+        ? "That email already has an account. If they never got in, use Resend invite on their row in Users & roles."
+        : invite.error,
     };
   }
 
   await service
     .from("profiles")
     .update({ role: "client", client_id: clientId, is_active: true })
-    .eq("id", data.user.id);
+    .eq("id", invite.userId);
 
   await service.from("clients").update({ portal_enabled: true }).eq("id", clientId);
 
-  const link = data.properties.action_link;
+  const link = invite.link;
 
   let emailed = false;
   if (isMailConfigured()) {
-    const result = await sendMail({
-      to: address,
-      subject: "Your Adversado client portal",
-      text: [
-        `Your portal for ${client?.name ?? "your account"} is ready.`,
-        "",
-        "Set a password and sign in here:",
-        link,
-        "",
-        "You'll find your projects, invoices and shared files inside.",
-      ].join("\n"),
+    const { text, html } = buttonEmail({
+      heading: "Your client portal",
+      body: `Your Adversado portal for ${client?.name ?? "your account"} is ready — your projects, invoices and shared files in one place. Set a password to get in.`,
+      cta: "Set your password",
+      link,
+      footnote: "The link works once and expires. Ask for another if it lapses.",
     });
+    const result = await sendMail({ to: address, subject: "Your Adversado client portal", text, html });
     emailed = result.ok;
   }
 

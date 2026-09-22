@@ -60,7 +60,6 @@ const FIELDS: { title: string; hint?: string; fields: Field[] }[] = [
 const AUDITED = [
   { table: "posts", label: "Blog post", route: "blog", titleField: "title" },
   { table: "projects", label: "Project", route: "projects", titleField: "title" },
-  { table: "case_studies", label: "Case study", route: "case-studies", titleField: "title" },
   { table: "services", label: "Service", route: "services", titleField: "name" },
 ] as const;
 

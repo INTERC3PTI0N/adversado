@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { getSupabase } from "@/lib/supabase/server";
 import { requireStaff } from "@/lib/auth/rbac";
 import { COLLECTION_BY_ROUTE } from "@/lib/cms/collections";
-import { ItemEditor } from "@/components/admin/ItemEditor";
+import { ItemEditor, type MediaOption } from "@/components/admin/ItemEditor";
+import { mediaUrl } from "@/lib/cms/content";
 import { PageHeading } from "@/components/admin/ui";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +40,25 @@ export default async function ItemPage({
     initial = data as Record<string, unknown>;
   }
 
+  // Only fetched when something on this form can use it.
+  let media: MediaOption[] = [];
+  if (collection.fields.some((f) => f.type === "image")) {
+    const supabase = await getSupabase();
+    const { data } = await supabase
+      .from("media")
+      .select("id, filename, bucket, storage_path")
+      .eq("bucket", "media")
+      .like("mime_type", "image/%")
+      .order("created_at", { ascending: false })
+      .limit(300);
+
+    media = (data ?? []).map((m) => ({
+      id: m.id,
+      filename: m.filename,
+      url: mediaUrl(m.bucket, m.storage_path),
+    }));
+  }
+
   const title = creating
     ? `New ${collection.singular.toLowerCase()}`
     : String(initial[collection.titleField] ?? collection.singular);
@@ -61,6 +81,7 @@ export default async function ItemPage({
         id={creating ? null : id}
         initial={initial}
         role={profile.role}
+        media={media}
       />
     </>
   );

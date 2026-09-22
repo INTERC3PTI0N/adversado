@@ -3,17 +3,21 @@ import type { Field } from "./schemas";
 /**
  * Collection registry.
  *
- * Blog, portfolio, case studies, services, team, testimonials and FAQs are the
- * same screen with different columns: a list, an editor, status, ordering and
- * SEO. Declaring them here means one list component and one editor component
+ * Blog, projects, services, team, testimonials and FAQs are the same screen
+ * with different columns: a list, an editor, status, ordering and SEO.
+ * Declaring them here means one list component and one editor component
  * instead of six near-identical pairs, and a seventh collection costs an entry
  * rather than a directory.
+ *
+ * There is no separate "case studies" collection. A project *is* its case
+ * study: the card in the /projects gallery and the page it opens onto are one
+ * record. Keeping them apart meant entering every client twice and gave the
+ * write-up no route in from the gallery. See migration 0010.
  */
 
 export type CollectionKey =
   | "posts"
   | "projects"
-  | "case_studies"
   | "services"
   | "team_members"
   | "testimonials"
@@ -77,9 +81,10 @@ export const COLLECTIONS: Collection[] = [
   {
     key: "projects",
     route: "projects",
-    label: "Portfolio",
+    label: "Projects",
     singular: "Project",
-    description: "The work shown on the Projects page.",
+    description:
+      "Each project is a case study: its cover appears in the /projects gallery, and clicking it opens the full write-up.",
     titleField: "title",
     slugField: "slug",
     orderBy: { column: "position", ascending: true },
@@ -92,34 +97,21 @@ export const COLLECTIONS: Collection[] = [
     ],
     fields: [
       t("title", "Title", { required: true }),
-      t("slug", "Slug", { required: true }),
+      t("slug", "Slug", { required: true, help: "The page address: /projects/your-slug" }),
       t("client_name", "Client"),
       t("category", "Category", { help: "Identity, Print, Packaging, Advertising, Web, Events, Social" }),
       { key: "year", label: "Year", type: "number" },
-      area("summary", "Summary"),
+      {
+        key: "cover_id",
+        label: "Cover image",
+        type: "image",
+        help: "The card shown in the gallery. A project without one stays off the gallery, though its page still works.",
+      },
+      area("summary", "Summary", { help: "One or two lines under the title." }),
+      area("challenge", "The challenge", { help: "What the client was up against." }),
+      area("approach", "The approach", { help: "What was done about it." }),
+      area("result", "The result", { help: "What changed." }),
       { key: "is_featured", label: "Featured", type: "boolean" },
-    ],
-  },
-  {
-    key: "case_studies",
-    route: "case-studies",
-    label: "Case studies",
-    singular: "Case study",
-    description: "Longer write-ups: the challenge, the approach, the result.",
-    titleField: "title",
-    slugField: "slug",
-    orderBy: { column: "position", ascending: true },
-    sortable: true,
-    publishable: true,
-    seo: true,
-    listColumns: [{ key: "client_name", label: "Client" }],
-    fields: [
-      t("title", "Title", { required: true }),
-      t("slug", "Slug", { required: true }),
-      t("client_name", "Client"),
-      area("challenge", "The challenge"),
-      area("approach", "The approach"),
-      area("result", "The result"),
     ],
   },
   {
